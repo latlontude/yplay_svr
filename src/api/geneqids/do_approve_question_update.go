@@ -207,7 +207,7 @@ func InsertApprovedQId(uin int64, qid int) (pos int, err error) {
 		pos = pos % total
 	}
 
-	log.Debugf("uin %d, InsertApprovedQId qid %d, total %d, orgcursor %d, insertcursor, newPos %d", uin, qid, total, orgPos, insertcursor, pos)
+	log.Debugf("uin %d, InsertApprovedQId qid %d, total %d, orgcursor %d, insertcursor %d, newPos %d", uin, qid, total, orgPos, insertcursor, pos)
 
 	err = app.ZAdd(keyStr2, int64(pos), fmt.Sprintf("%d", qid))
 	if err != nil {
@@ -217,7 +217,7 @@ func InsertApprovedQId(uin int64, qid int) (pos int, err error) {
 
 	//更新上次的插入进度
 	res := make(map[string]string)
-	res["insertcursor"] = fmt.Sprintf("%d", insertcursor)
+	res["insertcursor"] = fmt.Sprintf("%d", pos)
 
 	err1 := app.HMSet(keyStr, res)
 	if err1 != nil {
