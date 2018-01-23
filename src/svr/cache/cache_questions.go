@@ -23,7 +23,7 @@ func CacheQuestions() (err error) {
 		return
 	}
 
-	sql := fmt.Sprintf(`select qid, qtext, qiconUrl,  optionGender, replyGender, schoolType, dataSrc, status, ts from questions2 order by qid`)
+	sql := fmt.Sprintf(`select qid, qtext, qiconUrl,  optionGender, replyGender, schoolType, dataSrc, status, tagId, tagName, subTagId1, subTagName1, subTagId2, subTagName2, subTagId3, subTagName3, ts from questions2 order by qid`)
 
 	rows, err := inst.Query(sql)
 	if err != nil {
@@ -35,7 +35,8 @@ func CacheQuestions() (err error) {
 
 	for rows.Next() {
 		var info st.QuestionInfo
-		rows.Scan(&info.QId, &info.QText, &info.QIconUrl, &info.OptionGender, &info.ReplyGender, &info.SchoolType, &info.DataSrc, &info.Status, &info.Ts)
+		rows.Scan(&info.QId, &info.QText, &info.QIconUrl, &info.OptionGender, &info.ReplyGender, &info.SchoolType, &info.DataSrc, &info.Status, &info.TagId, &info.TagName,
+			&info.SubTagId1, &info.SubTagName1, &info.SubTagId2, &info.SubTagName2, &info.SubTagId3, &info.SubTagName3, &info.Ts)
 
 		info.QIconUrl = fmt.Sprintf("http://yplay-1253229355.image.myqcloud.com/qicon/%s", info.QIconUrl)
 
@@ -68,7 +69,7 @@ func AddCacheQuestions(qid int) (err error) {
 		return
 	}
 
-	sql := fmt.Sprintf(`select qid, qtext, qiconUrl,  optionGender, replyGender, schoolType, dataSrc, status, ts from questions2 where qid = %d`, qid)
+	sql := fmt.Sprintf(`select qid, qtext, qiconUrl,  optionGender, replyGender, schoolType, dataSrc, status, tagId, tagName, subTagId1, subTagName1, subTagId2, subTagName2, subTagId3, subTagName3, ts from questions2 where qid = %d`, qid)
 
 	rows, err := inst.Query(sql)
 	if err != nil {
@@ -80,7 +81,8 @@ func AddCacheQuestions(qid int) (err error) {
 
 	for rows.Next() {
 		var info st.QuestionInfo
-		rows.Scan(&info.QId, &info.QText, &info.QIconUrl, &info.OptionGender, &info.ReplyGender, &info.SchoolType, &info.DataSrc, &info.Status, &info.Ts)
+		rows.Scan(&info.QId, &info.QText, &info.QIconUrl, &info.OptionGender, &info.ReplyGender, &info.SchoolType, &info.DataSrc, &info.Status, &info.TagId, &info.TagName,
+			&info.SubTagId1, &info.SubTagName1, &info.SubTagId2, &info.SubTagName2, &info.SubTagId3, &info.SubTagName3, &info.Ts)
 
 		info.QIconUrl = fmt.Sprintf("http://yplay-1253229355.image.myqcloud.com/qicon/%s", info.QIconUrl)
 
