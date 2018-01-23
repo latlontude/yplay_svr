@@ -1,0 +1,18 @@
+mongo 10.66.205.15:27017/admin -u mongouser -p yeejaymgo501
+
+use yplay
+
+#注意经纬度的顺序 必须是经度在前 因为2者的取值范围不一样
+#返回值每个都是document $near 表示操作，类似的有$lt/$gt $in $near 表示操作，类似的有$lt/$gt $eq等等
+db.schools.find({loc:{$near:{type:"Point",coordinates:[114.032192,22.581889]}},type:2}).limit(10)
+
+#2dsphere 是GeoJson对象,可以是Point/Line/Circle/Region/Rectagle 
+#2d 只是一个Point对象
+db.schools.ensureIndex({loc:"2dsphere",type:1})
+
+#找所有的集合
+db.schools.find({})
+
+#可以给出每个点到目标点的距离
+#返回值在document上还有其他信息
+db.runCommand({geoNear:"schools",near:{type:"Point",coordinates:[114.032192,22.581889]},spherical:true,schoolType:1})
