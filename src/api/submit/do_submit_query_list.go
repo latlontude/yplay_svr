@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"svr/st"
 	"time"
 )
 
@@ -168,9 +169,8 @@ func SubmitQueryList(uin int64, typ int, pageNum, pageSize int) (infos []*Submit
 	}
 	qidsStr = qidsStr[:len(qidsStr)-1]
 
-	sql = fmt.Sprintf(`select qid, count(id) from voteRecords where qid in (%s) group by qid`, qidsStr)
-
-	log.Errorf(sql)
+	//要全部查询出来 然后找同校同年级的
+	sql = fmt.Sprintf(`select qid, voteToUin, count(id) as cnt from voteRecords where qid in (%s) group by qid, voteToUin`, qidsStr)
 
 	rows, err = inst.Query(sql)
 	if err != nil {
@@ -180,18 +180,58 @@ func SubmitQueryList(uin int64, typ int, pageNum, pageSize int) (infos []*Submit
 	}
 	defer rows.Close()
 
-	mqids := make(map[int]int)
+	//所有人的答题总数
+	mqids := make(map[int]map[int64]int)
 	for rows.Next() {
 
 		var qid int
+		var voteToUin int64
 		var cnt int
-		rows.Scan(&qid, &cnt)
+		rows.Scan(&qid, &voteToUin, &cnt)
 
-		mqids[qid] = cnt
+		if _, ok := mqids[qid]; !ok {
+			mqids[qid] = make(map[int64]int)
+		}
+
+		mqids[qid][voteToUin] = cnt
+	}
+
+	uins := make([]int64, 0)
+	for _, m := range mqids {
+		for uid, _ := range m {
+			uins = append(uins, uid)
+		}
+	}
+
+	uins = append(uins, uin)
+
+	res, err := st.BatchGetUserProfileInfo(uins)
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+
+	//同校同年级的答题总数
+	mqidsFinal := make(map[int]int)
+
+	ui := res[uin]
+
+	for qid, m := range mqids {
+		cntTotal := 0
+		for uid, cnt := range m {
+			if ui2, ok := res[uid]; ok {
+
+				if ui2.SchoolId == ui.SchoolId && ui2.Grade == ui.Grade {
+					cntTotal += cnt
+				}
+			}
+		}
+
+		mqidsFinal[qid] = cntTotal
 	}
 
 	for i, info := range infos {
-		if v, ok := mqids[info.QId]; ok {
+		if v, ok := mqidsFinal[info.QId]; ok {
 			infos[i].VotedCnt = v
 		}
 
