@@ -120,6 +120,9 @@ func SubmitApprove(uin int64, submitId int, user int64) (qid int64, err error) {
 		return
 	}
 
+	//插入到临时数据库
+	go InsertApprovedQuestion2Tmp(int(qid), qtext, qiconId)
+
 	//缓存的question要增加
 	go cache.AddCacheQuestions(int(qid))
 	//发送IM消息
@@ -127,6 +130,58 @@ func SubmitApprove(uin int64, submitId int, user int64) (qid int64, err error) {
 
 	//审核通过的题目立即插入到用户的未答题的列表里面
 	go geneqids.ApproveQuestionUpdate(user, int(qid))
+
+	return
+}
+
+func InsertApprovedQuestion2Tmp(qid int, qtext string, qiconId int) (err error) {
+
+	if qid == 0 || len(qtext) == 0 {
+		return
+	}
+
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		log.Errorf(err.Error())
+		return
+	}
+
+	//插入到题目数据库
+	stmt, err := inst.Prepare(`insert into questionsTmp(qid, qtext, qiconUrl, optionGender, replyGender, schoolType, dataSrc, status, tagId, tagName, subTagId1, subTagName1, subTagId2, subTagName2, subTagId3, subTagName3, ts values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_PREPARE, err.Error())
+		log.Errorf(err.Error())
+		return
+	}
+	defer stmt.Close()
+
+	ts := time.Now().Unix()
+
+	optionGender := 0
+	replyGender := 0
+	schoolType := 0
+	status := 0
+	dataSrc := 2 //投稿题库
+
+	tagId := 0
+	subTagId1 := 0
+	subTagId2 := 0
+	subTagId3 := 0
+
+	tagName := ""
+	subTagName1 := ""
+	subTagName2 := ""
+	subTagName3 := ""
+
+	qiconUrl := fmt.Sprintf("%d.png", qiconId)
+
+	_, err = stmt.Exec(qid, qtext, qiconUrl, optionGender, replyGender, schoolType, dataSrc, status, tagId, tagName, subTagId1, subTagName1, subTagId2, subTagName2, subTagId3, subTagName3, ts)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
+		log.Errorf(err.Error())
+		return
+	}
 
 	return
 }
