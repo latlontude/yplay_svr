@@ -486,15 +486,25 @@ func GetNextQuestionAndOptions(uin int64, uuid int64) (qinfo *st.QuestionInfo, o
 		return
 	}
 
+	//根据获取加好友的来源来进行判断分析
+	//通讯录 -> 搜索 -> 同校同年级 -> 同校非同年级 -> 可能认识的人
+	friendsByaddFriendSrc, err1 := GetUinsByAddFriendSrc(uin)
+	if err1 != nil {
+		log.Errorf(err1.Error())
+	}
+
 	if len(uinsByVote) > 12 {
+		uinsByVote = ReOrderUinsByAddFriendSrc(uinsByVote, friendsByaddFriendSrc)
 		uinsByVote = uinsByVote[:12]
 	}
 
 	if len(uinsByAddFriendTime) > 12 {
+		uinsByAddFriendTime = ReOrderUinsByAddFriendSrc(uinsByAddFriendTime, friendsByaddFriendSrc)
 		uinsByAddFriendTime = uinsByAddFriendTime[:12]
 	}
 
 	if len(uinsByPVCnt) > 12 {
+		uinsByPVCnt = ReOrderUinsByAddFriendSrc(uinsByPVCnt, friendsByaddFriendSrc)
 		uinsByPVCnt = uinsByPVCnt[:12]
 	}
 
@@ -1307,6 +1317,115 @@ func GetUinsPVCnt(uins []int64) (res map[int]int, err error) {
 		if v, ok := r[key3]; ok {
 			t, _ := strconv.Atoi(v)
 			res[int(uin)] += t
+		}
+	}
+
+	return
+}
+
+func GetUinsByAddFriendSrc(uin int64) (uins []int64, err error) {
+
+	uins = make([]int64, 0)
+
+	if uin == 0 {
+		return
+	}
+
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		log.Error(err)
+		return
+	}
+	sql := fmt.Sprintf(`select toUin, srcType from addFriendMsg where fromUin = %d`, uin)
+
+	rows, err := inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		return
+	}
+	defer rows.Close()
+
+	uids1 := make([]int64, 0)
+	uids2 := make([]int64, 0)
+	uids3 := make([]int64, 0)
+	uids4 := make([]int64, 0)
+	uids5 := make([]int64, 0)
+
+	for rows.Next() {
+		var uid int64
+		var srcType int
+		rows.Scan(&uid, &srcType)
+
+		if srcType == 2 {
+			//通讯录好友
+			uids1 = append(uids1, uid)
+		} else if srcType == 8 {
+			//搜索好友
+			uids2 = append(uids2, uid)
+		} else if srcType == 4 {
+			//同校同年级
+			uids3 = append(uids3, uid)
+		} else if srcType == 3 || srcType == 5 || srcType == 6 {
+			//同校/同校男生/同校女生/
+			uids4 = append(uids4, uid)
+		} else if srcType == 7 {
+			//共同好友
+			uids5 = append(uids5, uid)
+		}
+	}
+
+	for _, uid := range uids1 {
+		uins = append(uins, uid)
+	}
+	for _, uid := range uids2 {
+		uins = append(uins, uid)
+	}
+	for _, uid := range uids3 {
+		uins = append(uins, uid)
+	}
+	for _, uid := range uids4 {
+		uins = append(uins, uid)
+	}
+	for _, uid := range uids5 {
+		uins = append(uins, uid)
+	}
+
+	return
+}
+
+func ReOrderUinsByAddFriendSrc(uins, uinsByaddFriendSrc []int64) (ordered []int64) {
+
+	//按照friendsByAddFriendSrc的顺序
+	ordered = make([]int64, 0)
+	for _, uid := range uinsByaddFriendSrc {
+
+		find := false
+		for _, uid2 := range uins {
+			if uid == uid2 {
+				find = true
+				break
+			}
+		}
+
+		if find {
+			ordered = append(ordered, uid)
+		}
+	}
+
+	for _, uid := range uins {
+
+		find := false
+		for _, uid2 := range ordered {
+
+			if uid == uid2 {
+				find = true
+				break
+			}
+		}
+
+		if !find {
+			ordered = append(ordered, uid)
 		}
 	}
 

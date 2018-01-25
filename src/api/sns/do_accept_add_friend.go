@@ -100,9 +100,12 @@ func AcceptAddFriend(uin int64, msgId int64, act int) (err error) {
 	//更新状态
 	ts := time.Now().Unix()
 
-	//接受加好友请求 删掉原有消息
 	status := constant.ENUM_ADD_FRIEND_STATUS_ACCEPT
-	sql = fmt.Sprintf(`delete from addFriendMsg where msgId = %d`, msgId)
+	//接受加好友请求 删掉原有消息
+	//sql = fmt.Sprintf(`delete from addFriendMsg where msgId = %d`, msgId)
+
+	//接受加好友请求，保留原有消息
+	sql = fmt.Sprintf(`update addFriendMsg set status = %d, mts = %d where msgId = %d`, status, ts, msgId)
 
 	//忽略加好友请求
 	if act > 0 {

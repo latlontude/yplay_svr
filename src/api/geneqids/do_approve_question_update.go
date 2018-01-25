@@ -183,11 +183,9 @@ func InsertApprovedQId(uin int64, qid int) (pos int, err error) {
 		if insertcursor > orgPos {
 			//插入位置始终比当前答题的进度要快一些
 			pos = insertcursor + 1 + rand.Intn(3)
-		} else if orgPos-insertcursor > 100 {
-			//插入比答题快很多，并且回绕的情况
-			pos = insertcursor + 1 + rand.Intn(3)
 		} else {
-			//插入慢，答题快
+			//可能出现答题快，插入慢
+			//可能插入已经绕回来从头开始了，而答题在列表末尾阶段了
 			pos = orgPos + 1 + rand.Intn(3)
 		}
 	}

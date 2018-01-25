@@ -48,6 +48,42 @@ func CheckIsMyFriends(uin int64, fUins []int64) (res map[int64]int, err error) {
 	return
 }
 
+//检查是否我的好友
+func CheckIsMyFriend(uin int64, fUin int64) (res int, err error) {
+
+	res = 0
+	if uin == 0 || fUin == 0 {
+		return
+	}
+
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		log.Error(err.Error())
+		return
+	}
+
+	sql := fmt.Sprintf(`select friendUin from friends where uin = %d and friendUin = %d`, uin, fUin)
+	rows, err := inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Error(err.Error())
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+
+		var fUin int64
+		rows.Scan(&fUin)
+
+		res = 1
+		break
+	}
+
+	return
+}
+
 //检查是否我邀请过加好友
 func CheckIsMyInvite(uin int64, fUin int64) (hasInvited int, err error) {
 

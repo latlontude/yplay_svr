@@ -9,8 +9,8 @@ import (
 	"common/rest"
 	"fmt"
 	"net/http"
+	"svr/st"
 	"time"
-	//"svr/st"
 )
 
 type AddFriendReq struct {
@@ -57,6 +57,17 @@ func AddFriend(uin int64, srcType int, toUin int64) (msgId int64, err error) {
 	if uin == toUin {
 		err = rest.NewAPIError(constant.E_PERMI_DENY, "add self friend")
 		log.Error(err.Error())
+		return
+	}
+
+	isFriend, err := st.CheckIsMyFriend(uin, toUin)
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+
+	if isFriend > 0 {
+		log.Errorf("uin %d, toUin %d, already friend!", uin, toUin)
 		return
 	}
 

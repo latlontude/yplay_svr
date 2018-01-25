@@ -3,6 +3,7 @@ package account
 import (
 	"common/token"
 	"net/http"
+	//"time"
 )
 
 type DecryptTokenReq struct {
@@ -30,6 +31,8 @@ func doDecryptToken(req *DecryptTokenReq, r *http.Request) (rsp *DecryptTokenRsp
 		log.Errorf("uin %d, DecryptTokenRsp error, %s", req.Uin, err.Error())
 		return
 	}
+
+	//time.Sleep(20 * time.Second)
 
 	rsp = &DecryptTokenRsp{t.Uin, t.Ver, t.Uuid, t.Ts, t.Device, t.Os, t.AppVer}
 

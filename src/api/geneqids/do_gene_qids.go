@@ -21,7 +21,15 @@ var (
 
 	SUBMIT_NOT_LATEST_WEEK []*st.QuestionInfo //7天前的投稿题库
 	SUBMIT_LATEST_WEEK     []*st.QuestionInfo //7天后的投稿题库
+
+	ALL_UINS_SCHOOL_GRADE map[int64]*SchoolGradeInfo //所有的用户学校信息
+	ALL_SUBMIT_QIDS_UINS  map[int]int64
 )
+
+type SchoolGradeInfo struct {
+	SchoolId int `json:"schoolId"`
+	Grade    int `json:"grade"`
+}
 
 type GeneQIdsReq struct {
 	Uin   int64  `schema:"uin"`
@@ -62,6 +70,20 @@ func Gene(uin int64) (total int, err error) {
 		return
 	}
 
+	//所有提交的问题ID
+	err = GetAllSubmitQidsUin()
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+
+	//所有人的年级信息 用于计算提交问题的年级信息
+	err = GetAllUinsSchoolGradeInfo()
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+
 	qids, err := GeneQIds(uin)
 	if err != nil {
 		log.Errorf(err.Error())
@@ -75,6 +97,84 @@ func Gene(uin int64) (total int, err error) {
 	}
 
 	total = len(qids)
+
+	return
+}
+
+func GetAllSubmitQidsUin() (err error) {
+
+	if len(ALL_SUBMIT_QIDS_UINS) > 0 {
+		return
+	}
+
+	ALL_SUBMIT_QIDS_UINS = make(map[int]int64)
+
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		log.Errorf(err.Error())
+		return
+	}
+
+	sql := fmt.Sprintf(`select uin, qid from submitQuestions where status > 0`)
+
+	rows, err := inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Error(err.Error())
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+
+		var uin int64
+		var qid int
+
+		rows.Scan(&uin, &qid)
+
+		if qid > 0 && uin > 0 {
+			ALL_SUBMIT_QIDS_UINS[qid] = uin
+		}
+	}
+
+	return
+}
+
+func GetAllUinsSchoolGradeInfo() (err error) {
+
+	if len(ALL_UINS_SCHOOL_GRADE) > 0 {
+		return
+	}
+
+	ALL_UINS_SCHOOL_GRADE = make(map[int64]*SchoolGradeInfo)
+
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		log.Errorf(err.Error())
+		return
+	}
+
+	sql := fmt.Sprintf(`select uin, schoolId, grade from profiles`)
+
+	rows, err := inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Error(err.Error())
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+
+		var uin int64
+		var si SchoolGradeInfo
+
+		rows.Scan(&uin, &si.SchoolId, &si.Grade)
+
+		ALL_UINS_SCHOOL_GRADE[uin] = &si
+	}
 
 	return
 }
@@ -485,8 +585,24 @@ func PreGeneUserQIds(uin int64) (qids []int, err error) {
 				if qinfo.OptionGender == 0 {
 					if qinfo.SchoolType == 0 || (qinfo.SchoolType&ui.SchoolType) > 0 {
 
+						//获取投稿人的UIN
+						if _, ok := ALL_SUBMIT_QIDS_UINS[qinfo.QId]; !ok {
+							continue
+						}
+						qidUin := ALL_SUBMIT_QIDS_UINS[qinfo.QId]
+
+						//获取投稿人的学校信息
+						if _, ok := ALL_UINS_SCHOOL_GRADE[qidUin]; !ok {
+							continue
+						}
+						si := ALL_UINS_SCHOOL_GRADE[qidUin]
+
 						if qinfo.ReplyGender == 0 || qinfo.ReplyGender == ui.Gender {
-							qids = append(qids, qinfo.QId)
+
+							//同校同年级的才加入
+							if si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
+								qids = append(qids, qinfo.QId)
+							}
 						}
 					}
 				}
@@ -511,8 +627,24 @@ func PreGeneUserQIds(uin int64) (qids []int, err error) {
 			if qinfo.OptionGender == 0 {
 				if qinfo.SchoolType == 0 || (qinfo.SchoolType&ui.SchoolType) > 0 {
 
+					//获取投稿人的UIN
+					if _, ok := ALL_SUBMIT_QIDS_UINS[qinfo.QId]; !ok {
+						continue
+					}
+					qidUin := ALL_SUBMIT_QIDS_UINS[qinfo.QId]
+
+					//获取投稿人的学校信息
+					if _, ok := ALL_UINS_SCHOOL_GRADE[qidUin]; !ok {
+						continue
+					}
+					si := ALL_UINS_SCHOOL_GRADE[qidUin]
+
 					if qinfo.ReplyGender == 0 || qinfo.ReplyGender == ui.Gender {
-						order_qids = append(order_qids, qinfo.QId)
+
+						//同校同年级的才加入
+						if si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
+							order_qids = append(order_qids, qinfo.QId)
+						}
 					}
 				}
 			}
@@ -540,8 +672,24 @@ func PreGeneUserQIds(uin int64) (qids []int, err error) {
 
 				if qinfo.SchoolType == 0 || (qinfo.SchoolType&ui.SchoolType) > 0 {
 
+					//获取投稿人的UIN
+					if _, ok := ALL_SUBMIT_QIDS_UINS[qinfo.QId]; !ok {
+						continue
+					}
+					qidUin := ALL_SUBMIT_QIDS_UINS[qinfo.QId]
+
+					//获取投稿人的学校信息
+					if _, ok := ALL_UINS_SCHOOL_GRADE[qidUin]; !ok {
+						continue
+					}
+					si := ALL_UINS_SCHOOL_GRADE[qidUin]
+
 					if qinfo.ReplyGender == 0 || qinfo.ReplyGender == ui.Gender {
-						qids = append(qids, qinfo.QId)
+						//同校同年级的才加入
+						if si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
+							qids = append(qids, qinfo.QId)
+						}
+
 					}
 				}
 			}
@@ -605,7 +753,23 @@ func PreGeneUserQIds(uin int64) (qids []int, err error) {
 			if qinfo.SchoolType == 0 || (qinfo.SchoolType&ui.SchoolType) > 0 {
 
 				if qinfo.ReplyGender == 0 || qinfo.ReplyGender == ui.Gender {
-					order_qids = append(order_qids, qinfo.QId)
+
+					//获取投稿人的UIN
+					if _, ok := ALL_SUBMIT_QIDS_UINS[qinfo.QId]; !ok {
+						continue
+					}
+					qidUin := ALL_SUBMIT_QIDS_UINS[qinfo.QId]
+
+					//获取投稿人的学校信息
+					if _, ok := ALL_UINS_SCHOOL_GRADE[qidUin]; !ok {
+						continue
+					}
+					si := ALL_UINS_SCHOOL_GRADE[qidUin]
+
+					//同校同年级的才加入
+					if si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
+						order_qids = append(order_qids, qinfo.QId)
+					}
 				}
 			}
 		}
@@ -635,8 +799,25 @@ func PreGeneUserQIds(uin int64) (qids []int, err error) {
 
 					if qinfo.SchoolType == 0 || (qinfo.SchoolType&ui.SchoolType) > 0 {
 
+						//获取投稿人的UIN
+						if _, ok := ALL_SUBMIT_QIDS_UINS[qinfo.QId]; !ok {
+							continue
+						}
+						qidUin := ALL_SUBMIT_QIDS_UINS[qinfo.QId]
+
+						//获取投稿人的学校信息
+						if _, ok := ALL_UINS_SCHOOL_GRADE[qidUin]; !ok {
+							continue
+						}
+						si := ALL_UINS_SCHOOL_GRADE[qidUin]
+
 						if qinfo.ReplyGender == 0 || qinfo.ReplyGender == ui.Gender {
-							qids = append(qids, qinfo.QId)
+
+							//同校同年级的才加入
+							if si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
+								qids = append(qids, qinfo.QId)
+							}
+
 						}
 					}
 				}
@@ -687,8 +868,25 @@ func PreGeneUserQIds(uin int64) (qids []int, err error) {
 
 				if qinfo.SchoolType == 0 || (qinfo.SchoolType&ui.SchoolType) > 0 {
 
+					//获取投稿人的UIN
+					if _, ok := ALL_SUBMIT_QIDS_UINS[qinfo.QId]; !ok {
+						continue
+					}
+					qidUin := ALL_SUBMIT_QIDS_UINS[qinfo.QId]
+
+					//获取投稿人的学校信息
+					if _, ok := ALL_UINS_SCHOOL_GRADE[qidUin]; !ok {
+						continue
+					}
+					si := ALL_UINS_SCHOOL_GRADE[qidUin]
+
 					if qinfo.ReplyGender == 0 || qinfo.ReplyGender == ui.Gender {
-						order_qids = append(order_qids, qinfo.QId)
+
+						//同校同年级的才加入
+						if si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
+							order_qids = append(order_qids, qinfo.QId)
+						}
+
 					}
 				}
 			}
@@ -717,7 +915,24 @@ func PreGeneUserQIds(uin int64) (qids []int, err error) {
 					if qinfo.SchoolType == 0 || (qinfo.SchoolType&ui.SchoolType) > 0 {
 
 						if qinfo.ReplyGender == 0 || qinfo.ReplyGender == ui.Gender {
-							qids = append(qids, qinfo.QId)
+
+							//获取投稿人的UIN
+							if _, ok := ALL_SUBMIT_QIDS_UINS[qinfo.QId]; !ok {
+								continue
+							}
+							qidUin := ALL_SUBMIT_QIDS_UINS[qinfo.QId]
+
+							//获取投稿人的学校信息
+							if _, ok := ALL_UINS_SCHOOL_GRADE[qidUin]; !ok {
+								continue
+							}
+							si := ALL_UINS_SCHOOL_GRADE[qidUin]
+
+							//同校同年级的才加入
+							if si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
+								qids = append(qids, qinfo.QId)
+							}
+
 						}
 					}
 				}
@@ -769,7 +984,24 @@ func PreGeneUserQIds(uin int64) (qids []int, err error) {
 				if qinfo.SchoolType == 0 || (qinfo.SchoolType&ui.SchoolType) > 0 {
 
 					if qinfo.ReplyGender == 0 || qinfo.ReplyGender == ui.Gender {
-						order_qids = append(order_qids, qinfo.QId)
+
+						//获取投稿人的UIN
+						if _, ok := ALL_SUBMIT_QIDS_UINS[qinfo.QId]; !ok {
+							continue
+						}
+						qidUin := ALL_SUBMIT_QIDS_UINS[qinfo.QId]
+
+						//获取投稿人的学校信息
+						if _, ok := ALL_UINS_SCHOOL_GRADE[qidUin]; !ok {
+							continue
+						}
+						si := ALL_UINS_SCHOOL_GRADE[qidUin]
+
+						//同校同年级的才加入
+						if si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
+							order_qids = append(order_qids, qinfo.QId)
+						}
+
 					}
 				}
 			}
@@ -797,7 +1029,24 @@ func PreGeneUserQIds(uin int64) (qids []int, err error) {
 					if qinfo.SchoolType == 0 || (qinfo.SchoolType&ui.SchoolType) > 0 {
 
 						if qinfo.ReplyGender == 0 || qinfo.ReplyGender == ui.Gender {
-							qids = append(qids, qinfo.QId)
+
+							//获取投稿人的UIN
+							if _, ok := ALL_SUBMIT_QIDS_UINS[qinfo.QId]; !ok {
+								continue
+							}
+							qidUin := ALL_SUBMIT_QIDS_UINS[qinfo.QId]
+
+							//获取投稿人的学校信息
+							if _, ok := ALL_UINS_SCHOOL_GRADE[qidUin]; !ok {
+								continue
+							}
+							si := ALL_UINS_SCHOOL_GRADE[qidUin]
+
+							//同校同年级的才加入
+							if si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
+								qids = append(qids, qinfo.QId)
+							}
+
 						}
 					}
 				}
@@ -834,7 +1083,23 @@ func PreGeneUserQIds(uin int64) (qids []int, err error) {
 				if qinfo.SchoolType == 0 || (qinfo.SchoolType&ui.SchoolType) > 0 {
 
 					if qinfo.ReplyGender == 0 || qinfo.ReplyGender == ui.Gender {
-						order_qids = append(order_qids, qinfo.QId)
+
+						//获取投稿人的UIN
+						if _, ok := ALL_SUBMIT_QIDS_UINS[qinfo.QId]; !ok {
+							continue
+						}
+						qidUin := ALL_SUBMIT_QIDS_UINS[qinfo.QId]
+
+						//获取投稿人的学校信息
+						if _, ok := ALL_UINS_SCHOOL_GRADE[qidUin]; !ok {
+							continue
+						}
+						si := ALL_UINS_SCHOOL_GRADE[qidUin]
+
+						//同校同年级的才加入
+						if si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
+							order_qids = append(order_qids, qinfo.QId)
+						}
 					}
 				}
 			}
