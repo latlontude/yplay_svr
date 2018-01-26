@@ -99,6 +99,8 @@ func Vote(uin int64, qid int, voteToUin int64, optionStr string, index int) (vot
 		return
 	}
 
+	go  UserActRecords(uin, qid, 1)
+
 	ts := time.Now().Unix()
 
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
@@ -122,22 +124,6 @@ func Vote(uin int64, qid int, voteToUin int64, optionStr string, index int) (vot
 	defer stmt.Close()
 
 	res, err := stmt.Exec(0, uin, qid, voteToUin, optionStr, status, ts, imSessionId)
-	if err != nil {
-		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
-		log.Error(err.Error())
-		return
-	}
-
-    act := 1
-    stmt, err = inst.Prepare(`insert into actRecords values(?, ?, ?, ?, ?)`)
-	if err != nil {
-		err = rest.NewAPIError(constant.E_DB_PREPARE, err.Error())
-		log.Error(err)
-		return
-	}
-	defer stmt.Close()
-
-	res, err = stmt.Exec(0, uin, qid, act, ts)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
 		log.Error(err.Error())
@@ -184,6 +170,34 @@ func Vote(uin int64, qid int, voteToUin int64, optionStr string, index int) (vot
 	return
 }
 
+
+func UserActRecords(uin int64, qid int, act int)(err error){
+    
+    ts := time.Now().Unix()
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		log.Error(err)
+		return
+	}
+
+    stmt, err := inst.Prepare(`insert into actRecords values(?, ?, ?, ?, ?)`)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_PREPARE, err.Error())
+		log.Error(err)
+		return
+	}
+	defer stmt.Close()
+
+
+	res, err = stmt.Exec(0, uin, qid, act, ts)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
+		log.Error(err.Error())
+		return
+	}
+
+}
 func GeneFeeds2(uin int64, qid int, voteToUin int64, voteRecordId int64) (err error) {
 
 	if uin == 0 || qid == 0 || voteToUin == 0 {

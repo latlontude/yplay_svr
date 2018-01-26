@@ -3,10 +3,6 @@ package vote
 import (
 	"net/http"
 	"svr/st"
-        "time"
-        "common/constant"
-        "common/mydb"
-        "common/rest"
 )
 
 type SkipQuestionReq struct {
@@ -41,32 +37,7 @@ func doSkipQuestion(req *SkipQuestionReq, r *http.Request) (rsp *SkipQuestionRsp
 
 	log.Debugf("uin %d, SkipQuestionRsp succ, %+v", req.Uin, rsp)
 
-	ts := time.Now().Unix()
-	act := 0
-	qid := req.QId
-        uin := req.Uin
-
-	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
-	if inst == nil {
-		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
-		log.Error(err)
-		return
-	}
-
-	stmt, err := inst.Prepare(`insert into actRecords values(?, ?, ?, ?, ?)`)
-	if err != nil {
-		err = rest.NewAPIError(constant.E_DB_PREPARE, err.Error())
-		log.Error(err)
-		return
-	}
-	defer stmt.Close()
-
-	_, err = stmt.Exec(0, uin, qid, act, ts)
-	if err != nil {
-		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
-		log.Error(err.Error())
-		return
-	}
+	go vote.UserActRecords(req.Uin, req.QId, 0)
 
 	return
 }

@@ -90,7 +90,11 @@ func Gene(uin int64) (total int, err error) {
 		return
 	}
 
-      qids, err = optimizeQidsByUserAct(uin, qids)
+    qids, err = optimizeQidsByUserAct(uin, qids)
+      if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
 
 	err = UpdateQIds(uin, qids)
 	if err != nil {
@@ -112,7 +116,7 @@ func optimizeQidsByUserAct(uin int64, qids []int) (optimizedQids []int, err erro
 		return
 	}
 
-	sql := fmt.Sprintf(`select qid, act from actRecords where uin = %d  order by ts `, uin)
+     sql := fmt.Sprintf(`select qid, subTagId1, subTagId2, subTagId3 from questions2 `)
 
 	rows, err := inst.Query(sql)
 	if err != nil {
@@ -122,7 +126,28 @@ func optimizeQidsByUserAct(uin int64, qids []int) (optimizedQids []int, err erro
 	}
 	defer rows.Close()
 
+	qidsMap := make(map[int][]int)
+	for rows.Next() {
+       var qid, subTagId1, subTagId2, subTagId3 int 
+       rows.Scan(&qid, &subTagId1, &subTagId2, &subTagId3)
+       qidsMap[qid] = append(qidsMap[qid], subTagId1)
+       qidsMap[qid] = append(qidsMap[qid], subTagId2)
+       qidsMap[qid] = append(qidsMap[qid], subTagId3)
+	 }
 
+
+	sql := fmt.Sprintf(`select qid, act from actRecords where uin = %d  order by ts `, uin)
+
+	rows, err = inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Error(err.Error())
+		return
+	}
+	defer rows.Close()
+
+
+    
 	skipMap := make(map[int]int)
 	answerMap := make(map[int]int)
 
@@ -131,17 +156,10 @@ func optimizeQidsByUserAct(uin int64, qids []int) (optimizedQids []int, err erro
 		var act int
 		var qid  int
 		rows.Scan(&qid, &act)
-
-		sql := fmt.Sprintf(`select subTagId1, subTagId2, subTagId3 from questions2 where qid = %d`, qid)
-    	rows, err = inst.Query(sql) 
-	    if err != nil {
-		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
-		log.Error(err.Error())
-		return
-	    }
-
-	    var subTagId1, subTagId2, subTagId3 int 
-	    rows.Scan(&subTagId1, &subTagId2, &subTagId3)
+        
+        subTagId1 := qidsMap[qid][0]
+        subTagId2 := qidsMap[qid][1]
+        subTagId3 := qidsMap[qid][2]
 
 	    if act == 0 {
 	    	if subTagId1 != 0 {
@@ -149,11 +167,11 @@ func optimizeQidsByUserAct(uin int64, qids []int) (optimizedQids []int, err erro
             }
 
             if subTagId2 != 0 {        
-	    	     skipMap[subTagId1]++
+	    	     skipMap[subTagId2]++
             }
 
             if subTagId3 != 0 {
-	    		 skipMap[subTagId1]++
+	    		 skipMap[subTagId3]++
             }
 	    }  else {
 
@@ -162,11 +180,11 @@ func optimizeQidsByUserAct(uin int64, qids []int) (optimizedQids []int, err erro
             }
 
             if subTagId2 != 0 {
-	    	     answerMap[subTagId1]++
+	    	     answerMap[subTagId2]++
             }
 
             if subTagId3 != 0 { 
-	    		 answerMap[subTagId1]++ 
+	    		 answerMap[subTagId3]++ 
             }
 	    }
 	}
@@ -175,16 +193,9 @@ func optimizeQidsByUserAct(uin int64, qids []int) (optimizedQids []int, err erro
 
      for _, qid := range qids {
 
-       sql := fmt.Sprintf(`select subTagId1, subTagId2, subTagId3 from questions2 where qid = %d`, qid)
-	   rows, err = inst.Query(sql)
-	   if err != nil {
-		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
-		log.Error(err.Error())
-		return
-	   }
-
-	   var subTagId1, subTagId2, subTagId3 int 
-	   rows.Scan(&subTagId1, &subTagId2, &subTagId3)
+        subTagId1 := qidsMap[qid][0]
+        subTagId2 := qidsMap[qid][1]
+        subTagId3 := qidsMap[qid][2]
 
 	   if subTagId1 != 0 {
 	   	  	subTagMap[subTagId1] = append(subTagMap[subTagId1], qid)
@@ -207,16 +218,24 @@ func optimizeQidsByUserAct(uin int64, qids []int) (optimizedQids []int, err erro
          if skipCnt > 2 {
          	 cnt := len(subTagMap[subTagId]) * (answerCnt / (skipCnt + answerCnt))
          	 if cnt > 0 {
-         	   a := rand.Perm(cnt) //随机化
+         	   a := rand.Perm(len(subTagMap[subTagId])) //随机化
+         	   i := 0
 			   for _, idx := range a {
+                i++ 
 			    optimizedQids = append(optimizedQids, subTagMap[subTagId][idx])
+                 
+                 if i >= cnt {
+                 	break
+                 }
 			    }
 			
               }
 
             } else {
-                     
-         	 optimizedQids = append(optimizedQids, subTagMap[subTagId]...)
+
+         		for _, qid := range subTagMap[subTagId] {
+         			optimizedQids = append(optimizedQids, subTagMap[subTagId]...)
+         		}
             }
         }
 
