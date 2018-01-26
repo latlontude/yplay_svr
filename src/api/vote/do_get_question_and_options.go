@@ -813,6 +813,26 @@ func GetOptionsByCombine(uin int64, uuid int64, excludeUins []int64, qgender int
 		return
 	}
 
+	//检查是否有重复的
+	noptions := make([]*st.OptionInfo2, 0)
+	for _, option := range options {
+
+		find := false
+		for _, uid := range excludeUins {
+
+			if option.Uin == uid {
+				find = true
+				break
+			}
+		}
+
+		if !find {
+			noptions = append(noptions, option)
+		}
+	}
+
+	options = noptions
+
 	newExcludeUins := excludeUins
 
 	for _, option := range options {
@@ -914,8 +934,8 @@ func GetOptionsFromAddFriendMsg(uin int64, cnt int) (options []*st.OptionInfo2, 
 
 	options = make([]*st.OptionInfo2, 0)
 
-	//检查是否存在这样的消息
-	sql := fmt.Sprintf(`select count(toUin) from addFriendMsg where fromUin = %d`, uin)
+	//检查是否存在这样的消息 必须不是好友
+	sql := fmt.Sprintf(`select count(toUin) from addFriendMsg where fromUin = %d and status != 1`, uin)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -944,7 +964,7 @@ func GetOptionsFromAddFriendMsg(uin int64, cnt int) (options []*st.OptionInfo2, 
 		cnt = total
 	}
 
-	sql = fmt.Sprintf(`select toUin from addFriendMsg where fromUin = %d limit %d,%d`, uin, s, cnt)
+	sql = fmt.Sprintf(`select toUin from addFriendMsg where fromUin = %d and status != 1 limit %d,%d`, uin, s, cnt)
 	rows, err = inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
