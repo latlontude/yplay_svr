@@ -343,15 +343,25 @@ func GetNextQuestionAndOptionsByPreGene(uin int64, uuid int64) (qinfo *st.Questi
 		return
 	}
 
+	//根据获取加好友的来源来进行判断分析
+	//通讯录 -> 搜索 -> 同校同年级 -> 同校非同年级 -> 可能认识的人
+	friendsByaddFriendSrc, err1 := GetUinsByAddFriendSrc(uin)
+	if err1 != nil {
+		log.Errorf(err1.Error())
+	}
+
 	if len(uinsByVote) > 12 {
+		uinsByVote = ReOrderUinsByAddFriendSrc(uinsByVote, friendsByaddFriendSrc)
 		uinsByVote = uinsByVote[:12]
 	}
 
 	if len(uinsByAddFriendTime) > 12 {
+		uinsByAddFriendTime = ReOrderUinsByAddFriendSrc(uinsByAddFriendTime, friendsByaddFriendSrc)
 		uinsByAddFriendTime = uinsByAddFriendTime[:12]
 	}
 
 	if len(uinsByPVCnt) > 12 {
+		uinsByPVCnt = ReOrderUinsByAddFriendSrc(uinsByPVCnt, friendsByaddFriendSrc)
 		uinsByPVCnt = uinsByPVCnt[:12]
 	}
 

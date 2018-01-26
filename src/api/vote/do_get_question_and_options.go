@@ -1375,20 +1375,45 @@ func GetUinsByAddFriendSrc(uin int64) (uins []int64, err error) {
 		}
 	}
 
+	//map去重
+	uinsM := make(map[int64]int)
+
 	for _, uid := range uids1 {
+
+		if _, ok := uinsM[uid]; ok {
+			continue
+		}
+
 		uins = append(uins, uid)
+		uinsM[uid] = 1
 	}
 	for _, uid := range uids2 {
+		if _, ok := uinsM[uid]; ok {
+			continue
+		}
 		uins = append(uins, uid)
+		uinsM[uid] = 1
 	}
 	for _, uid := range uids3 {
+		if _, ok := uinsM[uid]; ok {
+			continue
+		}
 		uins = append(uins, uid)
+		uinsM[uid] = 1
 	}
 	for _, uid := range uids4 {
+		if _, ok := uinsM[uid]; ok {
+			continue
+		}
 		uins = append(uins, uid)
+		uinsM[uid] = 1
 	}
 	for _, uid := range uids5 {
+		if _, ok := uinsM[uid]; ok {
+			continue
+		}
 		uins = append(uins, uid)
+		uinsM[uid] = 1
 	}
 
 	return
