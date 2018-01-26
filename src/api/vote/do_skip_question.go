@@ -37,7 +37,7 @@ func doSkipQuestion(req *SkipQuestionReq, r *http.Request) (rsp *SkipQuestionRsp
 
 	log.Debugf("uin %d, SkipQuestionRsp succ, %+v", req.Uin, rsp)
 
-	go vote.UserActRecords(req.Uin, req.QId, 0)
+	go UserActRecords(req.Uin, req.QId, 0)
 
 	return
 }

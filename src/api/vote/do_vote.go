@@ -190,12 +190,14 @@ func UserActRecords(uin int64, qid int, act int)(err error){
 	defer stmt.Close()
 
 
-	res, err = stmt.Exec(0, uin, qid, act, ts)
+	_, err = stmt.Exec(0, uin, qid, act, ts)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
 		log.Error(err.Error())
 		return
 	}
+
+     return
 
 }
 func GeneFeeds2(uin int64, qid int, voteToUin int64, voteRecordId int64) (err error) {

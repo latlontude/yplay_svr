@@ -136,7 +136,7 @@ func optimizeQidsByUserAct(uin int64, qids []int) (optimizedQids []int, err erro
 	 }
 
 
-	sql := fmt.Sprintf(`select qid, act from actRecords where uin = %d  order by ts `, uin)
+	sql = fmt.Sprintf(`select qid, act from actRecords where uin = %d  order by ts `, uin)
 
 	rows, err = inst.Query(sql)
 	if err != nil {
@@ -233,9 +233,7 @@ func optimizeQidsByUserAct(uin int64, qids []int) (optimizedQids []int, err erro
 
             } else {
 
-         		for _, qid := range subTagMap[subTagId] {
-         			optimizedQids = append(optimizedQids, subTagMap[subTagId]...)
-         		}
+                optimizedQids = append(optimizedQids, subTagMap[subTagId]...)
             }
         }
 
