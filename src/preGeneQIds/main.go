@@ -98,17 +98,17 @@ func main() {
 		uids = t_uids
 	}
 
-	err := geneqids.GetAllQIds()
-	if err != nil {
-		log.Errorf(err.Error())
-		return
-	}
+	// err := geneqids.GetAllQIds()
+	// if err != nil {
+	// 	log.Errorf(err.Error())
+	// 	return
+	// }
 
 	for _, uin := range uids {
 
 		total, err1 := geneqids.Gene(uin)
 		if err1 != nil {
-			log.Errorf(err.Error())
+			log.Errorf(err1.Error())
 		} else {
 			log.Errorf("uin %d, pregeneqids total %d", uin, total)
 		}

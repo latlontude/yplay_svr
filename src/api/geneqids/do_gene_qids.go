@@ -62,13 +62,9 @@ func doGene(req *GeneQIdsReq, r *http.Request) (rsp *GeneQIdsRsp, err error) {
 
 func Gene(uin int64) (total int, err error) {
 
-	rand.Seed(time.Now().Unix())
+	log.Errorf("begin Gene uin %d", uin)
 
-	err = GetAllQIds()
-	if err != nil {
-		log.Errorf(err.Error())
-		return
-	}
+	rand.Seed(time.Now().Unix())
 
 	//所有提交的问题ID
 	err = GetAllSubmitQidsUin()
@@ -79,6 +75,12 @@ func Gene(uin int64) (total int, err error) {
 
 	//所有人的年级信息 用于计算提交问题的年级信息
 	err = GetAllUinsSchoolGradeInfo()
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+
+	err = GetAllQIds()
 	if err != nil {
 		log.Errorf(err.Error())
 		return
@@ -108,6 +110,8 @@ func Gene(uin int64) (total int, err error) {
 }
 
 func optimizeQidsByUserAct(uin int64, qids []int) (optimizedQids []int, err error) {
+
+	log.Errorf("begin optimizeQidsByUserAct, uin %d, qidsCnt %d", uin, len(qids))
 
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
 	if inst == nil {
@@ -250,6 +254,8 @@ func optimizeQidsByUserAct(uin int64, qids []int) (optimizedQids []int, err erro
 
 	}
 
+	log.Errorf("end optimizeQidsByUserAct, uin %d, optimizedQidsCnt %d", uin, len(optimizedQids))
+
 	return
 
 }
@@ -259,6 +265,8 @@ func GetAllSubmitQidsUin() (err error) {
 	if len(ALL_SUBMIT_QIDS_UINS) > 0 {
 		return
 	}
+
+	log.Errorf("begin GetAllSubmitQidsUin")
 
 	ALL_SUBMIT_QIDS_UINS = make(map[int]int64)
 
@@ -291,6 +299,8 @@ func GetAllSubmitQidsUin() (err error) {
 		}
 	}
 
+	log.Errorf("end GetAllSubmitQidsUin, submitCnt %d", len(ALL_SUBMIT_QIDS_UINS))
+
 	return
 }
 
@@ -299,6 +309,8 @@ func GetAllUinsSchoolGradeInfo() (err error) {
 	if len(ALL_UINS_SCHOOL_GRADE) > 0 {
 		return
 	}
+
+	log.Errorf("begin GetAllUinsSchoolGradeInfo")
 
 	ALL_UINS_SCHOOL_GRADE = make(map[int64]*SchoolGradeInfo)
 
@@ -329,6 +341,8 @@ func GetAllUinsSchoolGradeInfo() (err error) {
 		ALL_UINS_SCHOOL_GRADE[uin] = &si
 	}
 
+	log.Errorf("end GetAllUinsSchoolGradeInfo, uinCnt %d", len(ALL_UINS_SCHOOL_GRADE))
+
 	return
 }
 
@@ -338,6 +352,8 @@ func GetAllQIds() (err error) {
 	if len(GENE_QIDS) > 0 {
 		return
 	}
+
+	log.Errorf("begin GetAllQIds")
 
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
 	if inst == nil {
@@ -374,6 +390,8 @@ func GetAllQIds() (err error) {
 
 		info.QIconUrl = fmt.Sprintf("http://yplay-1253229355.image.myqcloud.com/qicon/%s", info.QIconUrl)
 
+		//log.Errorf("query questionInfo %+v", info)
+
 		if info.DataSrc == 0 { //普通题库
 
 			if info.OptionGender == 0 {
@@ -405,6 +423,8 @@ func GetAllQIds() (err error) {
 }
 
 func GeneQIds(uin int64) (qids []int, err error) {
+
+	log.Errorf("begin GeneQIds, uin %d", uin)
 
 	//先查找已经回答的题目
 	answneredIds, err := GetLastAnswneredQIds(uin)
@@ -564,6 +584,8 @@ func UpdateQIds(uin int64, qids []int) (err error) {
 		return
 	}
 
+	log.Debugf("begin UpdateQIds, uin %d", uin)
+
 	app, err := myredis.GetApp(constant.ENUM_REDIS_APP_PRE_GENE_QIDS)
 	if err != nil {
 		log.Errorf(err.Error())
@@ -571,7 +593,7 @@ func UpdateQIds(uin int64, qids []int) (err error) {
 	}
 
 	//上一次答题的ID 上一次题目的性别 上一次答题的索引
-	fields := []string{"cursor", "qid", "qindex", "options", "voted", "prepared", "preparedCursor"}
+	fields := []string{"cursor", "qid", "qindex", "options", "voted", "prepared", "preparedcursor"}
 
 	keyStr := fmt.Sprintf("%d_progress", uin)
 
@@ -640,6 +662,8 @@ func UpdateQIds(uin int64, qids []int) (err error) {
 	if err != nil {
 		log.Errorf(err.Error())
 	}
+
+	log.Debugf("end UpdateQIds, uin %d", uin)
 
 	return
 }
