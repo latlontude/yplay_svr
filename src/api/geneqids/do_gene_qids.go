@@ -90,6 +90,8 @@ func Gene(uin int64) (total int, err error) {
 		return
 	}
 
+      qids, err = optimizeQidsByUserAct(uin, qids)
+
 	err = UpdateQIds(uin, qids)
 	if err != nil {
 		log.Errorf(err.Error())
@@ -99,6 +101,127 @@ func Gene(uin int64) (total int, err error) {
 	total = len(qids)
 
 	return
+}
+
+func optimizeQidsByUserAct(uin int64, qids []int) (optimizedQids []int, err error){
+
+    inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		log.Errorf(err.Error())
+		return
+	}
+
+	sql := fmt.Sprintf(`select qid, act from actRecords where uin = %d  order by ts `, uin)
+
+	rows, err := inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Error(err.Error())
+		return
+	}
+	defer rows.Close()
+
+
+	skipMap := make(map[int]int)
+	answerMap := make(map[int]int)
+
+	for rows.Next() {
+
+		var act int
+		var qid  int
+		rows.Scan(&qid, &act)
+
+		sql := fmt.Sprintf(`select subTagId1, subTagId2, subTagId3 from questions2 where qid = %d`, qid)
+    	rows, err = inst.Query(sql) 
+	    if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Error(err.Error())
+		return
+	    }
+
+	    var subTagId1, subTagId2, subTagId3 int 
+	    rows.Scan(&subTagId1, &subTagId2, &subTagId3)
+
+	    if act == 0 {
+	    	if subTagId1 != 0 {
+	    		 skipMap[subTagId1]++
+            }
+
+            if subTagId2 != 0 {        
+	    	     skipMap[subTagId1]++
+            }
+
+            if subTagId3 != 0 {
+	    		 skipMap[subTagId1]++
+            }
+	    }  else {
+
+	    	if subTagId1 != 0 {
+	    		 answerMap[subTagId1]++
+            }
+
+            if subTagId2 != 0 {
+	    	     answerMap[subTagId1]++
+            }
+
+            if subTagId3 != 0 { 
+	    		 answerMap[subTagId1]++ 
+            }
+	    }
+	}
+     
+     subTagMap := make(map[int][]int)
+
+     for _, qid := range qids {
+
+       sql := fmt.Sprintf(`select subTagId1, subTagId2, subTagId3 from questions2 where qid = %d`, qid)
+	   rows, err = inst.Query(sql)
+	   if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Error(err.Error())
+		return
+	   }
+
+	   var subTagId1, subTagId2, subTagId3 int 
+	   rows.Scan(&subTagId1, &subTagId2, &subTagId3)
+
+	   if subTagId1 != 0 {
+	   	  	subTagMap[subTagId1] = append(subTagMap[subTagId1], qid)
+	   }
+
+	   if subTagId2 != 0 {
+	   	  	subTagMap[subTagId2] = append(subTagMap[subTagId2], qid)
+	   }
+
+	   if subTagId3 != 0 {
+	   	  	subTagMap[subTagId3] = append(subTagMap[subTagId3], qid)
+	   }
+    }
+
+    for subTagId := range subTagMap {
+
+         skipCnt := skipMap[subTagId]
+         answerCnt := answerMap[subTagId]
+
+         if skipCnt > 2 {
+         	 cnt := len(subTagMap[subTagId]) * (answerCnt / (skipCnt + answerCnt))
+         	 if cnt > 0 {
+         	   a := rand.Perm(cnt) //随机化
+			   for _, idx := range a {
+			    optimizedQids = append(optimizedQids, subTagMap[subTagId][idx])
+			    }
+			
+              }
+
+            } else {
+                     
+         	 optimizedQids = append(optimizedQids, subTagMap[subTagId]...)
+            }
+        }
+
+        return
+
 }
 
 func GetAllSubmitQidsUin() (err error) {

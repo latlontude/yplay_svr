@@ -128,6 +128,23 @@ func Vote(uin int64, qid int, voteToUin int64, optionStr string, index int) (vot
 		return
 	}
 
+    act := 1
+    stmt, err = inst.Prepare(`insert into actRecords values(?, ?, ?, ?, ?)`)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_PREPARE, err.Error())
+		log.Error(err)
+		return
+	}
+	defer stmt.Close()
+
+	res, err = stmt.Exec(0, uin, qid, act, ts)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
+		log.Error(err.Error())
+		return
+	}
+
+	 
 	voteRecordId, err = res.LastInsertId()
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
