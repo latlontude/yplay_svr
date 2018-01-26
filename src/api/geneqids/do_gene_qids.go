@@ -210,6 +210,7 @@ func optimizeQidsByUserAct(uin int64, qids []int) (optimizedQids []int, err erro
 	   }
     }
 
+     tmpMap := make(map[int]int)
     for subTagId := range subTagMap {
 
          skipCnt := skipMap[subTagId]
@@ -222,7 +223,7 @@ func optimizeQidsByUserAct(uin int64, qids []int) (optimizedQids []int, err erro
          	   i := 0
 			   for _, idx := range a {
                 i++ 
-			    optimizedQids = append(optimizedQids, subTagMap[subTagId][idx])
+                tmpMap[subTagMap[subTagId][idx]] = 1
                  
                  if i >= cnt {
                  	break
@@ -233,8 +234,23 @@ func optimizeQidsByUserAct(uin int64, qids []int) (optimizedQids []int, err erro
 
             } else {
 
-                optimizedQids = append(optimizedQids, subTagMap[subTagId]...)
+            	for _, qid := range subTagMap[subTagId] {
+
+            		tmpMap[qid] = 1
+            	}
+            	  
             }
+
+        }
+
+        for _, qid := range qids {
+
+             _, ok := tmpMap[qid]
+
+             if ok {
+             	optimizedQids = append(optimizedQids, qid)
+             }
+           
         }
 
         return
