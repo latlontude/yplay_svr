@@ -90,8 +90,8 @@ func Gene(uin int64) (total int, err error) {
 		return
 	}
 
-    qids, err = optimizeQidsByUserAct(uin, qids)
-      if err != nil {
+	qids, err = optimizeQidsByUserAct(uin, qids)
+	if err != nil {
 		log.Errorf(err.Error())
 		return
 	}
@@ -107,16 +107,16 @@ func Gene(uin int64) (total int, err error) {
 	return
 }
 
-func optimizeQidsByUserAct(uin int64, qids []int) (optimizedQids []int, err error){
+func optimizeQidsByUserAct(uin int64, qids []int) (optimizedQids []int, err error) {
 
-    inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
 	if inst == nil {
 		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
 		log.Errorf(err.Error())
 		return
 	}
 
-     sql := fmt.Sprintf(`select qid, subTagId1, subTagId2, subTagId3 from questions2 `)
+	sql := fmt.Sprintf(`select qid, subTagId1, subTagId2, subTagId3 from questions2 `)
 
 	rows, err := inst.Query(sql)
 	if err != nil {
@@ -128,13 +128,12 @@ func optimizeQidsByUserAct(uin int64, qids []int) (optimizedQids []int, err erro
 
 	qidsMap := make(map[int][]int)
 	for rows.Next() {
-       var qid, subTagId1, subTagId2, subTagId3 int 
-       rows.Scan(&qid, &subTagId1, &subTagId2, &subTagId3)
-       qidsMap[qid] = append(qidsMap[qid], subTagId1)
-       qidsMap[qid] = append(qidsMap[qid], subTagId2)
-       qidsMap[qid] = append(qidsMap[qid], subTagId3)
-	 }
-
+		var qid, subTagId1, subTagId2, subTagId3 int
+		rows.Scan(&qid, &subTagId1, &subTagId2, &subTagId3)
+		qidsMap[qid] = append(qidsMap[qid], subTagId1)
+		qidsMap[qid] = append(qidsMap[qid], subTagId2)
+		qidsMap[qid] = append(qidsMap[qid], subTagId3)
+	}
 
 	sql = fmt.Sprintf(`select qid, act from actRecords where uin = %d  order by ts `, uin)
 
@@ -146,114 +145,112 @@ func optimizeQidsByUserAct(uin int64, qids []int) (optimizedQids []int, err erro
 	}
 	defer rows.Close()
 
-
-    
 	skipMap := make(map[int]int)
 	answerMap := make(map[int]int)
 
 	for rows.Next() {
 
 		var act int
-		var qid  int
+		var qid int
 		rows.Scan(&qid, &act)
-        
-        subTagId1 := qidsMap[qid][0]
-        subTagId2 := qidsMap[qid][1]
-        subTagId3 := qidsMap[qid][2]
 
-	    if act == 0 {
-	    	if subTagId1 != 0 {
-	    		 skipMap[subTagId1]++
-            }
+		subTagId1 := qidsMap[qid][0]
+		subTagId2 := qidsMap[qid][1]
+		subTagId3 := qidsMap[qid][2]
 
-            if subTagId2 != 0 {        
-	    	     skipMap[subTagId2]++
-            }
+		if act == 0 {
+			if subTagId1 != 0 {
+				skipMap[subTagId1]++
+			}
 
-            if subTagId3 != 0 {
-	    		 skipMap[subTagId3]++
-            }
-	    }  else {
+			if subTagId2 != 0 {
+				skipMap[subTagId2]++
+			}
 
-	    	if subTagId1 != 0 {
-	    		 answerMap[subTagId1]++
-            }
+			if subTagId3 != 0 {
+				skipMap[subTagId3]++
+			}
+		} else {
 
-            if subTagId2 != 0 {
-	    	     answerMap[subTagId2]++
-            }
+			if subTagId1 != 0 {
+				answerMap[subTagId1]++
+			}
 
-            if subTagId3 != 0 { 
-	    		 answerMap[subTagId3]++ 
-            }
-	    }
+			if subTagId2 != 0 {
+				answerMap[subTagId2]++
+			}
+
+			if subTagId3 != 0 {
+				answerMap[subTagId3]++
+			}
+		}
 	}
-     
-     subTagMap := make(map[int][]int)
 
-     for _, qid := range qids {
+	subTagMap := make(map[int][]int)
 
-        subTagId1 := qidsMap[qid][0]
-        subTagId2 := qidsMap[qid][1]
-        subTagId3 := qidsMap[qid][2]
+	for _, qid := range qids {
 
-	   if subTagId1 != 0 {
-	   	  	subTagMap[subTagId1] = append(subTagMap[subTagId1], qid)
-	   }
+		subTagId1 := qidsMap[qid][0]
+		subTagId2 := qidsMap[qid][1]
+		subTagId3 := qidsMap[qid][2]
 
-	   if subTagId2 != 0 {
-	   	  	subTagMap[subTagId2] = append(subTagMap[subTagId2], qid)
-	   }
+		if subTagId1 != 0 {
+			subTagMap[subTagId1] = append(subTagMap[subTagId1], qid)
+		}
 
-	   if subTagId3 != 0 {
-	   	  	subTagMap[subTagId3] = append(subTagMap[subTagId3], qid)
-	   }
-    }
+		if subTagId2 != 0 {
+			subTagMap[subTagId2] = append(subTagMap[subTagId2], qid)
+		}
 
-     tmpMap := make(map[int]int)
-    for subTagId := range subTagMap {
+		if subTagId3 != 0 {
+			subTagMap[subTagId3] = append(subTagMap[subTagId3], qid)
+		}
+	}
 
-         skipCnt := skipMap[subTagId]
-         answerCnt := answerMap[subTagId]
+	tmpMap := make(map[int]int)
+	for subTagId := range subTagMap {
 
-         if skipCnt > 2 {
-         	 cnt := len(subTagMap[subTagId]) * (answerCnt / (skipCnt + answerCnt))
-         	 if cnt > 0 {
-         	   a := rand.Perm(len(subTagMap[subTagId])) //随机化
-         	   i := 0
-			   for _, idx := range a {
-                i++ 
-                tmpMap[subTagMap[subTagId][idx]] = 1
-                 
-                 if i >= cnt {
-                 	break
-                 }
-			    }
-			
-              }
+		skipCnt := skipMap[subTagId]
+		answerCnt := answerMap[subTagId]
 
-            } else {
+		if skipCnt > 2 {
+			cnt := len(subTagMap[subTagId]) * (answerCnt / (skipCnt + answerCnt))
+			if cnt > 0 {
+				a := rand.Perm(len(subTagMap[subTagId])) //随机化
+				i := 0
+				for _, idx := range a {
+					i++
+					tmpMap[subTagMap[subTagId][idx]] = 1
 
-            	for _, qid := range subTagMap[subTagId] {
+					if i >= cnt {
+						break
+					}
+				}
 
-            		tmpMap[qid] = 1
-            	}
-            	  
-            }
+			}
 
-        }
+		} else {
 
-        for _, qid := range qids {
+			for _, qid := range subTagMap[subTagId] {
 
-             _, ok := tmpMap[qid]
+				tmpMap[qid] = 1
+			}
 
-             if ok {
-             	optimizedQids = append(optimizedQids, qid)
-             }
-           
-        }
+		}
 
-        return
+	}
+
+	for _, qid := range qids {
+
+		_, ok := tmpMap[qid]
+
+		if ok {
+			optimizedQids = append(optimizedQids, qid)
+		}
+
+	}
+
+	return
 
 }
 

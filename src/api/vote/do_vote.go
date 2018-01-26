@@ -99,7 +99,7 @@ func Vote(uin int64, qid int, voteToUin int64, optionStr string, index int) (vot
 		return
 	}
 
-	go  UserActRecords(uin, qid, 1)
+	go UserActRecords(uin, qid, 1)
 
 	ts := time.Now().Unix()
 
@@ -130,7 +130,6 @@ func Vote(uin int64, qid int, voteToUin int64, optionStr string, index int) (vot
 		return
 	}
 
-	 
 	voteRecordId, err = res.LastInsertId()
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
@@ -170,10 +169,9 @@ func Vote(uin int64, qid int, voteToUin int64, optionStr string, index int) (vot
 	return
 }
 
+func UserActRecords(uin int64, qid int, act int) (err error) {
 
-func UserActRecords(uin int64, qid int, act int)(err error){
-    
-    ts := time.Now().Unix()
+	ts := time.Now().Unix()
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
 	if inst == nil {
 		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
@@ -181,14 +179,13 @@ func UserActRecords(uin int64, qid int, act int)(err error){
 		return
 	}
 
-    stmt, err := inst.Prepare(`insert into actRecords values(?, ?, ?, ?, ?)`)
+	stmt, err := inst.Prepare(`insert into actRecords values(?, ?, ?, ?, ?)`)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_PREPARE, err.Error())
 		log.Error(err)
 		return
 	}
 	defer stmt.Close()
-
 
 	_, err = stmt.Exec(0, uin, qid, act, ts)
 	if err != nil {
@@ -197,7 +194,7 @@ func UserActRecords(uin int64, qid int, act int)(err error){
 		return
 	}
 
-     return
+	return
 
 }
 func GeneFeeds2(uin int64, qid int, voteToUin int64, voteRecordId int64) (err error) {
