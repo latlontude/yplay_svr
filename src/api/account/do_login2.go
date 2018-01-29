@@ -95,9 +95,6 @@ func Login2(phone string, code string, uuid int64, device, os, appVer string) (r
 		return
 	}
 
-	//短信验证码不能进行再次使用
-	app.Del(keyStr)
-
 	//该手机号码不校验验证码
 	if phone == "18682235582" || phone == "13480970139" {
 		if len(code) != 4 {
@@ -110,6 +107,8 @@ func Login2(phone string, code string, uuid int64, device, os, appVer string) (r
 		log.Error(err.Error())
 		return
 	}
+
+	app.Del(keyStr)
 
 	uin, isNewUser, err := GetUinByPhone(phone)
 	if err != nil {
