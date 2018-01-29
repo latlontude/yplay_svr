@@ -104,19 +104,38 @@ func main() {
 	// 	return
 	// }
 
-	for _, uin := range uids {
+	t := time.Tick(time.Second * time.Duration(env.PreGeneQIdsConfig.GeneGap))
 
-		total, err1 := geneqids.Gene(uin)
-		if err1 != nil {
-			log.Errorf(err1.Error())
-		} else {
-			log.Errorf("uin %d, pregeneqids total %d", uin, total)
+	for {
+		select {
+		case <-t:
+			GeneQidsByUin(uids)
 		}
 	}
 
 	log.Errorf("end preGeneQIdsr....")
 
 	time.Sleep(3 * time.Second)
+}
+
+func GeneQidsByUin(uins []int64) (err error) {
+
+	log.Errorf("It`s time to generate qids for user! %+v", uins)
+
+	for _, uin := range uins {
+
+		total, err := geneqids.Gene(uin)
+		if err != nil {
+			log.Errorf(err.Error())
+		} else {
+			log.Errorf("uin %d, pregeneqids total %d", uin, total)
+		}
+	}
+
+	log.Errorf("Finished generating qids for user!")
+
+
+        return
 }
 
 func GetAllUins() (uins []int64, err error) {

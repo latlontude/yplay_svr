@@ -141,4 +141,6 @@ type PreGeneQIdsSvrConfig struct {
 		ModName string //include or exclude
 		Ids     string //includ mod only gene ids, exclude mod gene alluins except ids
 	}
+
+	GeneGap int
 }
