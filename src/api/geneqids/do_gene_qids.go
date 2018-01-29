@@ -218,7 +218,11 @@ func optimizeQidsByUserAct(uin int64, qids []int) (optimizedQids []int, err erro
 		answerCnt := answerMap[subTagId]
 
 		if skipCnt > 2 {
-			cnt := len(subTagMap[subTagId]) * (answerCnt / (skipCnt + answerCnt))
+			cnt := len(subTagMap[subTagId]) * answerCnt / (skipCnt + answerCnt)
+
+			log.Errorf("uin:%d subTagId:%d  last skipCnt:%d last answerCnt:%d", uin, subTagId, skipCnt, answerCnt)
+			log.Errorf("now the number of subTagId:%d is %d, recomment count:%d", subTagId, len(subTagMap[subTagId]), cnt)
+
 			if cnt > 0 {
 				a := rand.Perm(len(subTagMap[subTagId])) //随机化
 				i := 0
