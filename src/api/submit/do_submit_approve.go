@@ -131,7 +131,7 @@ func SubmitApprove(uin int64, submitId int, user int64) (qid int64, err error) {
 	}
 
 	//插入到临时数据库
-	go InsertApprovedQuestion2Tmp(int(qid), qtext, qiconId)
+	//go InsertApprovedQuestion2Tmp(int(qid), qtext, qiconId)
 
 	//缓存的question要增加
 	go cache.AddCacheQuestions(int(qid))

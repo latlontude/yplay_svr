@@ -26,14 +26,15 @@ type SubmitQueryListRsp struct {
 }
 
 type SubmitQInfo struct {
-	SubmitId int    `json:"submitId"`
-	QId      int    `json:"qid"`
-	QText    string `json:"qtext"`
-	QIconUrl string `json:"qiconUrl"`
-	Status   int    `json:"status"`
-	Desc     string `json:"desc"`
-	VotedCnt int    `json:"votedCnt"`
-	Flag     int    `json:"flag"` //是否是新上线 根据上次的时间戳来判断
+	SubmitId    int    `json:"submitId"`
+	QId         int    `json:"qid"`
+	QText       string `json:"qtext"`
+	QIconUrl    string `json:"qiconUrl"`
+	Status      int    `json:"status"`
+	Desc        string `json:"desc"`
+	VotedCnt    int    `json:"votedCnt"`
+	NewVotedCnt int    `json:"newVotedCnt"`
+	Flag        int    `json:"flag"` //是否是新上线 根据上次的时间戳来判断
 }
 
 func (this *SubmitQInfo) String() string {
@@ -196,6 +197,32 @@ func SubmitQueryList(uin int64, typ int, pageNum, pageSize int) (infos []*Submit
 		mqids[qid][voteToUin] = cnt
 	}
 
+	// 用户投稿的题新增的所有人答题记录
+	sql = fmt.Sprintf(`select qid, voteToUin, count(id) as cnt from voteRecords where qid in (%s) and ts > %d group by qid, voteToUin`, qidsStr, lastTs)
+
+	rows, err = inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Errorf(err.Error())
+		return
+	}
+	defer rows.Close()
+
+	newQids := make(map[int]map[int64]int)
+	for rows.Next() {
+
+		var qid int
+		var voteToUin int64
+		var cnt int
+		rows.Scan(&qid, &voteToUin, &cnt)
+
+		if _, ok := mqids[qid]; !ok {
+			newQids[qid] = make(map[int64]int)
+		}
+
+		newQids[qid][voteToUin] = cnt
+	}
+
 	uins := make([]int64, 0)
 	for _, m := range mqids {
 		for uid, _ := range m {
@@ -212,27 +239,33 @@ func SubmitQueryList(uin int64, typ int, pageNum, pageSize int) (infos []*Submit
 	}
 
 	//同校同年级的答题总数
-	mqidsFinal := make(map[int]int)
+	mqidsFinal := make(map[int][]int)
 
 	ui := res[uin]
 
 	for qid, m := range mqids {
 		cntTotal := 0
+		newTotal := 0
 		for uid, cnt := range m {
 			if ui2, ok := res[uid]; ok {
 
 				if ui2.SchoolId == ui.SchoolId && ui2.Grade == ui.Grade {
 					cntTotal += cnt
+					newTotal += newQids[qid][uid]
 				}
 			}
 		}
 
-		mqidsFinal[qid] = cntTotal
+		mqidsFinal[qid] = append(mqidsFinal[qid], cntTotal)
+		mqidsFinal[qid] = append(mqidsFinal[qid], newTotal)
 	}
 
 	for i, info := range infos {
 		if v, ok := mqidsFinal[info.QId]; ok {
-			infos[i].VotedCnt = v
+			infos[i].VotedCnt = v[0]
+			infos[i].NewVotedCnt = v[1]
+
+			log.Errorf("uin:%d, votedQid:%d, newly added count:%d, now total count:%d", uin, info.QId, v[1], v[0])
 		}
 
 		//判断是否新上线的标志
