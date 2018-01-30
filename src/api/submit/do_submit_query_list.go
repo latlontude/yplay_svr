@@ -60,9 +60,12 @@ func doSubmitQueryList(req *SubmitQueryListReq, r *http.Request) (rsp *SubmitQue
 	return
 }
 
-func SubmitQueryList(uin int64, typ int, pageNum, pageSize int) (infos []*SubmitQInfo, err error) {
+func SubmitQueryList(uin int64, typ int, pageNum, pageSize int) (retInfos []*SubmitQInfo, err error) {
 
-	infos = make([]*SubmitQInfo, 0)
+	log.Errorf("start SubmitQueryList")
+
+	infos := make([]*SubmitQInfo, 0)
+	retInfos = make([]*SubmitQInfo, 0)
 
 	if uin == 0 {
 		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid param")
@@ -93,9 +96,9 @@ func SubmitQueryList(uin int64, typ int, pageNum, pageSize int) (infos []*Submit
 	}
 
 	s := (pageNum - 1) * pageSize
-	e := pageSize
+	e := s + pageSize -1
 
-	sql := fmt.Sprintf(`select id, qid, qtext, qiconId, status, descr, mts from submitQuestions where uin = %d and status = %d order by mts desc limit %d,%d`, uin, typ, s, e)
+	sql := fmt.Sprintf(`select id, qid, qtext, qiconId, status, descr, mts from submitQuestions where uin = %d and status = %d order by mts desc`, uin, typ)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -169,6 +172,26 @@ func SubmitQueryList(uin int64, typ int, pageNum, pageSize int) (infos []*Submit
 		qidsStr += fmt.Sprintf("%d,", qid)
 	}
 	qidsStr = qidsStr[:len(qidsStr)-1]
+
+	//用户投稿的每道题的最新答题时间按降序排序
+	sql = fmt.Sprintf(`select qid, max(ts) as maxTs from voteRecords where qid in (%s) group by qid order by maxTs desc`, qidsStr)
+
+	rows, err = inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Errorf(err.Error())
+		return
+	}
+	defer rows.Close()
+
+	qidsMaxTs := make([]int, 0)
+	for rows.Next() {
+		var qid int
+		var maxTs int
+		rows.Scan(&qid, &maxTs)
+
+		qidsMaxTs = append(qidsMaxTs, qid)
+	}
 
 	//要全部查询出来 然后找同校同年级的
 	sql = fmt.Sprintf(`select qid, voteToUin, count(id) as cnt from voteRecords where qid in (%s) group by qid, voteToUin`, qidsStr)
@@ -251,7 +274,10 @@ func SubmitQueryList(uin int64, typ int, pageNum, pageSize int) (infos []*Submit
 
 				if ui2.SchoolId == ui.SchoolId && ui2.Grade == ui.Grade {
 					cntTotal += cnt
-					newTotal += newQids[qid][uid]
+
+					if _, ok := newQids[qid][uid]; ok {
+						newTotal += newQids[qid][uid]
+					}
 				}
 			}
 		}
@@ -264,8 +290,6 @@ func SubmitQueryList(uin int64, typ int, pageNum, pageSize int) (infos []*Submit
 		if v, ok := mqidsFinal[info.QId]; ok {
 			infos[i].VotedCnt = v[0]
 			infos[i].NewVotedCnt = v[1]
-
-			log.Errorf("uin:%d, votedQid:%d, newly added count:%d, now total count:%d", uin, info.QId, v[1], v[0])
 		}
 
 		//判断是否新上线的标志
@@ -276,5 +300,33 @@ func SubmitQueryList(uin int64, typ int, pageNum, pageSize int) (infos []*Submit
 		}
 	}
 
+	tmpInfos := make([]*SubmitQInfo, 0)
+	for _, qid := range qidsMaxTs {
+		for j, info := range infos {
+			if qid == infos[j].QId {
+				tmpInfos = append(tmpInfos, info)
+				break
+			}
+		}
+	}
+
+	if len(tmpInfos) < s {
+		return
+	} else {
+		start := s
+		end := e
+		if len(tmpInfos) < e {
+			end = len(tmpInfos) - 1
+		}
+
+                log.Errorf("total count:%d start:%d, end:%d",len(tmpInfos), start, end)
+
+		for i := 0; i <= end-start; i++ {
+			retInfos = append(retInfos, tmpInfos[start+i])
+			log.Errorf("uin:%d, submitQid:%d, newly added count:%d, now total count:%d", uin, tmpInfos[start+i].QId, tmpInfos[start+i].NewVotedCnt, tmpInfos[start+i].VotedCnt)
+		}
+	}
+
+	log.Errorf("end SubmitQueryList")
 	return
 }
