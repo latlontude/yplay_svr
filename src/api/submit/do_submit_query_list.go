@@ -132,6 +132,7 @@ func SubmitQueryList(uin int64, typ int, pageNum, pageSize int) (retInfos []*Sub
 		return
 	}
 
+
 	//已经上线的，判断是否新上线的问题列表
 	//对比上次的拉取时间
 	keyStr := fmt.Sprintf("%d", uin)
@@ -219,6 +220,7 @@ func SubmitQueryList(uin int64, typ int, pageNum, pageSize int) (retInfos []*Sub
 
 		mqids[qid][voteToUin] = cnt
 	}
+	//所有人的答题总数
 
 	// 用户投稿的题新增的所有人答题记录
 	sql = fmt.Sprintf(`select qid, voteToUin, count(id) as cnt from voteRecords where qid in (%s) and ts > %d group by qid, voteToUin`, qidsStr, lastTs)
@@ -239,7 +241,7 @@ func SubmitQueryList(uin int64, typ int, pageNum, pageSize int) (retInfos []*Sub
 		var cnt int
 		rows.Scan(&qid, &voteToUin, &cnt)
 
-		if _, ok := mqids[qid]; !ok {
+		if _, ok := newQids[qid]; !ok {
 			newQids[qid] = make(map[int64]int)
 		}
 
