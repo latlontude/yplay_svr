@@ -26,9 +26,9 @@ type GetRankingListRsp struct {
 
 type UserInfo struct {
 	Uin        int64  `json:"uin"`
-	NickName   string `json:"nickame"`
-	HeadImgUrl string `json:"headimgurl"`
-	VotedCnt   int    `json:"votedcnt"`
+	NickName   string `json:"nickName"`
+	HeadImgUrl string `json:"headImgUrl"`
+	VotedCnt   int    `json:"votedCnt"`
 }
 
 func doGetRankingList(req *GetRankingListReq, r *http.Request) (rsp *GetRankingListRsp, err error) {
