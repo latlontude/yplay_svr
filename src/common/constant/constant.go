@@ -2,7 +2,7 @@ package constant
 
 const DEFAULT_PAGE_SIZE = 10
 
-const ENUM_QUESTION_BATCH_SIZE = 15 //每次批量拉取题目数
+const ENUM_QUESTION_BATCH_SIZE = 12 //每次批量拉取题目数
 const ENUM_OPTION_BATCH_SIZE = 4    //每个题目下的选择项数目
 
 const ENUM_ADDR_MAX_BATCH_UPLOAD_SIZE = 100 //通讯录每次上传的最大数目

@@ -45,7 +45,7 @@ func GetNextQuestionAndOptionsByPreGene(uin int64, uuid int64) (qinfo *st.Questi
 	}
 
 	lastQId := 0     //上一次的题目ID
-	lastQIndex := 0  //上一次的答题编号 1~15
+	lastQIndex := 0  //上一次的答题编号 
 	voted := 1       //是否已经投票
 	lastCursor := -1 //问题队列的上次扫描位置
 	optionsStr := "" //上一次的选项列表
@@ -90,10 +90,7 @@ func GetNextQuestionAndOptionsByPreGene(uin int64, uuid int64) (qinfo *st.Questi
 	qinfo = cache.QUESTIONS[newQId]
 	nextQGender := qinfo.OptionGender
 
-	index = lastQIndex + 1
-	if index > 15 {
-		index = 1
-	}
+	index = (lastQIndex + 1) % constant.ENUM_QUESTION_BATCH_SIZE
 
 	log.Debugf("uin %d, genen newQId %d, newIndex %d, newGender %d, newCursor %d", uin, newQId, index, nextQGender, newCursor)
 
