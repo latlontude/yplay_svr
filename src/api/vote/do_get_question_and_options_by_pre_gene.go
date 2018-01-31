@@ -90,7 +90,11 @@ func GetNextQuestionAndOptionsByPreGene(uin int64, uuid int64) (qinfo *st.Questi
 	qinfo = cache.QUESTIONS[newQId]
 	nextQGender := qinfo.OptionGender
 
-	index = (lastQIndex + 1) % constant.ENUM_QUESTION_BATCH_SIZE
+       
+	index = lastQIndex + 1
+        if index > constant.ENUM_QUESTION_BATCH_SIZE {
+           index = 1
+        }
 
 	log.Debugf("uin %d, genen newQId %d, newIndex %d, newGender %d, newCursor %d", uin, newQId, index, nextQGender, newCursor)
 
