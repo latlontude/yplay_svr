@@ -17,9 +17,6 @@ type GetRankingListReq struct {
 	QId   int    `schema:"qid"`
 }
 
-type Rsp struct {
-}
-
 type GetRankingListRsp struct {
 	RankingInSameSchool        []UserInfo `json:"rankingInSameSchool"`
 	RankingPercentInSameSchool string     `json:"rankingPercentInSameSchool"`
@@ -134,6 +131,8 @@ func GetRankingList(uin int64, qid int) (retInfo GetRankingListRsp, err error) {
 		}
 	}
 
+	log.Errorf("allSameSchoolAndGradeCnt:%d", allSameSchoolAndGradeCnt)
+
 	tmpRetInfo.RankingInSameSchool = tmpUserInfos1
 	if allSameSchoolAndGradeCnt == 0 {
 		tmpRetInfo.RankingPercentInSameSchool = "0%"
@@ -153,7 +152,7 @@ func GetRankingList(uin int64, qid int) (retInfo GetRankingListRsp, err error) {
 	friendsUinsMap[uin] = 1
 
 	tmpUserInfos2 := make([]UserInfo, 0)
-	allMyFriendsCnt := len(friendsUinsMap)
+	allVotedMyFriendsCnt := 0
 	myPosInMyFriends := 0
 	flag = true
 
@@ -176,19 +175,22 @@ func GetRankingList(uin int64, qid int) (retInfo GetRankingListRsp, err error) {
 
 					tmpUserInfos2 = append(tmpUserInfos2, userInfo)
 				}
-
+				allVotedMyFriendsCnt++
 			}
 
 		}
 
 	}
+
+	log.Errorf("allVotedMyFriendsCnt:%d", allVotedMyFriendsCnt)
+
 	tmpRetInfo.RankingInFriends = tmpUserInfos2
-	if allMyFriendsCnt == 0 {
+	if allVotedMyFriendsCnt == 0 {
 		tmpRetInfo.RankingPercentInFriends = "0%"
 	} else {
-		tmpRetInfo.RankingPercentInFriends = strconv.Itoa(100*(allMyFriendsCnt-myPosInMyFriends)/allMyFriendsCnt) + "%"
+		tmpRetInfo.RankingPercentInFriends = strconv.Itoa(100*(allVotedMyFriendsCnt-myPosInMyFriends)/allVotedMyFriendsCnt) + "%"
 	}
-	log.Errorf("qid:%d allMyFriendsCnt:%d myPos in allMyFriends is %d(%s)", qid, allMyFriendsCnt, myPosInMyFriends, tmpRetInfo.RankingPercentInFriends)
+	log.Errorf("qid:%d allVotedMyFriendsCnt:%d myPos in allMyFriends is %d(%s)", qid, allVotedMyFriendsCnt, myPosInMyFriends, tmpRetInfo.RankingPercentInFriends)
 
 	retInfo = tmpRetInfo
 	log.Errorf("end GetRankingList")
