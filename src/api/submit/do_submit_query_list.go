@@ -7,6 +7,7 @@ import (
 	"common/rest"
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 	"svr/st"
 	"time"
@@ -96,7 +97,7 @@ func SubmitQueryList(uin int64, typ int, pageNum, pageSize int) (retInfos []*Sub
 	}
 
 	s := (pageNum - 1) * pageSize
-	e := s + pageSize -1
+	e := s + pageSize - 1
 
 	sql := fmt.Sprintf(`select id, qid, qtext, qiconId, status, descr, mts from submitQuestions where uin = %d and status = %d order by mts desc`, uin, typ)
 	rows, err := inst.Query(sql)
@@ -131,7 +132,6 @@ func SubmitQueryList(uin int64, typ int, pageNum, pageSize int) (retInfos []*Sub
 	if len(qids) == 0 {
 		return
 	}
-
 
 	//已经上线的，判断是否新上线的问题列表
 	//对比上次的拉取时间
@@ -174,8 +174,8 @@ func SubmitQueryList(uin int64, typ int, pageNum, pageSize int) (retInfos []*Sub
 	}
 	qidsStr = qidsStr[:len(qidsStr)-1]
 
-	//用户投稿的每道题的最新答题时间按降序排序
-	sql = fmt.Sprintf(`select qid, max(ts) as maxTs from voteRecords where qid in (%s) group by qid order by maxTs desc`, qidsStr)
+	//用户投稿的所有题的答题记录
+	sql = fmt.Sprintf(`select qid, voteToUin, ts from voteRecords where qid in (%s) order by ts`, qidsStr)
 
 	rows, err = inst.Query(sql)
 	if err != nil {
@@ -185,13 +185,17 @@ func SubmitQueryList(uin int64, typ int, pageNum, pageSize int) (retInfos []*Sub
 	}
 	defer rows.Close()
 
-	qidsMaxTs := make([]int, 0)
+	qidsTsMap := make(map[int]map[int64]int)
 	for rows.Next() {
 		var qid int
-		var maxTs int
-		rows.Scan(&qid, &maxTs)
+		var uin int64
+		var ts int
+		rows.Scan(&qid, &uin, &ts)
 
-		qidsMaxTs = append(qidsMaxTs, qid)
+		if _, ok := qidsTsMap[qid]; !ok {
+			qidsTsMap[qid] = make(map[int64]int)
+		}
+		qidsTsMap[qid][uin] = ts // ts 按升序排序，收到这道题投票的每一个用户的ts一定是最新的
 	}
 
 	//要全部查询出来 然后找同校同年级的
@@ -233,7 +237,7 @@ func SubmitQueryList(uin int64, typ int, pageNum, pageSize int) (retInfos []*Sub
 	}
 	defer rows.Close()
 
-	newQids := make(map[int]map[int64]int)
+	newQidsCntMap := make(map[int]map[int64]int)
 	for rows.Next() {
 
 		var qid int
@@ -241,11 +245,11 @@ func SubmitQueryList(uin int64, typ int, pageNum, pageSize int) (retInfos []*Sub
 		var cnt int
 		rows.Scan(&qid, &voteToUin, &cnt)
 
-		if _, ok := newQids[qid]; !ok {
-			newQids[qid] = make(map[int64]int)
+		if _, ok := newQidsCntMap[qid]; !ok {
+			newQidsCntMap[qid] = make(map[int64]int)
 		}
 
-		newQids[qid][voteToUin] = cnt
+		newQidsCntMap[qid][voteToUin] = cnt
 	}
 
 	uins := make([]int64, 0)
@@ -265,6 +269,7 @@ func SubmitQueryList(uin int64, typ int, pageNum, pageSize int) (retInfos []*Sub
 
 	//同校同年级的答题总数
 	mqidsFinal := make(map[int][]int)
+	qidsUinMap := make(map[int][]int64) // 收到这题投票的同校同年级人的集合
 
 	ui := res[uin]
 
@@ -277,9 +282,11 @@ func SubmitQueryList(uin int64, typ int, pageNum, pageSize int) (retInfos []*Sub
 				if ui2.SchoolId == ui.SchoolId && ui2.Grade == ui.Grade {
 					cntTotal += cnt
 
-					if _, ok := newQids[qid][uid]; ok {
-						newTotal += newQids[qid][uid]
+					if _, ok := newQidsCntMap[qid][uid]; ok {
+						newTotal += newQidsCntMap[qid][uid]
 					}
+
+					qidsUinMap[qid] = append(qidsUinMap[qid], uid)
 				}
 			}
 		}
@@ -292,6 +299,7 @@ func SubmitQueryList(uin int64, typ int, pageNum, pageSize int) (retInfos []*Sub
 		if v, ok := mqidsFinal[info.QId]; ok {
 			infos[i].VotedCnt = v[0]
 			infos[i].NewVotedCnt = v[1]
+
 		}
 
 		//判断是否新上线的标志
@@ -302,14 +310,70 @@ func SubmitQueryList(uin int64, typ int, pageNum, pageSize int) (retInfos []*Sub
 		}
 	}
 
+	qidsMaxTsMap := make(map[int]int) // 同校同年级的人收到该用户投稿的题目的投票的最新时间
+
+	for _, info := range infos {
+		if _, ok := qidsUinMap[info.QId]; ok {
+			maxTs := 0
+			for _, uin := range qidsUinMap[info.QId] {
+				if qidsTsMap[info.QId][uin] > maxTs {
+					maxTs = qidsTsMap[info.QId][uin]
+				}
+			}
+			qidsMaxTsMap[info.QId] = maxTs
+		} else {
+			qidsMaxTsMap[info.QId] = 0
+		}
+	}
+
+	log.Errorf("qidsMaxTsMap total:%d info :%+v", len(qidsMaxTsMap), qidsMaxTsMap)
+
+	newHotCntQidMap := make(map[int][]int) //key 为新增热度数，value为相同新增热度数的用户投稿题目集合
+	newCntSlice := make([]int, 0)
+
+	for _, info := range infos {
+		newHotCntQidMap[info.NewVotedCnt] = append(newHotCntQidMap[info.NewVotedCnt], info.QId)
+	}
+
+	log.Errorf("newHotCntQidMap : %+v", newHotCntQidMap)
+
+	for key, _ := range newHotCntQidMap {
+		newCntSlice = append(newCntSlice, key)
+	}
+
+	sort.Ints(newCntSlice[:]) // 按新增热度排序
 	tmpInfos := make([]*SubmitQInfo, 0)
-	for _, qid := range qidsMaxTs {
-		for j, info := range infos {
-			if qid == infos[j].QId {
-				tmpInfos = append(tmpInfos, info)
-				break
+
+	for i := len(newCntSlice) - 1; i >= 0; i-- {
+
+		tsQidMap := make(map[int][]int)
+		tsSlice := make([]int, 0)
+
+		for _, qid := range newHotCntQidMap[newCntSlice[i]] {
+			ts := qidsMaxTsMap[qid]
+			tsQidMap[ts] = append(tsQidMap[ts], qid)
+
+		}
+
+		for key, _ := range tsQidMap {
+
+			tsSlice = append(tsSlice, key)
+		}
+
+		sort.Ints(tsSlice[:])
+		log.Errorf("tsQidMap %+v", tsQidMap)
+		log.Errorf("tsSlice total:%d, info:%+v", len(tsSlice), tsSlice)
+
+		for j := len(tsSlice) - 1; j >= 0; j-- {
+			for _, qid := range tsQidMap[tsSlice[j]] {
+				for _, info := range infos {
+					if info.QId == qid {
+						tmpInfos = append(tmpInfos, info)
+					}
+				}
 			}
 		}
+
 	}
 
 	if len(tmpInfos) < s {
@@ -321,7 +385,7 @@ func SubmitQueryList(uin int64, typ int, pageNum, pageSize int) (retInfos []*Sub
 			end = len(tmpInfos) - 1
 		}
 
-                log.Errorf("total count:%d start:%d, end:%d",len(tmpInfos), start, end)
+		log.Errorf("total count:%d start:%d, end:%d", len(tmpInfos), start, end)
 
 		for i := 0; i <= end-start; i++ {
 			retInfos = append(retInfos, tmpInfos[start+i])
