@@ -14,6 +14,7 @@ type GetStarReq struct {
 	Uin   int64  `schema:"uin"`
 	Token string `schema:"token"`
 	Ver   int    `schema:"ver"`
+	User  int64  `schema:"uid"`
 }
 
 type GetStarRsp struct {
@@ -27,19 +28,19 @@ type GetStarRsp struct {
 	DiamondSet []int  `josn:"diamondSet"` // 每周获得的钻石总数列表
 }
 
-func doGetStarInThisWeek(req *GetStarReq, r *http.Request) (rsp *GetStarRsp, err error) {
+func doGetStarInLastWeek(req *GetStarReq, r *http.Request) (rsp *GetStarRsp, err error) {
 
-	log.Debugf("uin %d, GetStarInThisWeek %+v", req.Uin, req)
+	log.Debugf("uin %d, GetStarInLastWeek %+v", req.Uin, req)
 
-	info, err := GetStarOfWeek(req.Uin, 0)
+	info, err := GetStarOfWeek(req.User, 1) //查询上周话题明星
 	if err != nil {
-		log.Errorf("uin %d, GetStarInThisWeek error, %s", req.Uin, err.Error())
+		log.Errorf("uin %d, GetStarInLastWeek error, %s", req.Uin, err.Error())
 		return
 	}
 
-	last := 1
+	last := 2 //查询上上周
 	for {
-		ret, _ := GetStarOfWeek(req.Uin, last)
+		ret, _ := GetStarOfWeek(req.User, last)
 
 		if ret.Uin == info.Uin {
 			info.Cnt++
@@ -59,7 +60,7 @@ func doGetStarInThisWeek(req *GetStarReq, r *http.Request) (rsp *GetStarRsp, err
 
 func GetStarOfWeek(uin int64, last int) (ret GetStarRsp, err error) {
 
-	log.Errorf("start GetStarInThisWeek")
+	log.Errorf("start GetStarOfWeek")
 	if uin == 0 {
 		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid param")
 		log.Errorf(err.Error())
@@ -73,13 +74,10 @@ func GetStarOfWeek(uin int64, last int) (ret GetStarRsp, err error) {
 		return
 	}
 
-	s := GetFirstDayOfThisWeek()
-	e := time.Now().Unix()
+	e := GetFirstDayOfThisWeek()
+	s := e - int64(last*7*24*3600)
 
-	if last != 0 {
-		s = s - int64(last*7*24*3600)
-		e = s + int64(7*24*3600)
-	}
+	e = s + int64(7*24*3600)
 
 	log.Errorf("start time:%s end time:%s", time.Unix(s, 0).Format("2006-01-02 15:04:05 PM"), time.Unix(e, 0).Format("2006-01-02 15:04:05 PM"))
 
@@ -147,7 +145,7 @@ func GetStarOfWeek(uin int64, last int) (ret GetStarRsp, err error) {
 		ret = tmpRet
 	}
 
-	log.Errorf("end GetStarInThisWeek")
+	log.Errorf("end GetStarOfWeek")
 	return
 }
 
