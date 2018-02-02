@@ -53,7 +53,7 @@ func doGetStarInLastWeek(req *GetStarReq, r *http.Request) (rsp *GetStarRsp, err
 
 	rsp = &info
 
-	log.Debugf("uin %d, GetStarInThisWeek succ, %+v", req.Uin, rsp)
+	log.Debugf("uin %d, GetStarInLastWeek succ, %+v", req.Uin, rsp)
 
 	return
 }
