@@ -78,16 +78,23 @@ func GetRankingList(uin int64, qid int) (retInfo GetRankingListRsp, err error) {
 	defer rows.Close()
 
 	uins := make([]int64, 0)
-	uins = append(uins, uin)
 
 	userInfos := make([]UserInfo, 0)
-
+	in := false
 	for rows.Next() {
 		var userInfo UserInfo
 		rows.Scan(&userInfo.Uin, &userInfo.VotedCnt)
 		userInfos = append(userInfos, userInfo)
-
 		uins = append(uins, userInfo.Uin)
+
+		if userInfo.Uin == uin {
+			in = true
+		}
+
+	}
+
+	if !in {
+		uins = append(uins, uin)
 	}
 
 	res, err := st.BatchGetUserProfileInfo(uins)
@@ -122,7 +129,6 @@ func GetRankingList(uin int64, qid int) (retInfo GetRankingListRsp, err error) {
 
 					userInfo.NickName = v.NickName
 					userInfo.HeadImgUrl = v.HeadImgUrl
-
 					tmpUserInfos1 = append(tmpUserInfos1, userInfo)
 				}
 				allSameSchoolAndGradeCnt++
@@ -134,10 +140,19 @@ func GetRankingList(uin int64, qid int) (retInfo GetRankingListRsp, err error) {
 	log.Errorf("allSameSchoolAndGradeCnt:%d", allSameSchoolAndGradeCnt)
 
 	tmpRetInfo.RankingInSameSchool = tmpUserInfos1
+
 	if allSameSchoolAndGradeCnt == 0 {
 		tmpRetInfo.RankingPercentInSameSchool = "0%"
 	} else {
-		tmpRetInfo.RankingPercentInSameSchool = strconv.Itoa(100*(allSameSchoolAndGradeCnt-myPos)/allSameSchoolAndGradeCnt) + "%"
+		if allSameSchoolAndGradeCnt == 1 {
+			if in {
+				tmpRetInfo.RankingPercentInSameSchool = "100%"
+			} else {
+				tmpRetInfo.RankingPercentInSameSchool = "0%"
+			}
+		} else {
+			tmpRetInfo.RankingPercentInSameSchool = strconv.Itoa(100*(allSameSchoolAndGradeCnt-myPos)/(allSameSchoolAndGradeCnt-1)) + "%"
+		}
 	}
 
 	log.Errorf("qid:%d allSameSchoolAndGradeCnt:%d myPos in allSameSchoolAndGrade is:%d(%s) ", qid, allSameSchoolAndGradeCnt, myPos, tmpRetInfo.RankingPercentInSameSchool)
@@ -188,7 +203,15 @@ func GetRankingList(uin int64, qid int) (retInfo GetRankingListRsp, err error) {
 	if allVotedMyFriendsCnt == 0 {
 		tmpRetInfo.RankingPercentInFriends = "0%"
 	} else {
-		tmpRetInfo.RankingPercentInFriends = strconv.Itoa(100*(allVotedMyFriendsCnt-myPosInMyFriends)/allVotedMyFriendsCnt) + "%"
+		if allVotedMyFriendsCnt == 1 {
+			if in {
+				tmpRetInfo.RankingPercentInFriends = "100%"
+			} else {
+				tmpRetInfo.RankingPercentInFriends = "0%"
+			}
+		} else {
+			tmpRetInfo.RankingPercentInFriends = strconv.Itoa(100*(allVotedMyFriendsCnt-myPosInMyFriends)/(allVotedMyFriendsCnt-1)) + "%"
+		}
 	}
 	log.Errorf("qid:%d allVotedMyFriendsCnt:%d myPos in allMyFriends is %d(%s)", qid, allVotedMyFriendsCnt, myPosInMyFriends, tmpRetInfo.RankingPercentInFriends)
 
