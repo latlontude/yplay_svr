@@ -166,6 +166,63 @@ func Vote(uin int64, qid int, voteToUin int64, optionStr string, index int) (vot
 	go im.SendVoteMsg(uin, qid, voteToUin, optionStr, voteRecordId)
 
 	//被投票者生成消息 全部放在客户端的IM上做
+
+	// 检查该题是否为投稿题，投稿人和被投人是否同校同年级
+	uid, tpe, flag, _ := checkQidTypeAndSameSchoolSameGradeFlag(qid, voteToUin)
+	if tpe == 1 && flag == 1 {
+		// 通知用户，同校同年级的同学收到他(她)投稿的题的投票
+		go im.SendSubmitVotedNotifyMsg(uid)
+	}
+
+	return
+}
+
+func checkQidTypeAndSameSchoolSameGradeFlag(qid int, votedUin int64) (submitUin int64, tpe int, flag int, err error) {
+
+	log.Errorf("start checkQidTypeAndSameSchoolSameGradeFlag")
+
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		log.Error(err)
+		return
+	}
+
+	sql := fmt.Sprintf(`select uin from submitQuestions where qid = %d and status = 1`, qid)
+	rows, err := inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Errorf(err.Error())
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		rows.Scan(&submitUin)
+	}
+
+	if submitUin == 0 { // 不是投稿题目
+		return
+	}
+
+	//是投稿题目
+	tpe = 1
+
+	uinsSlice := make([]int64, 0)
+	uinsSlice = append(uinsSlice, submitUin)
+	uinsSlice = append(uinsSlice, votedUin)
+
+	res, err := st.BatchGetUserProfileInfo(uinsSlice)
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+
+	if res[submitUin].SchoolId == res[votedUin].SchoolId && res[submitUin].Grade == res[votedUin].Grade {
+		flag = 1
+	}
+
+	log.Errorf("end checkQidTypeAndSameSchoolSameGradeFlag")
 	return
 }
 
