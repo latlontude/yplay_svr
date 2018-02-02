@@ -40,8 +40,10 @@ func doGetStarInLastWeek(req *GetStarReq, r *http.Request) (rsp *GetStarRsp, err
 
 	last := 2 //查询上上周
 	for {
+		if info.Uin == 0 {
+			break
+		}
 		ret, _ := GetStarOfWeek(req.User, last)
-
 		if ret.Uin == info.Uin {
 			info.Cnt++
 			info.DiamondSet = append(info.DiamondSet, ret.DiamondSet...)
