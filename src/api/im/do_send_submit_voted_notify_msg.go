@@ -69,14 +69,14 @@ func MakeIMSubmitVotedNotifyMsg(uin int64) (msg IMC2CMsg, err error) {
 
 	var extInfo NotifyExtInfo
 
-	extInfo.NotifyType = constant.ENUM_NOTIFY_TYPE_LEAVE_FROZEN
+	extInfo.NotifyType = constant.ENUM_NOTIFY_TYPE_SUBMIT_ADD_NEW_HOT
 	extInfo.Content = ""
 
 	se, _ := json.Marshal(extInfo)
 
 	content := fmt.Sprintf("同校同年级的人获得你投稿题目的投票")
 
-	offlinePush.PushFlag = 0
+	offlinePush.PushFlag = 1 // 不离线推送
 	offlinePush.Desc = content
 	offlinePush.Ext = string(se)
 	offlinePush.Apns = ApnsInfo{1, "", "投稿题有新动态", ""} //badge不计数
@@ -113,7 +113,7 @@ func SendSubmitVotedNotifyMsg(uin int64) (err error) {
 
 	data, err := json.Marshal(&msg)
 	if err != nil {
-		err = rest.NewAPIError(constant.E_IM_REQ_SEND_VOTE_MSG, err.Error())
+		err = rest.NewAPIError(constant.E_IM_REQ_SEND_NEW_HOT_NOTIFY_MSG, err.Error())
 		log.Errorf(err.Error())
 		return
 	}
@@ -123,14 +123,14 @@ func SendSubmitVotedNotifyMsg(uin int64) (err error) {
 
 	hrsp, err := http.Post(url, "application/octet-stream", bytes.NewBuffer(data))
 	if err != nil {
-		err = rest.NewAPIError(constant.E_IM_REQ_SEND_VOTE_MSG, err.Error())
+		err = rest.NewAPIError(constant.E_IM_REQ_SEND_NEW_HOT_NOTIFY_MSG, err.Error())
 		log.Errorf(err.Error())
 		return
 	}
 
 	body, err := ioutil.ReadAll(hrsp.Body)
 	if err != nil {
-		err = rest.NewAPIError(constant.E_IM_REQ_SEND_VOTE_MSG, err.Error())
+		err = rest.NewAPIError(constant.E_IM_REQ_SEND_NEW_HOT_NOTIFY_MSG, err.Error())
 		log.Errorf(err.Error())
 		return
 	}
@@ -139,7 +139,7 @@ func SendSubmitVotedNotifyMsg(uin int64) (err error) {
 
 	err = json.Unmarshal(body, &rsp)
 	if err != nil {
-		err = rest.NewAPIError(constant.E_IM_REQ_SEND_VOTE_MSG, err.Error())
+		err = rest.NewAPIError(constant.E_IM_REQ_SEND_NEW_HOT_NOTIFY_MSG, err.Error())
 		log.Errorf(err.Error())
 		return
 	}
@@ -147,7 +147,7 @@ func SendSubmitVotedNotifyMsg(uin int64) (err error) {
 	log.Errorf("SendSubmitVotedNotifyMsgRsp uin %d, rsp %+v", uin, rsp)
 
 	if rsp.ErrorCode != 0 {
-		err = rest.NewAPIError(constant.E_IM_REQ_SEND_VOTE_MSG, rsp.ErrorInfo)
+		err = rest.NewAPIError(constant.E_IM_REQ_SEND_NEW_HOT_NOTIFY_MSG, rsp.ErrorInfo)
 		log.Errorf(err.Error())
 		return
 	}
