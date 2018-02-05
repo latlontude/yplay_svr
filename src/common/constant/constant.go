@@ -42,6 +42,7 @@ const ENUM_REDIS_APP_INVITE_CODE = "invitecode"
 const ENUM_REDIS_APP_SUBMIT_LAST_READ_ONLINE_TS = "submitlastreadonline" //上一次读取已经上线的投稿时间,用于判断哪些是新上线的标志
 const ENUM_REDIS_APP_USER_PV_CNT = "userpvcnt"
 const ENUM_REDIS_APP_PRE_GENE_QIDS = "pregeneqids"
+const ENUM_REDIS_APP_SNAPCHAT_SESSION = "snapchatsession"
 
 const ENUM_VOTE_STATUS_INIT = 0
 const ENUM_VOTE_STATUS_REPLY = 1

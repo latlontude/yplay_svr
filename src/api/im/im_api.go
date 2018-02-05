@@ -20,6 +20,7 @@ var (
 		"/creategroup":                      auth.Apify2(doCreateGroup),
 		"/sendsubmitquestionapprovedmsg":    auth.Apify2(doSendSubmitQustionApprovedMsg), //移除好友，通知被移除的一方
 		"/sendsubmitnewlyaddedhotnotifymsg": auth.Apify2(doSendSubmitVotedNotifyMsg),     //
+		"/createsnapchatsession":            auth.Apify2(doCreateSnapChatSession),
 	}
 
 	IM_SIG_ADMIN         string
