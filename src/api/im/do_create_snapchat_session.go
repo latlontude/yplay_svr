@@ -94,7 +94,11 @@ func CreateSnapChatSesson(uin int64, user int64) (sessionId string, err error) {
 		}
 
 	} else {
+
 		sessionId = strings.TrimSpace(valStr)
+
+		log.Errorf("uin %d, user %d, IMCreateSnapChatSesson, return sessionId from redis %s", uin, user, sessionId)
+
 		return
 	}
 
