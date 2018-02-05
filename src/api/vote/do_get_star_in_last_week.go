@@ -26,6 +26,31 @@ type GetStarRsp struct {
 	Grade      int    `json:"grade"`
 	Cnt        int    `json:"cnt"`        // 连续几周成为排行榜第一名
 	DiamondSet []int  `josn:"diamondSet"` // 每周获得的钻石总数列表
+
+	FriendUin        int64  `schema:"friendUin"`
+	FriendNickName   string `json:"friendNickName"`
+	FriendHeadImgUrl string `json:"friendHeadImgUrl"`
+	FriendSchoolName string `json:"friendSchoolName"`
+	FriendSchoolType int    `json:"friendSchoolType"`
+	FriendGrade      int    `json:"friendGrade"`
+	FriendCnt        int    `json:"friendCnt"`
+	FriendDiamondSet []int  `json:"friendDiamondSet"`
+}
+type GetStarRspTmp struct {
+	SameSchoolAndSameGradeWeekStar WeekStarUserInfo `json:"sameSchoolAndGradeWeekStar"`
+	FriendsWeekStar                WeekStarUserInfo `json:"friendsWeekStar"`
+}
+
+type WeekStarUserInfo struct {
+	Uin        int64  `schema:"uin"`
+	NickName   string `json:"nickName"`
+	HeadImgUrl string `json:"headImgUrl"`
+	SchoolName string `json:"schoolName"`
+	SchoolType int    `json:"schoolType"`
+	Grade      int    `json:"grade"`
+	Cnt        int    `json:"cnt"`        // 连续几周成为排行榜第一名
+	DiamondSet []int  `josn:"diamondSet"` // 每周获得的钻石总数列表
+
 }
 
 func doGetStarInLastWeek(req *GetStarReq, r *http.Request) (rsp *GetStarRsp, err error) {
@@ -40,27 +65,51 @@ func doGetStarInLastWeek(req *GetStarReq, r *http.Request) (rsp *GetStarRsp, err
 
 	last := 2 //查询上上周
 	for {
-		if info.Uin == 0 {
+		if info.SameSchoolAndSameGradeWeekStar.Uin == 0 && info.FriendsWeekStar.Uin == 0 {
 			break
 		}
 		ret, _ := GetStarOfWeek(req.User, last)
-		if ret.Uin == info.Uin {
-			info.Cnt++
-			info.DiamondSet = append(info.DiamondSet, ret.DiamondSet...)
-			last++
+		if ret.SameSchoolAndSameGradeWeekStar.Uin == info.SameSchoolAndSameGradeWeekStar.Uin && ret.SameSchoolAndSameGradeWeekStar.Uin != 0 {
+			info.SameSchoolAndSameGradeWeekStar.Cnt++
+			info.SameSchoolAndSameGradeWeekStar.DiamondSet = append(info.SameSchoolAndSameGradeWeekStar.DiamondSet, ret.SameSchoolAndSameGradeWeekStar.DiamondSet...)
+
+		} else if ret.FriendsWeekStar.Uin == info.FriendsWeekStar.Uin && ret.FriendsWeekStar.Uin != 0 {
+			info.FriendsWeekStar.Cnt++
+			info.FriendsWeekStar.DiamondSet = append(info.FriendsWeekStar.DiamondSet, ret.FriendsWeekStar.DiamondSet...)
+
 		} else {
 			break
 		}
+		last++
 	}
 
-	rsp = &info
+	var ret GetStarRsp
+	ret.Uin = info.SameSchoolAndSameGradeWeekStar.Uin
+	ret.NickName = info.SameSchoolAndSameGradeWeekStar.NickName
+	ret.HeadImgUrl = info.SameSchoolAndSameGradeWeekStar.HeadImgUrl
+	ret.SchoolName = info.SameSchoolAndSameGradeWeekStar.SchoolName
+	ret.SchoolType = info.SameSchoolAndSameGradeWeekStar.SchoolType
+	ret.Grade = info.SameSchoolAndSameGradeWeekStar.Grade
+	ret.Cnt = info.SameSchoolAndSameGradeWeekStar.Cnt
+	ret.DiamondSet = info.SameSchoolAndSameGradeWeekStar.DiamondSet
+
+	ret.FriendUin = info.FriendsWeekStar.Uin
+	ret.FriendNickName = info.FriendsWeekStar.NickName
+	ret.FriendHeadImgUrl = info.FriendsWeekStar.HeadImgUrl
+	ret.FriendSchoolName = info.FriendsWeekStar.SchoolName
+	ret.FriendSchoolType = info.FriendsWeekStar.SchoolType
+	ret.FriendGrade = info.FriendsWeekStar.Grade
+	ret.FriendCnt = info.FriendsWeekStar.Cnt
+	ret.FriendDiamondSet = info.FriendsWeekStar.DiamondSet
+
+	rsp = &ret
 
 	log.Debugf("uin %d, GetStarInLastWeek succ, %+v", req.Uin, rsp)
 
 	return
 }
 
-func GetStarOfWeek(uin int64, last int) (ret GetStarRsp, err error) {
+func GetStarOfWeek(uin int64, last int) (ret GetStarRspTmp, err error) {
 
 	log.Errorf("start GetStarOfWeek")
 	if uin == 0 {
@@ -120,33 +169,54 @@ func GetStarOfWeek(uin int64, last int) (ret GetStarRsp, err error) {
 		return
 	}
 
-	var tmpRet GetStarRsp
+	friendsUinsMap, err := GetAllMyFriends(uin)
+	if err != nil {
+		log.Errorf("failed to get all my friends")
+		log.Errorf(err.Error())
+		return
+	}
+
+	var tmpRet GetStarRspTmp
+	sameSchoolAndSameGradeWeekStarFlag := false
+	friendsWeekStarFlag := false
+
 	for _, uid := range uidsSlice {
 		if _, ok := res[uid]; ok {
-			if res[uin].SchoolId == res[uid].SchoolId && res[uin].Grade == res[uid].Grade {
-				tmpRet.Uin = uid
-				tmpRet.NickName = res[uid].NickName
-				tmpRet.HeadImgUrl = res[uid].HeadImgUrl
-				tmpRet.SchoolName = res[uid].SchoolName
-				tmpRet.SchoolType = res[uid].SchoolType
-				tmpRet.Grade = res[uid].Grade
-				tmpRet.Cnt = 1
-				tmpRet.DiamondSet = append(tmpRet.DiamondSet, uidCntMap[uid])
-				break
-
+			if res[uin].SchoolId == res[uid].SchoolId && res[uin].Grade == res[uid].Grade && !sameSchoolAndSameGradeWeekStarFlag {
+				if uid != uin || (uid == uin && in) {
+					tmpRet.SameSchoolAndSameGradeWeekStar.Uin = uid
+					tmpRet.SameSchoolAndSameGradeWeekStar.NickName = res[uid].NickName
+					tmpRet.SameSchoolAndSameGradeWeekStar.HeadImgUrl = res[uid].HeadImgUrl
+					tmpRet.SameSchoolAndSameGradeWeekStar.SchoolName = res[uid].SchoolName
+					tmpRet.SameSchoolAndSameGradeWeekStar.SchoolType = res[uid].SchoolType
+					tmpRet.SameSchoolAndSameGradeWeekStar.Grade = res[uid].Grade
+					tmpRet.SameSchoolAndSameGradeWeekStar.Cnt = 1
+					tmpRet.SameSchoolAndSameGradeWeekStar.DiamondSet = append(tmpRet.SameSchoolAndSameGradeWeekStar.DiamondSet, uidCntMap[uid])
+					sameSchoolAndSameGradeWeekStarFlag = true
+				}
 			}
+
+			if _, ok := friendsUinsMap[uid]; ok && !friendsWeekStarFlag {
+				tmpRet.FriendsWeekStar.Uin = uid
+				tmpRet.FriendsWeekStar.NickName = res[uid].NickName
+				tmpRet.FriendsWeekStar.HeadImgUrl = res[uid].HeadImgUrl
+				tmpRet.FriendsWeekStar.SchoolName = res[uid].SchoolName
+				tmpRet.FriendsWeekStar.SchoolType = res[uid].SchoolType
+				tmpRet.FriendsWeekStar.Grade = res[uid].Grade
+				tmpRet.FriendsWeekStar.Cnt = 1
+				tmpRet.FriendsWeekStar.DiamondSet = append(tmpRet.FriendsWeekStar.DiamondSet, uidCntMap[uid])
+				friendsWeekStarFlag = true
+			}
+
+			if sameSchoolAndSameGradeWeekStarFlag && friendsWeekStarFlag {
+				break
+			}
+
 		}
 	}
+
 	log.Errorf("star:%+v", tmpRet)
-
-	if tmpRet.Uin == uin {
-		if in {
-			ret = tmpRet
-		}
-	} else {
-		ret = tmpRet
-	}
-
+	ret = tmpRet
 	log.Errorf("end GetStarOfWeek")
 	return
 }
