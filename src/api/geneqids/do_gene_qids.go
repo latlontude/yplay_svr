@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
-	"strconv"
 	"svr/st"
 	"time"
 )
@@ -218,7 +217,15 @@ func optimizeQidsByUserAct(uin int64, qids []int) (optimizedQids []int, err erro
 		answerCnt := answerMap[subTagId]
 
 		if skipCnt > 2 {
-			cnt := len(subTagMap[subTagId]) * answerCnt / (skipCnt + answerCnt)
+			cnt := 0
+			if 10*answerCnt/(skipCnt+answerCnt) < 1 { // 推荐概率小于10%
+				cnt = len(subTagMap[subTagId]) * 10 / 100
+				if cnt == 0 {
+					cnt = 1
+				}
+			} else {
+				cnt = len(subTagMap[subTagId]) * answerCnt / (skipCnt + answerCnt)
+			}
 
 			log.Errorf("uin:%d subTagId:%d  last skipCnt:%d last answerCnt:%d", uin, subTagId, skipCnt, answerCnt)
 			log.Errorf("now the number of subTagId:%d is %d, recomment count:%d", subTagId, len(subTagMap[subTagId]), cnt)
@@ -259,9 +266,7 @@ func optimizeQidsByUserAct(uin int64, qids []int) (optimizedQids []int, err erro
 	}
 
 	log.Errorf("end optimizeQidsByUserAct, uin %d, optimizedQidsCnt %d", uin, len(optimizedQids))
-
 	return
-
 }
 
 func GetAllSubmitQidsUin() (err error) {
@@ -281,7 +286,7 @@ func GetAllSubmitQidsUin() (err error) {
 		return
 	}
 
-	sql := fmt.Sprintf(`select uin, qid from submitQuestions where status > 0`)
+	sql := fmt.Sprintf(`select uin, qid from submitQuestions where status = 1`)
 
 	rows, err := inst.Query(sql)
 	if err != nil {
@@ -431,13 +436,13 @@ func GeneQIds(uin int64) (qids []int, err error) {
 	log.Errorf("begin GeneQIds, uin %d", uin)
 
 	//先查找已经回答的题目
-	answneredIds, err := GetLastAnswneredQIds(uin)
+	answeredQidsMap, err := GetLastAnswneredQIds(uin)
 	if err != nil {
 		log.Errorf(err.Error())
 		return
 	}
 
-	log.Errorf("uin %d, AnswneredQIds cnt %d", uin, len(answneredIds))
+	log.Errorf("uin %d, AnswneredQIds cnt %d", uin, len(answeredQidsMap))
 
 	//重新生成的列表 已经随机化
 	preQIds, err := PreGeneUserQIds(uin)
@@ -449,38 +454,49 @@ func GeneQIds(uin int64) (qids []int, err error) {
 	log.Errorf("uin %d, PreGeneUserQIds cnt %d", uin, len(preQIds))
 
 	qids = make([]int, 0)
+	unAnsweredQidsSlice := make([]int, 0)
+	answeredQidsSlice := make([]int, 0)
 
-	//在已经回答过的题目里面 并且在新生成的列表里面
-	join_qids := make([]int, 0)
-
-	//已经回答的放到后面 未回答的放在前面
 	for _, qid := range preQIds {
-
-		find := false
-
-		for _, t := range answneredIds {
-
-			if qid == t {
-				find = true
-				join_qids = append(join_qids, t)
-				break
-			}
-		}
-
-		if !find {
-			qids = append(qids, qid)
+		if _, ok := answeredQidsMap[qid]; !ok {
+			unAnsweredQidsSlice = append(unAnsweredQidsSlice, qid)
+		} else {
+			answeredQidsSlice = append(answeredQidsSlice, qid)
 		}
 	}
 
-	log.Errorf("uin %d, join_qids cnt %d", uin, len(join_qids))
+	if len(unAnsweredQidsSlice) == 0 {
 
-	//已经回答的放到前面
-	for _, t := range join_qids {
-		qids = append(qids, t)
+		log.Errorf("user:%d has finished the round, a new round start!", uin)
+
+		inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+		if inst == nil {
+			err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+			log.Errorf(err.Error())
+			return
+		}
+
+		stmt, err1 := inst.Prepare(`insert into loopRecords values(?, ?, ?)`)
+		if err1 != nil {
+			err = rest.NewAPIError(constant.E_DB_PREPARE, err1.Error())
+			log.Error(err)
+			return
+		}
+		defer stmt.Close()
+
+		ts := time.Now().Unix()
+		_, err1 = stmt.Exec(0, uin, ts)
+		if err1 != nil {
+			err = rest.NewAPIError(constant.E_DB_EXEC, err1.Error())
+			log.Error(err.Error())
+			return
+		}
+
 	}
+	qids = append(qids, unAnsweredQidsSlice...)
+	qids = append(qids, answeredQidsSlice...)
 
-	log.Errorf("uin %d, last gene qids cnt %d", uin, len(qids))
-
+	log.Errorf("end GeneQIds")
 	return
 }
 
@@ -519,66 +535,55 @@ func rand_order_qids(qids []int) (rand_qids []int) {
 	return
 }
 
-func GetLastAnswneredQIds(uin int64) (qids []int, err error) {
+func GetLastAnswneredQIds(uin int64) (qidsMap map[int]int, err error) {
 
-	qids = make([]int, 0)
+	log.Errorf("start GetLastAnswneredQIds user:%d", uin)
 
-	if uin == 0 {
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		log.Errorf(err.Error())
 		return
 	}
 
-	app, err := myredis.GetApp(constant.ENUM_REDIS_APP_PRE_GENE_QIDS)
+	sql := fmt.Sprintf(`select max(startTs) as maxStartTs from loopRecords where uin = %d`, uin)
+
+	rows, err := inst.Query(sql)
 	if err != nil {
-		log.Errorf(err.Error())
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Error(err.Error())
 		return
 	}
+	defer rows.Close()
 
-	//上一次答题的ID 上一次题目的性别 上一次答题的索引
-	fields := []string{"cursor"}
+	newLoopStartTs := 0
 
-	keyStr := fmt.Sprintf("%d_progress", uin)
+	for rows.Next() {
+		rows.Scan(&newLoopStartTs)
+	}
 
-	valsStr, err := app.HMGet(keyStr, fields)
+	log.Errorf("newLoopStartTs:%d", newLoopStartTs)
+
+	answeredQidsMap := make(map[int]int)
+
+	sql = fmt.Sprintf(`select qid from actRecords where uin = %d and ts > %d`, uin, newLoopStartTs)
+
+	rows, err = inst.Query(sql)
 	if err != nil {
-		log.Errorf(err.Error())
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Error(err.Error())
 		return
 	}
+	defer rows.Close()
 
-	log.Debugf("uin %d, GetLastAnswneredQIds HMGet rsp %+v", uin, valsStr)
-
-	if len(valsStr) != len(fields) && len(valsStr) != 0 {
-		err = rest.NewAPIError(constant.E_PRE_GENE_QIDS_PROGRESS_ERR, "pre gene progress info error")
-		log.Errorf(err.Error())
-		return
+	for rows.Next() {
+		var qid int
+		rows.Scan(&qid)
+		answeredQidsMap[qid] = 1
 	}
 
-	lastCursor := -1 //队列的上次扫描位置
-
-	//如果从来没有答题 则上一次题目设置为0  上答题一次索引为0
-	if len(valsStr) != 0 {
-		lastCursor, _ = strconv.Atoi(valsStr["cursor"])
-	}
-
-	//还从未答过本轮题目 则认为已经回答的题目为空
-	if lastCursor < 0 {
-		return
-	}
-
-	keyStr2 := fmt.Sprintf("%d_qids", uin)
-
-	vals, err := app.ZRange(keyStr2, 0, lastCursor)
-	if err != nil {
-		log.Errorf(err.Error())
-		return
-	}
-
-	for _, val := range vals {
-		qid, _ := strconv.Atoi(val)
-		if qid > 0 {
-			qids = append(qids, qid)
-		}
-	}
-
+	qidsMap = answeredQidsMap
+	log.Errorf("end GetLastAnswneredQIds")
 	return
 }
 

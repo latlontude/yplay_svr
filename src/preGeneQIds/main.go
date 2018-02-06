@@ -104,6 +104,10 @@ func main() {
 	// 	return
 	// }
 
+	if env.PreGeneQIdsConfig.ReStartGeneFlag == 1 {
+		GeneQidsByUin(uids)
+	}
+
 	t := time.Tick(time.Second * time.Duration(env.PreGeneQIdsConfig.GeneGap))
 
 	for {
@@ -134,8 +138,7 @@ func GeneQidsByUin(uins []int64) (err error) {
 
 	log.Errorf("Finished generating qids for user!")
 
-
-        return
+	return
 }
 
 func GetAllUins() (uins []int64, err error) {

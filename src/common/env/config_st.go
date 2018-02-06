@@ -142,5 +142,6 @@ type PreGeneQIdsSvrConfig struct {
 		Ids     string //includ mod only gene ids, exclude mod gene alluins except ids
 	}
 
-	GeneGap int
+	GeneGap         int
+	ReStartGeneFlag int
 }
