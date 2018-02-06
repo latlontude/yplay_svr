@@ -21,6 +21,7 @@ var (
 		"/sendsubmitquestionapprovedmsg":    auth.Apify2(doSendSubmitQustionApprovedMsg), //移除好友，通知被移除的一方
 		"/sendsubmitnewlyaddedhotnotifymsg": auth.Apify2(doSendSubmitVotedNotifyMsg),     //
 		"/createsnapchatsession":            auth.Apify2(doCreateSnapChatSession),
+		"/sendvotereplyreplymsg":            auth.Apify2(doSendVoteReplyReplyMsg), //回复的回复
 	}
 
 	IM_SIG_ADMIN         string
