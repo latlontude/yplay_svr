@@ -11,6 +11,7 @@ import (
 	"api/notify"
 	"api/push"
 	"api/sns"
+	"api/story"
 	"api/submit"
 	"api/user"
 	"api/vote"
@@ -68,6 +69,7 @@ func main() {
 	httputil.HandleAPIMap("/api/submit/", submit.APIMap)
 	httputil.HandleAPIMap("/api/geneqids/", geneqids.APIMap)
 	httputil.HandleAPIMap("/api/helper/", helper.APIMap)
+	httputil.HandleAPIMap("/api/story/", story.APIMap)
 	httputil.HandleAPIMap("/svr/cache/", cache.APIMap)
 
 	log.Errorf("Starting yplay_svr...")
