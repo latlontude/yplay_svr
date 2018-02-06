@@ -69,7 +69,7 @@ func AddStory(uin int64, typ int, data, text, thumbnailImgUrl string) (sid int64
 		return
 	}
 
-	keyStr := fmt.Sprintf("%d", uin)
+	keyStr := fmt.Sprintf("%d", sid)
 
 	//存储story信息 并设置过期时间
 	valStr := string(d)
