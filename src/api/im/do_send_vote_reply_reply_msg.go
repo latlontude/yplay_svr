@@ -65,7 +65,7 @@ func MakeIMVoteReplyReplyMsg(uin int64, sessionId string, newSessionId string, r
 		return
 	}
 
-	if uin != record.VoteToUin {
+	if uin != record.Uin {
 		err = rest.NewAPIError(constant.E_PERMI_DENY, "permision deny")
 		log.Errorf(err.Error())
 		return
