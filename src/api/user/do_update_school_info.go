@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"svr/cache"
 	"svr/st"
+	"time"
 )
 
 type UpdateSchoolInfoReq struct {
@@ -16,8 +17,9 @@ type UpdateSchoolInfoReq struct {
 	Token string `schema:"token"`
 	Ver   int    `schema:"ver"`
 
-	SchoolId int `schema:"schoolId"`
-	Grade    int `schema:"grade"`
+	SchoolId   int    `schema:"schoolId"`
+	Grade      int    `schema:"grade"`
+	SchoolName string `schema:"schoolName"`
 
 	Flag int `schema:"flag"` //1表示要记入修改次数限制中
 }
@@ -29,7 +31,7 @@ func doUpdateSchoolInfo(req *UpdateSchoolInfoReq, r *http.Request) (rsp *UpdateS
 
 	log.Errorf("uin %d, UpdateSchoolInfoReq %+v", req.Uin, req)
 
-	err = UpdateUserSchoolInfo(req.Uin, req.SchoolId, req.Grade, req.Flag)
+	err = UpdateUserSchoolInfo(req.Uin, req.SchoolId, req.SchoolName, req.Grade, req.Flag)
 	if err != nil {
 		log.Errorf("uin %d, UpdateSchoolInfoRsp error, %s", req.Uin, err.Error())
 		return
@@ -40,7 +42,9 @@ func doUpdateSchoolInfo(req *UpdateSchoolInfoReq, r *http.Request) (rsp *UpdateS
 	return
 }
 
-func UpdateUserSchoolInfo(uin int64, schoolId int, grade int, flag int) (err error) {
+func UpdateUserSchoolInfo(uin int64, schoolId int, schoolName string, grade int, flag int) (err error) {
+
+	log.Errorf("start UpdateUserSchoolInfo uin:%d, schoolId:%d, schoolName:%s, grade:%d, flag:%d", uin, schoolId, schoolName, grade, flag)
 
 	if uin == 0 {
 		return
@@ -53,17 +57,32 @@ func UpdateUserSchoolInfo(uin int64, schoolId int, grade int, flag int) (err err
 		return
 	}
 
-	if _, ok := cache.SCHOOLS[schoolId]; !ok {
-		err = rest.NewAPIError(constant.E_INVALID_PARAM, "schoolId not found")
-		log.Errorf(err.Error())
-		return
-	}
-
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
 	if inst == nil {
 		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
 		log.Errorf(err.Error())
 		return
+	}
+
+	if _, ok := cache.SCHOOLS[schoolId]; !ok {
+
+		log.Errorf("uin:%d, pending schoolName:%s ", uin, schoolName)
+		stmt, err1 := inst.Prepare(`insert into pendingSchool values(?, ?, ?, ?, ?, ?)`)
+		if err != nil {
+			err = rest.NewAPIError(constant.E_DB_PREPARE, err1.Error())
+			log.Error(err)
+			return
+		}
+		defer stmt.Close()
+
+		ts := time.Now().Unix()
+		_, err1 = stmt.Exec(0, uin, schoolId, schoolName, 0, ts)
+		if err1 != nil {
+			err = rest.NewAPIError(constant.E_DB_EXEC, err1.Error())
+			log.Error(err.Error())
+			return
+		}
+
 	}
 
 	var modQutoaInfo *st.ProfileModQuotaInfo
@@ -84,10 +103,12 @@ func UpdateUserSchoolInfo(uin int64, schoolId int, grade int, flag int) (err err
 		}
 	}
 
-	info := cache.SCHOOLS[schoolId]
+	var sql string
 
-	//更新学校信息
-	sql := fmt.Sprintf(`update profiles set 
+	if info, ok := cache.SCHOOLS[schoolId]; ok {
+
+		//更新学校信息
+		sql = fmt.Sprintf(`update profiles set 
 							grade = %d, 
 							schoolId = %d, 
 							schoolType = %d, 
@@ -96,12 +117,12 @@ func UpdateUserSchoolInfo(uin int64, schoolId int, grade int, flag int) (err err
 							province = "%s", 
 							city = "%s" 
 							where uin = %d`,
-		grade, info.SchoolId, info.SchoolType, info.SchoolName, info.Country, info.Province, info.City, uin)
+			grade, info.SchoolId, info.SchoolType, info.SchoolName, info.Country, info.Province, info.City, uin)
 
-	//不更新grade
-	if grade == 0 {
+		//不更新grade
+		if grade == 0 {
 
-		sql = fmt.Sprintf(`update profiles set 							
+			sql = fmt.Sprintf(`update profiles set 							
 							schoolId = %d, 
 							schoolType = %d, 
 							schoolName = "%s", 
@@ -109,7 +130,15 @@ func UpdateUserSchoolInfo(uin int64, schoolId int, grade int, flag int) (err err
 							province = "%s", 
 							city = "%s" 
 							where uin = %d`,
-			info.SchoolId, info.SchoolType, info.SchoolName, info.Country, info.Province, info.City, uin)
+				info.SchoolId, info.SchoolType, info.SchoolName, info.Country, info.Province, info.City, uin)
+		}
+
+	} else { // 该学校待审核
+
+		sql = fmt.Sprintf(`update profiles set grade = %d, schoolId = %d, schoolName = "%s" where uin = %d`, grade, schoolId, schoolName, uin)
+		if grade == 0 {
+			sql = fmt.Sprintf(`update profiles set schoolId = %d, schoolName = "%s" where uin = %d`, schoolId, schoolName, uin)
+		}
 
 	}
 
@@ -129,5 +158,6 @@ func UpdateUserSchoolInfo(uin int64, schoolId int, grade int, flag int) (err err
 		go geneqids.Gene(uin)
 	}
 
+	log.Errorf("end UpdateUserSchoolInfo")
 	return
 }
