@@ -1,6 +1,7 @@
 package geneqids
 
 import (
+	"api/vote"
 	"common/constant"
 	"common/mydb"
 	"common/myredis"
@@ -8,6 +9,8 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
+	"sort"
+	"strconv"
 	"svr/st"
 	"time"
 )
@@ -493,7 +496,45 @@ func GeneQIds(uin int64) (qids []int, err error) {
 		}
 
 	}
-	qids = append(qids, unAnsweredQidsSlice...)
+
+	scoreQidsMap := make(map[int][]int)
+	scoreMap := make(map[int]int)
+	scoreSlice := make([]int, 0)
+
+	for _, qid := range unAnsweredQidsSlice {
+
+		info, _ := vote.GetRankingList(uin, qid)
+		scoreInSchool, err1 := strconv.Atoi(info.RankingPercentInSameSchool[:len(info.RankingPercentInSameSchool)-1])
+		scoreInFriends, err2 := strconv.Atoi(info.RankingPercentInSameSchool[:len(info.RankingPercentInSameSchool)-1])
+
+		if err1 != nil || err2 != nil {
+			log.Errorf("ParseFloat err")
+			continue
+		}
+
+		if scoreInFriends > scoreInSchool {
+			scoreMap[scoreInFriends] = 1
+			scoreQidsMap[scoreInFriends] = append(scoreQidsMap[scoreInFriends], qid)
+		} else {
+			scoreMap[scoreInSchool] = 1
+			scoreQidsMap[scoreInSchool] = append(scoreQidsMap[scoreInSchool], qid)
+		}
+	}
+
+	for score, _ := range scoreMap {
+		scoreSlice = append(scoreSlice, score)
+	}
+
+	sort.Ints(scoreSlice[:])
+	sortUnsweredQidsSlice := make([]int, 0)
+
+	for i := len(scoreSlice) - 1; i >= 0; i-- {
+		for _, qid := range scoreQidsMap[scoreSlice[i]] {
+			sortUnsweredQidsSlice = append(sortUnsweredQidsSlice, qid)
+		}
+	}
+
+	qids = append(qids, sortUnsweredQidsSlice...)
 	qids = append(qids, answeredQidsSlice...)
 
 	log.Errorf("end GeneQIds")
