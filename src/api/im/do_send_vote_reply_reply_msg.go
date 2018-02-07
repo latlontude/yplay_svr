@@ -111,7 +111,7 @@ func MakeIMVoteReplyReplyMsg(uin int64, sessionId string, newSessionId string, r
 
 	var customData IMCustomData
 
-	customData.DataType = 3
+	customData.DataType = 1000
 	cd, _ := json.Marshal(voteData)
 	customData.Data = string(cd)
 
