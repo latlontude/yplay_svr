@@ -500,6 +500,8 @@ func GeneQIds(uin int64) (qids []int, err error) {
 	scoreQidsMap := make(map[int][]int)
 	scoreMap := make(map[int]int)
 	scoreSlice := make([]int, 0)
+	votedCntQidsMap := make(map[int][]int)
+	votedCntSlice := make([]int, 0)
 
 	for _, qid := range unAnsweredQidsSlice {
 
@@ -515,9 +517,23 @@ func GeneQIds(uin int64) (qids []int, err error) {
 		if scoreInFriends > scoreInSchool {
 			scoreMap[scoreInFriends] = 1
 			scoreQidsMap[scoreInFriends] = append(scoreQidsMap[scoreInFriends], qid)
-		} else {
+		} else if scoreInFriends < scoreInSchool {
 			scoreMap[scoreInSchool] = 1
 			scoreQidsMap[scoreInSchool] = append(scoreQidsMap[scoreInSchool], qid)
+		} else if scoreInFriends == scoreInSchool && scoreInFriends != 0 {
+			scoreMap[scoreInSchool] = 1
+			scoreQidsMap[scoreInSchool] = append(scoreQidsMap[scoreInSchool], qid)
+		} else {
+			total := 0
+			for _, userInfo := range info.RankingInSameSchool {
+				total += userInfo.VotedCnt
+			}
+
+			for _, userInfo := range info.RankingInFriends {
+				total += userInfo.VotedCnt
+			}
+
+			votedCntQidsMap[total] = append(votedCntQidsMap[total], qid)
 		}
 	}
 
@@ -534,8 +550,22 @@ func GeneQIds(uin int64) (qids []int, err error) {
 		}
 	}
 
-	qids = append(qids, sortUnsweredQidsSlice...)
-	qids = append(qids, answeredQidsSlice...)
+	for cnt, _ := range votedCntQidsMap {
+		votedCntSlice = append(votedCntSlice, cnt)
+	}
+
+	sort.Ints(votedCntSlice[:]) // 该题目同校同年级的前三名和好友前三名获得的投票总数排序
+	sortCntQidsSlice := make([]int, 0)
+
+	for i := len(votedCntSlice) - 1; i >= 0; i-- {
+		for _, qid := range votedCntQidsMap[votedCntSlice[i]] {
+			sortCntQidsSlice = append(sortCntQidsSlice, qid)
+		}
+	}
+
+	qids = append(qids, sortUnsweredQidsSlice...) // 打败好友最多的未答题目降序
+	qids = append(qids, sortCntQidsSlice...)      // 没有打败任何好友，按好友和同校同年级前三名在该题下被投次数总数降序
+	qids = append(qids, answeredQidsSlice...)     // 已回答题目
 
 	log.Errorf("end GeneQIds")
 	return
@@ -607,7 +637,7 @@ func GetLastAnswneredQIds(uin int64) (qidsMap map[int]int, err error) {
 
 	answeredQidsMap := make(map[int]int)
 
-	sql = fmt.Sprintf(`select qid from actRecords where uin = %d and ts > %d`, uin, newLoopStartTs)
+	sql = fmt.Sprintf(`select qid from actRecords where uin = %d and ts > %d order by ts`, uin, newLoopStartTs)
 
 	rows, err = inst.Query(sql)
 	if err != nil {
