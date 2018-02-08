@@ -305,11 +305,8 @@ func GetRandomRecommendsFromAddrBookHasRegistedExceptInvited(uin int64, uuid int
 		cnt = total
 	}
 
-	s := rand.Intn(total - cnt + 1)
-	e := cnt
-
 	//查询通讯录中的非应用内的好友
-	sql = fmt.Sprintf(`select friendUin, friendName from addrBook where uuid = %d and friendUin > 0 and friendUin not in (%s) limit %d, %d`, uuid, strs, s, e)
+	sql = fmt.Sprintf(`select friendUin from addrBook where uuid = %d and friendUin > 0 and friendUin not in (%s)`, uuid, strs)
 
 	rows, err = inst.Query(sql)
 	if err != nil {
@@ -320,15 +317,10 @@ func GetRandomRecommendsFromAddrBookHasRegistedExceptInvited(uin int64, uuid int
 	defer rows.Close()
 
 	recommUins := make([]int64, 0)
-	names := make(map[int64]string)
 	for rows.Next() {
 		var uid int64
-		var name string
-		rows.Scan(&uid, &name)
-
+		rows.Scan(&uid)
 		recommUins = append(recommUins, uid)
-
-		names[uid] = name
 	}
 
 	//获取这批用户的资料
@@ -338,9 +330,10 @@ func GetRandomRecommendsFromAddrBookHasRegistedExceptInvited(uin int64, uuid int
 		return
 	}
 
-	for _, uid := range recommUins {
+	a := rand.Perm(len(recommUins) - 1)
+	for _, val := range a {
 
-		if v, ok := res[uid]; ok {
+		if v, ok := res[recommUins[val]]; ok {
 
 			var fi RecommendInfo
 
@@ -361,13 +354,13 @@ func GetRandomRecommendsFromAddrBookHasRegistedExceptInvited(uin int64, uuid int
 			fi.RecommendType = constant.ENUM_RECOMMEND_FRIEND_TYPE_ADDR_BOOK_REGISTED
 			fi.RecommendDesc = "通讯录好友"
 
-			if len(fi.NickName) == 0 {
-				if len(names[fi.Uin]) > 0 {
-					fi.NickName = names[fi.Uin]
-				}
+			if len(friends) > cnt {
+				break
 			}
 
-			friends = append(friends, &fi)
+			if len(fi.NickName) > 0 {
+				friends = append(friends, &fi)
+			}
 		}
 	}
 
