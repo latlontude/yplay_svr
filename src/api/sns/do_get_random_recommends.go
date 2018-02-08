@@ -109,19 +109,21 @@ func GetRandomRecommends(uin int64, uuid int64, cnt int) (friends []*RecommendIn
 		}
 	}
 
-	//如果不满足 则从未注册好友列表中选取邀请对象
-	if len(friends) < cnt {
+	/*
+		//如果不满足 则从未注册好友列表中选取邀请对象
+		if len(friends) < cnt {
 
-		_, t, err1 := GetRandomRecommendsFromAddrBookNotRegisted(uin, uuid, cnt-len(friends))
-		if err1 != nil {
-			log.Error(err1.Error())
-			return
-		}
+			_, t, err1 := GetRandomRecommendsFromAddrBookNotRegisted(uin, uuid, cnt-len(friends))
+			if err1 != nil {
+				log.Error(err1.Error())
+				return
+			}
 
-		for _, v := range t {
-			friends = append(friends, v)
+			for _, v := range t {
+				friends = append(friends, v)
+			}
 		}
-	}
+	*/
 
 	return
 }
