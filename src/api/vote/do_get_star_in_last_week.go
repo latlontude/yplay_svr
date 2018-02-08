@@ -176,6 +176,8 @@ func GetStarOfWeek(uin int64, last int) (ret GetStarRspTmp, err error) {
 		return
 	}
 
+	friendsUinsMap[uin] = 1 // 我也是我自己的好友
+
 	var tmpRet GetStarRspTmp
 	sameSchoolAndSameGradeWeekStarFlag := false
 	friendsWeekStarFlag := false
@@ -197,6 +199,11 @@ func GetStarOfWeek(uin int64, last int) (ret GetStarRspTmp, err error) {
 			}
 
 			if _, ok := friendsUinsMap[uid]; ok && !friendsWeekStarFlag {
+				if uid == uin {
+					if _, ok = uidCntMap[uid]; !ok {
+						continue
+					}
+				}
 				tmpRet.FriendsWeekStar.Uin = uid
 				tmpRet.FriendsWeekStar.NickName = res[uid].NickName
 				tmpRet.FriendsWeekStar.HeadImgUrl = res[uid].HeadImgUrl
