@@ -87,27 +87,27 @@ func MakeIMVoteReplyReplyMsg(uin int64, sessionId string, newSessionId string, r
 		voteData.Options = append(voteData.Options, *option)
 	}
 	voteData.SelIndex = selIndex
-	voteData.SenderInfo = st.UserProfileInfo{}
-	voteData.SenderInfo.Uin = record.VoteToUin
-	voteData.SenderInfo.NickName = record.VoteToNickName
-	voteData.SenderInfo.HeadImgUrl = record.VoteToHeadImgUrl
-	voteData.SenderInfo.Gender = record.VoteToGender
-	voteData.SenderInfo.Age = record.VoteToAge
-	voteData.SenderInfo.Grade = record.VoteToGrade
-	voteData.SenderInfo.SchoolId = record.VoteToSchoolId
-	voteData.SenderInfo.SchoolType = record.VoteToSchoolType
-	voteData.SenderInfo.SchoolName = record.VoteToSchoolName
-
 	voteData.ReceiverInfo = st.UserProfileInfo{}
-	voteData.ReceiverInfo.Uin = record.Uin
-	voteData.ReceiverInfo.NickName = record.NickName
-	voteData.ReceiverInfo.HeadImgUrl = record.HeadImgUrl
-	voteData.ReceiverInfo.Gender = record.Gender
-	voteData.ReceiverInfo.Age = record.Age
-	voteData.ReceiverInfo.Grade = record.Grade
-	voteData.ReceiverInfo.SchoolId = record.SchoolId
-	voteData.ReceiverInfo.SchoolType = record.SchoolType
-	voteData.ReceiverInfo.SchoolName = record.SchoolName
+	voteData.ReceiverInfo.Uin = record.VoteToUin
+	voteData.ReceiverInfo.NickName = record.VoteToNickName
+	voteData.ReceiverInfo.HeadImgUrl = record.VoteToHeadImgUrl
+	voteData.ReceiverInfo.Gender = record.VoteToGender
+	voteData.ReceiverInfo.Age = record.VoteToAge
+	voteData.ReceiverInfo.Grade = record.VoteToGrade
+	voteData.ReceiverInfo.SchoolId = record.VoteToSchoolId
+	voteData.ReceiverInfo.SchoolType = record.VoteToSchoolType
+	voteData.ReceiverInfo.SchoolName = record.VoteToSchoolName
+
+	voteData.SenderInfo = st.UserProfileInfo{}
+	voteData.SenderInfo.Uin = record.Uin
+	voteData.SenderInfo.NickName = record.NickName
+	voteData.SenderInfo.HeadImgUrl = record.HeadImgUrl
+	voteData.SenderInfo.Gender = record.Gender
+	voteData.SenderInfo.Age = record.Age
+	voteData.SenderInfo.Grade = record.Grade
+	voteData.SenderInfo.SchoolId = record.SchoolId
+	voteData.SenderInfo.SchoolType = record.SchoolType
+	voteData.SenderInfo.SchoolName = record.SchoolName
 
 	var customData IMCustomData
 
