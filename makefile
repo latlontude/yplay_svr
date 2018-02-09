@@ -13,6 +13,7 @@ yplay_svr:
 	@GOPATH=$(GOPATH) $(GO) install -v mysqldeadlock
 	@GOPATH=$(GOPATH) $(GO) install -v phoneParser
 	@GOPATH=$(GOPATH) $(GO) install -v preGeneQIds
+	@GOPATH=$(GOPATH) $(GO) install -v geneSnapSession
 	mv bin/main bin/yplay_svr
 	#cp bin/yplay_svr /home/work/yplay_svr/bin/yplay_svr
 
