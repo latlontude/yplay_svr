@@ -141,17 +141,17 @@ func MakeIMVoteReplyReplyMsg(uin int64, sessionId string, newSessionId string, r
 	extInfo.NotifyType = constant.ENUM_NOTIFY_TYPE_IM
 
 	extContent.SessionId = newSessionId
-	extContent.Status = 1
+	extContent.Status = 2
 	sb, _ := json.Marshal(extContent)
 	extInfo.Content = string(sb)
 
 	se, _ := json.Marshal(extInfo)
 
 	offlinePush.PushFlag = 0
-	offlinePush.Desc = fmt.Sprintf("@%s,有新消息回复了你！( ⁼̴̀ .̫ ⁼̴́ )✧", record.NickName)
+	offlinePush.Desc = fmt.Sprintf("%s:%s", senderNickName, replyReply)
 	offlinePush.Ext = string(se)
-	offlinePush.Apns = ApnsInfo{0, "", senderNickName, ""}
-	offlinePush.Ands = AndroidInfo{senderNickName}
+	offlinePush.Apns = ApnsInfo{0, "", "", ""}
+	offlinePush.Ands = AndroidInfo{""}
 
 	msg.OfflinePush = offlinePush
 

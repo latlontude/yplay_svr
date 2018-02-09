@@ -95,12 +95,12 @@ func MakeIMAddFriendMsg(uin1 int64, uin2 int64) (msg IMC2CMsg, err error) {
 
 	se, _ := json.Marshal(extInfo)
 
-	content := fmt.Sprintf("同学～加个好友呗(*/ω＼*)")
+	content := fmt.Sprintf("%s:同学～加个好友呗(*/ω＼*)", ui.NickName)
 
 	offlinePush.PushFlag = 0
 	offlinePush.Desc = content
 	offlinePush.Ext = string(se)
-	offlinePush.Apns = ApnsInfo{0, "", ui.NickName, ""}
+	offlinePush.Apns = ApnsInfo{0, "", "", ""}
 	offlinePush.Ands = AndroidInfo{""}
 
 	msg.OfflinePush = offlinePush

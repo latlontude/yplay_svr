@@ -184,7 +184,7 @@ func CreateGroup(uin int64, voteToUin int64, voteRecordId int64, groupName strin
 	   }
 	*/
 
-	newName := "神秘信件"
+	newName := "噗噗"
 
 	req, err := MakeIMCreateGroupReq(uin, voteToUin, newName)
 	if err != nil {
