@@ -38,3 +38,9 @@ func CacheSchools() (err error) {
 
 	return
 }
+
+func AddCacheSchool(schoolInfo st.SchoolInfo) {
+
+	SCHOOLS[schoolInfo.SchoolId] = &schoolInfo
+	return
+}
