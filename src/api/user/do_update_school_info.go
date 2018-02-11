@@ -135,9 +135,19 @@ func UpdateUserSchoolInfo(uin int64, schoolId int, schoolName string, grade int,
 
 	} else { // 该学校待审核
 
-		sql = fmt.Sprintf(`update profiles set grade = %d, schoolId = %d, schoolName = "%s" where uin = %d`, grade, schoolId, schoolName, uin)
+		tschoolType := 0
+
+		if schoolId == 9999999 {
+			tschoolType = 3
+		} else if schoolId == 9999998 {
+			tschoolType = 2
+		} else if schoolId == 9999997 {
+			tschoolType = 1
+		}
+
+		sql = fmt.Sprintf(`update profiles set grade = %d, schoolId = %d, schoolType = %d, schoolName = "%s" where uin = %d`, grade, schoolId, tschoolType, schoolName, uin)
 		if grade == 0 {
-			sql = fmt.Sprintf(`update profiles set schoolId = %d, schoolName = "%s" where uin = %d`, schoolId, schoolName, uin)
+			sql = fmt.Sprintf(`update profiles set schoolId = %d, schoolType = %d, schoolName = "%s" where uin = %d`, schoolId, tschoolType, schoolName, uin)
 		}
 
 	}
