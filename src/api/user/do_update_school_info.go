@@ -64,7 +64,7 @@ func UpdateUserSchoolInfo(uin int64, schoolId int, schoolName string, grade int,
 		return
 	}
 
-	if _, ok := cache.SCHOOLS[schoolId]; !ok && schoolId == 9999999 { //9999999 代表用户自己输入学校
+	if _, ok := cache.SCHOOLS[schoolId]; !ok && (schoolId <= 9999999 && schoolId >= 9999997) { //999999[7~9] 代表用户自己输入学校 初中/高中/大学
 
 		log.Errorf("uin:%d, pending schoolName:%s ", uin, schoolName)
 		stmt, err1 := inst.Prepare(`insert into pendingSchool values(?, ?, ?, ?, ?, ?)`)
