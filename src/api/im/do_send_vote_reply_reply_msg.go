@@ -73,7 +73,7 @@ func MakeIMVoteReplyReplyMsg(uin int64, sessionId string, newSessionId string, r
 
 	selIndex := 0
 	for i, v := range record.Options {
-		if v.Uin == uin {
+		if v.Uin == record.VoteToUin {
 			selIndex = i + 1
 			break
 		}
