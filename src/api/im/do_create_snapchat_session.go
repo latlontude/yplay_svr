@@ -108,7 +108,7 @@ func CreateSnapChatSesson(uin int64, user int64) (sessionId string, err error) {
 		return
 	}
 
-	groupName := "SnapChatSession"
+	groupName := "噗噗"
 
 	req, err := MakeIMCreateSnapChatSessonReq(uin, user, groupName)
 	if err != nil {
