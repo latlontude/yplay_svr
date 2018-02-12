@@ -31,6 +31,12 @@ type SnapChatSessionInfo struct {
 	SessionId      string `json:"sessionId"`
 }
 
+func (this *SnapChatSessionInfo) String() string {
+
+	return fmt.Sprintf(`SnapChatSessionInfo{Uin1:%d, NickName1:%s, HeadImgUrl1:%s, Uin2:%d, NickName2:%s, HeadImgUrl2:%s, SessionId:%s}`,
+		this.Uin1, this.Uin1NickName, this.Uin1HeadImgUrl, this.Uin2, this.Uin2NickName, this.Uin2HeadImgUrl, this.SessionId)
+}
+
 //yplay创建群组相应
 type BatchGetSnapSessonsForUpgradeAppRsp struct {
 	Sessions []*SnapChatSessionInfo `json:"sessions"`
@@ -48,7 +54,7 @@ func doBatchGetSnapSessionsForUpgradeApp(req *BatchGetSnapSessonsForUpgradeAppRe
 
 	rsp = &BatchGetSnapSessonsForUpgradeAppRsp{ss}
 
-	log.Debugf("uin %d, BatchGetSnapSessonsForUpgradeAppRsp succ", req.Uin)
+	log.Debugf("uin %d, BatchGetSnapSessonsForUpgradeAppRsp succ %+v", req.Uin, rsp)
 
 	return
 }

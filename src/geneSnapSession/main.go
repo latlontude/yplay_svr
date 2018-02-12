@@ -13,6 +13,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var (
@@ -81,6 +82,10 @@ func main() {
 
 		log.Errorf("uin1 %d, uin2 %d, create snap chat session success, groupId %s", uin1, uin2, groupId)
 	}
+
+	log.Errorf("end geneSnapSessions....")
+
+	time.Sleep(3 * time.Second)
 
 	return
 }
