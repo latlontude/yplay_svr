@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"svr/st"
 )
 
 //yplay创建群组请求
@@ -21,9 +22,13 @@ type BatchGetSnapSessonsForUpgradeAppReq struct {
 }
 
 type SnapChatSessionInfo struct {
-	Uin1      int64  `json:"uin1"`
-	Uin2      int64  `json:"uin2"`
-	SessionId string `json:"sessionId"`
+	Uin1           int64  `json:"uin1"`
+	Uin1NickName   string `json:"uin1NickName"`
+	Uin1HeadImgUrl string `json:"uin1HeadImgUrl"`
+	Uin2           int64  `json:"uin2"`
+	Uin2NickName   string `json:"uin2NickName"`
+	Uin2HeadImgUrl string `json:"uin2HeadImgUrl"`
+	SessionId      string `json:"sessionId"`
 }
 
 //yplay创建群组相应
@@ -88,6 +93,14 @@ func BatchGetSnapSessonsForUpgradeApp(uin int64, users string) (ss []*SnapChatSe
 		return
 	}
 
+	friends = append(friends, uin)
+
+	res, err := st.BatchGetUserProfileInfo(friends)
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+
 	vals, err := app.MGet(keys)
 
 	if err != nil {
@@ -101,15 +114,30 @@ func BatchGetSnapSessonsForUpgradeApp(uin int64, users string) (ss []*SnapChatSe
 			continue
 		}
 
-		uin1, _ := strconv.Atoi(a[0])
-		uin2, _ := strconv.Atoi(a[1])
+		uin1, _ := strconv.ParseInt(a[0], 10, 64)
+		uin2, _ := strconv.ParseInt(a[1], 10, 64)
 
-		if int64(uin2) == uin {
+		if uin2 == uin {
 			uin2 = uin1
-			uin1 = int(uin)
+			uin1 = uin
 		}
 
-		ss = append(ss, &SnapChatSessionInfo{int64(uin1), int64(uin2), v})
+		uin1NickName := ""
+		uin1HeadImgUrl := ""
+		uin2NickName := ""
+		uin2HeadImgUrl := ""
+
+		if _, ok := res[uin1]; ok {
+			uin1NickName = res[uin1].NickName
+			uin1HeadImgUrl = res[uin1].HeadImgUrl
+		}
+
+		if _, ok := res[uin2]; ok {
+			uin2NickName = res[uin2].NickName
+			uin2HeadImgUrl = res[uin2].HeadImgUrl
+		}
+
+		ss = append(ss, &SnapChatSessionInfo{int64(uin1), uin1NickName, uin1HeadImgUrl, int64(uin2), uin2NickName, uin2HeadImgUrl, v})
 	}
 
 	return
