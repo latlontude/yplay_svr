@@ -148,10 +148,10 @@ func MakeIMVoteReplyReplyMsg(uin int64, sessionId string, newSessionId string, r
 	se, _ := json.Marshal(extInfo)
 
 	offlinePush.PushFlag = 0
-	offlinePush.Desc = fmt.Sprintf("%s:%s", senderNickName, replyReply)
+	offlinePush.Desc = fmt.Sprintf("%s 发来新消息", senderNickName)
 	offlinePush.Ext = string(se)
-	offlinePush.Apns = ApnsInfo{0, "", "", ""}
-	offlinePush.Ands = AndroidInfo{""}
+	offlinePush.Apns = ApnsInfo{0, "", "噗噗", ""}
+	offlinePush.Ands = AndroidInfo{"噗噗"}
 
 	msg.OfflinePush = offlinePush
 

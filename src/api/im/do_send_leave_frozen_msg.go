@@ -90,8 +90,8 @@ func MakeIMLeaveFrozenMsg(uin int64) (msg IMC2CMsg, err error) {
 	offlinePush.PushFlag = 0
 	offlinePush.Desc = content
 	offlinePush.Ext = string(se)
-	offlinePush.Apns = ApnsInfo{1, "", "", ""} //badge不计数
-	offlinePush.Ands = AndroidInfo{""}
+	offlinePush.Apns = ApnsInfo{1, "", "噗噗", ""} //badge不计数
+	offlinePush.Ands = AndroidInfo{"噗噗"}
 
 	msg.OfflinePush = offlinePush
 
