@@ -159,7 +159,9 @@ func GetStarOfWeek(uin int64, last int) (ret GetStarRspTmp, err error) {
 		}
 	}
 
-	uidsSlice = append(uidsSlice, uin) //也要获取本用户的信息，用于后续查找同校同年级的人
+	if !in {
+		uidsSlice = append(uidsSlice, uin) //也要获取本用户的信息，用于后续查找同校同年级的人
+	}
 
 	log.Errorf("uidsSlice:%+v", uidsSlice)
 
@@ -199,10 +201,8 @@ func GetStarOfWeek(uin int64, last int) (ret GetStarRspTmp, err error) {
 			}
 
 			if _, ok := friendsUinsMap[uid]; ok && !friendsWeekStarFlag {
-				if uid == uin {
-					if _, ok = uidCntMap[uid]; !ok {
-						continue
-					}
+				if uid == uin && !in {
+					continue
 				}
 				tmpRet.FriendsWeekStar.Uin = uid
 				tmpRet.FriendsWeekStar.NickName = res[uid].NickName

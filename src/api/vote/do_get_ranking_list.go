@@ -6,6 +6,7 @@ import (
 	"common/rest"
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 	"svr/st"
 )
@@ -92,6 +93,65 @@ func GetRankingList(uin int64, qid int) (retInfo GetRankingListRsp, err error) {
 		}
 
 	}
+
+	sql = fmt.Sprintf(`select voteToUin, ts from voteRecords where qid = %d order by ts desc`, qid)
+	rows, err = inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Errorf(err.Error())
+		return
+	}
+	defer rows.Close()
+
+	uinMaxTsMap := make(map[int64]int)
+	for rows.Next() {
+		var uid int64
+		var ts int
+		rows.Scan(&uid, &ts)
+		if _, ok := uinMaxTsMap[uid]; ok {
+			if ts > uinMaxTsMap[uid] {
+				uinMaxTsMap[uid] = ts
+			}
+		} else {
+			uinMaxTsMap[uid] = ts
+		}
+	}
+
+	log.Errorf("before total:%d, userinfos:%+v", len(userInfos), userInfos)
+	//对获得钻石数目相同的用户按照最新获得钻石的时间降序排列
+	start := 0
+	end := 0
+	sameCnt := userInfos[start].VotedCnt
+
+	for i := 1; i < len(userInfos); i++ {
+
+		if userInfos[i].VotedCnt == sameCnt {
+			end = i
+		}
+
+		if userInfos[i].VotedCnt != sameCnt || i == len(userInfos)-1 {
+			if end != start {
+				tmpUserInfos := userInfos[start : end+1]
+				maxTsSlice := make([]int, 0)
+				tsUinMap := make(map[int]int64)
+				for _, info := range tmpUserInfos {
+					maxTsSlice = append(maxTsSlice, uinMaxTsMap[info.Uin])
+					tsUinMap[uinMaxTsMap[info.Uin]] = info.Uin
+				}
+				sort.Ints(maxTsSlice[:])
+				for j := len(maxTsSlice) - 1; j >= 0; j-- {
+					userInfos[start+(len(maxTsSlice)-1-j)].Uin = tsUinMap[maxTsSlice[j]]
+				}
+
+			}
+
+			start = i
+			end = start
+			sameCnt = userInfos[start].VotedCnt
+		}
+
+	}
+	log.Errorf("before total:%d, userinfos:%+v", len(userInfos), userInfos)
 
 	if !in {
 		uins = append(uins, uin)
