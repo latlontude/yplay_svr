@@ -856,8 +856,8 @@ func PreGeneUserQIds(uin int64) (qids []int, err error) {
 
 						if qinfo.ReplyGender == 0 || qinfo.ReplyGender == ui.Gender {
 
-							//同校同年级的才加入
-							if si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
+							//同校同年级的才加入, 过滤掉待审核学校
+							if si.SchoolId < 9999997 && si.SchoolId == ui.SchoolId && si.Grade == ui.Grade { //999999[7~9] 代表用户自己输入学校 初中/高中/大学
 								qids = append(qids, qinfo.QId)
 							}
 						}
@@ -898,8 +898,8 @@ func PreGeneUserQIds(uin int64) (qids []int, err error) {
 
 					if qinfo.ReplyGender == 0 || qinfo.ReplyGender == ui.Gender {
 
-						//同校同年级的才加入
-						if si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
+						//同校同年级的才加入，过滤掉待审核学校
+						if si.SchoolId < 9999997 && si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
 							order_qids = append(order_qids, qinfo.QId)
 						}
 					}
@@ -942,8 +942,8 @@ func PreGeneUserQIds(uin int64) (qids []int, err error) {
 					si := ALL_UINS_SCHOOL_GRADE[qidUin]
 
 					if qinfo.ReplyGender == 0 || qinfo.ReplyGender == ui.Gender {
-						//同校同年级的才加入
-						if si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
+						//同校同年级的才加入，过滤掉待审核学校
+						if si.SchoolId < 9999997 && si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
 							qids = append(qids, qinfo.QId)
 						}
 
@@ -1023,8 +1023,8 @@ func PreGeneUserQIds(uin int64) (qids []int, err error) {
 					}
 					si := ALL_UINS_SCHOOL_GRADE[qidUin]
 
-					//同校同年级的才加入
-					if si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
+					//同校同年级的才加入，过滤掉待审核学校
+					if si.SchoolId < 9999997 && si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
 						order_qids = append(order_qids, qinfo.QId)
 					}
 				}
@@ -1070,8 +1070,8 @@ func PreGeneUserQIds(uin int64) (qids []int, err error) {
 
 						if qinfo.ReplyGender == 0 || qinfo.ReplyGender == ui.Gender {
 
-							//同校同年级的才加入
-							if si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
+							//同校同年级的才加入，过滤掉待审核学校
+							if si.SchoolId < 9999997 && si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
 								qids = append(qids, qinfo.QId)
 							}
 
@@ -1139,8 +1139,8 @@ func PreGeneUserQIds(uin int64) (qids []int, err error) {
 
 					if qinfo.ReplyGender == 0 || qinfo.ReplyGender == ui.Gender {
 
-						//同校同年级的才加入
-						if si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
+						//同校同年级的才加入，过滤掉待审核学校
+						if si.SchoolId < 9999997 && si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
 							order_qids = append(order_qids, qinfo.QId)
 						}
 
@@ -1185,8 +1185,8 @@ func PreGeneUserQIds(uin int64) (qids []int, err error) {
 							}
 							si := ALL_UINS_SCHOOL_GRADE[qidUin]
 
-							//同校同年级的才加入
-							if si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
+							//同校同年级的才加入，过滤掉待审核学校
+							if si.SchoolId < 9999997 && si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
 								qids = append(qids, qinfo.QId)
 							}
 
@@ -1254,8 +1254,8 @@ func PreGeneUserQIds(uin int64) (qids []int, err error) {
 						}
 						si := ALL_UINS_SCHOOL_GRADE[qidUin]
 
-						//同校同年级的才加入
-						if si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
+						//同校同年级的才加入，过滤掉待审核学校
+						if si.SchoolId < 9999997 && si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
 							order_qids = append(order_qids, qinfo.QId)
 						}
 
@@ -1299,8 +1299,8 @@ func PreGeneUserQIds(uin int64) (qids []int, err error) {
 							}
 							si := ALL_UINS_SCHOOL_GRADE[qidUin]
 
-							//同校同年级的才加入
-							if si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
+							//同校同年级的才加入，过滤掉待审核学校
+							if si.SchoolId < 9999997 && si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
 								qids = append(qids, qinfo.QId)
 							}
 
@@ -1353,8 +1353,8 @@ func PreGeneUserQIds(uin int64) (qids []int, err error) {
 						}
 						si := ALL_UINS_SCHOOL_GRADE[qidUin]
 
-						//同校同年级的才加入
-						if si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
+						//同校同年级的才加入，过滤掉待审核学校
+						if si.SchoolId < 9999997 && si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
 							order_qids = append(order_qids, qinfo.QId)
 						}
 					}
