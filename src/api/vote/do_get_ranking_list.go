@@ -121,7 +121,10 @@ func GetRankingList(uin int64, qid int) (retInfo GetRankingListRsp, err error) {
 	//对获得钻石数目相同的用户按照最新获得钻石的时间降序排列
 	start := 0
 	end := 0
-	sameCnt := userInfos[start].VotedCnt
+	sameCnt := 0
+	if len(userInfos) > 0 {
+		sameCnt = userInfos[start].VotedCnt
+	}
 
 	for i := 1; i < len(userInfos); i++ {
 
@@ -151,7 +154,7 @@ func GetRankingList(uin int64, qid int) (retInfo GetRankingListRsp, err error) {
 		}
 
 	}
-	log.Errorf("before total:%d, userinfos:%+v", len(userInfos), userInfos)
+	log.Errorf("after total:%d, userinfos:%+v", len(userInfos), userInfos)
 
 	if !in {
 		uins = append(uins, uin)
