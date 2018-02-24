@@ -718,8 +718,17 @@ func UpdateQIds(uin int64, qids []int) (err error) {
 		return
 	}
 
+	cacheQid, err := strconv.Atoi(qid)
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+
 	//新生成的
 	for i, qid := range qids {
+		if qid == cacheQid {
+			continue
+		}
 		err = app.ZAdd(keyStr2, int64(i), fmt.Sprintf("%d", qid))
 		if err != nil {
 			log.Errorf(err.Error())
