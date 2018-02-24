@@ -219,7 +219,7 @@ func MakeIMVoteMsg(uin int64, qid int, voteToUin int64, optionStr string, groupI
 
 	offlinePush.PushFlag = 0
 	offlinePush.Ext = string(se)
-	offlinePush.Apns = ApnsInfo{0, "", "噗噗", ""}
+	offlinePush.Apns = ApnsInfo{0, "", "", ""}
 	offlinePush.Ands = AndroidInfo{"噗噗"}
 
 	msg.OfflinePush = offlinePush

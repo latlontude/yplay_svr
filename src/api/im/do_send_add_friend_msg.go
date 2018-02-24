@@ -100,7 +100,7 @@ func MakeIMAddFriendMsg(uin1 int64, uin2 int64) (msg IMC2CMsg, err error) {
 	offlinePush.PushFlag = 0
 	offlinePush.Desc = content
 	offlinePush.Ext = string(se)
-	offlinePush.Apns = ApnsInfo{0, "", "噗噗", ""}
+	offlinePush.Apns = ApnsInfo{0, "", "", ""}
 	offlinePush.Ands = AndroidInfo{"噗噗"}
 
 	msg.OfflinePush = offlinePush
