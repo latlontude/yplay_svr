@@ -507,9 +507,6 @@ func OptionsByProbaility(uin int64, uids []int64) (newUids []int64, err error) {
 
 	//所有的出现过的uin列表
 	for k, v := range vals {
-
-		log.Errorf("k:%s, v:%s", k, v)
-
 		ik, _ := strconv.ParseInt(k, 10, 64)
 		iv, _ := strconv.ParseInt(v, 10, 32)
 		rvals[int(ik)] = int(iv)

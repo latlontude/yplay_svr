@@ -1346,7 +1346,7 @@ func GetUinsPVCnt(uins []int64) (res map[int]int, err error) {
 }
 
 func GetUinsByAddFriendSrc(uin int64) (uinsMap map[int64]int, err error) {
-	log.Errorf("start GetUinsByAddFriendSrc")
+	log.Errorf("start GetUinsByAddFriendSrc uin:%d", uin)
 	uinsMap = make(map[int64]int)
 
 	if uin == 0 {
@@ -1396,7 +1396,7 @@ func GetUinsByAddFriendSrc(uin int64) (uinsMap map[int64]int, err error) {
 	}
 
 	for uid, srcType := range friendUinsMap {
-		if srcType == 1 || srcType == 0 {
+		if srcType == 1 {
 			//通讯录好友
 			uids1 = append(uids1, uid)
 		} else if srcType == 8 {
