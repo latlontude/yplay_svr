@@ -120,6 +120,12 @@ func GetOptionsByPreGene(uin int64, qid int, index int, uuid int64) (options []*
 				log.Error(err.Error())
 				return
 			}
+
+			//统计每一轮的选项UIN出现的次数
+			//如果是最后一轮 需要清理掉之前的统计数据
+			if index != constant.ENUM_QUESTION_BATCH_SIZE {
+				go AddOptionUinsLookedCnt(uin, options)
+			}
 		}
 	}()
 

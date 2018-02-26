@@ -45,7 +45,7 @@ func GetNextQuestionAndOptionsByPreGene(uin int64, uuid int64) (qinfo *st.Questi
 	}
 
 	lastQId := 0     //上一次的题目ID
-	lastQIndex := 0  //上一次的答题编号 
+	lastQIndex := 0  //上一次的答题编号
 	voted := 1       //是否已经投票
 	lastCursor := -1 //问题队列的上次扫描位置
 	optionsStr := "" //上一次的选项列表
@@ -90,11 +90,10 @@ func GetNextQuestionAndOptionsByPreGene(uin int64, uuid int64) (qinfo *st.Questi
 	qinfo = cache.QUESTIONS[newQId]
 	nextQGender := qinfo.OptionGender
 
-       
 	index = lastQIndex + 1
-        if index > constant.ENUM_QUESTION_BATCH_SIZE {
-           index = 1
-        }
+	if index > constant.ENUM_QUESTION_BATCH_SIZE {
+		index = 1
+	}
 
 	log.Debugf("uin %d, genen newQId %d, newIndex %d, newGender %d, newCursor %d", uin, newQId, index, nextQGender, newCursor)
 
@@ -245,6 +244,14 @@ func GetNextQuestionAndOptionsByPreGene(uin int64, uuid int64) (qinfo *st.Questi
 				log.Error(err.Error())
 				return
 			}
+
+			//统计每一轮的选项UIN出现的次数
+			//如果是最后一轮 需要清理掉之前的统计数据
+			if index == constant.ENUM_QUESTION_BATCH_SIZE {
+				go ClearOptionUinsLookedCnt(uin)
+			} else {
+				go AddOptionUinsLookedCnt(uin, options)
+			}
 		}
 	}()
 
@@ -307,6 +314,8 @@ func GetNextQuestionAndOptionsByPreGene(uin int64, uuid int64) (qinfo *st.Questi
 		return
 	}
 
+	log.Errorf("the number of my friends is biger than 4")
+
 	if nextQGender != 0 {
 
 		//从中过滤出男性朋友或者女性朋友
@@ -314,21 +323,21 @@ func GetNextQuestionAndOptionsByPreGene(uin int64, uuid int64) (qinfo *st.Questi
 		newUinsByAddFriendTime := make([]int64, 0)
 		newUinsByPVCnt := make([]int64, 0)
 
-		for _, uin := range uinsByVote {
-			if friendInfos[uin].Gender == nextQGender {
-				newUinsByVote = append(newUinsByVote, uin)
+		for _, uid := range uinsByVote {
+			if friendInfos[uid].Gender == nextQGender {
+				newUinsByVote = append(newUinsByVote, uid)
 			}
 		}
 
-		for _, uin := range uinsByAddFriendTime {
-			if friendInfos[uin].Gender == nextQGender {
-				newUinsByAddFriendTime = append(newUinsByAddFriendTime, uin)
+		for _, uid := range uinsByAddFriendTime {
+			if friendInfos[uid].Gender == nextQGender {
+				newUinsByAddFriendTime = append(newUinsByAddFriendTime, uid)
 			}
 		}
 
-		for _, uin := range uinsByPVCnt {
-			if friendInfos[uin].Gender == nextQGender {
-				newUinsByPVCnt = append(newUinsByPVCnt, uin)
+		for _, uid := range uinsByPVCnt {
+			if friendInfos[uid].Gender == nextQGender {
+				newUinsByPVCnt = append(newUinsByPVCnt, uid)
 			}
 		}
 
@@ -336,6 +345,15 @@ func GetNextQuestionAndOptionsByPreGene(uin int64, uuid int64) (qinfo *st.Questi
 		uinsByAddFriendTime = newUinsByAddFriendTime
 		uinsByPVCnt = newUinsByPVCnt
 	}
+
+	randomUins := friendUins
+	if nextQGender == 1 {
+		randomUins = boyUins
+	} else if nextQGender == 2 {
+		randomUins = girlUins
+	}
+
+	log.Errorf("filter users by question option gender")
 
 	//前面已经校验过不可能<4
 	if len(uinsByVote) < constant.ENUM_OPTION_BATCH_SIZE || len(uinsByAddFriendTime) < constant.ENUM_OPTION_BATCH_SIZE || len(uinsByPVCnt) < constant.ENUM_OPTION_BATCH_SIZE {
@@ -351,29 +369,31 @@ func GetNextQuestionAndOptionsByPreGene(uin int64, uuid int64) (qinfo *st.Questi
 		log.Errorf(err1.Error())
 	}
 
+	uinsByVote = ReOrderUinsByAddFriendSrc(uinsByVote, friendsByaddFriendSrc)
+	uinsByVote, _ = OptionsByProbaility(uin, uinsByVote) // /将用户这一轮次答题中出现过的候选人往后排
 	if len(uinsByVote) > 12 {
-		uinsByVote = ReOrderUinsByAddFriendSrc(uinsByVote, friendsByaddFriendSrc)
 		uinsByVote = uinsByVote[:12]
 	}
 
+	uinsByAddFriendTime = ReOrderUinsByAddFriendSrc(uinsByAddFriendTime, friendsByaddFriendSrc)
+	uinsByAddFriendTime, _ = OptionsByProbaility(uin, uinsByAddFriendTime)
 	if len(uinsByAddFriendTime) > 12 {
-		uinsByAddFriendTime = ReOrderUinsByAddFriendSrc(uinsByAddFriendTime, friendsByaddFriendSrc)
 		uinsByAddFriendTime = uinsByAddFriendTime[:12]
 	}
 
+	uinsByPVCnt = ReOrderUinsByAddFriendSrc(uinsByPVCnt, friendsByaddFriendSrc)
+	uinsByPVCnt, _ = OptionsByProbaility(uin, uinsByPVCnt)
 	if len(uinsByPVCnt) > 12 {
-		uinsByPVCnt = ReOrderUinsByAddFriendSrc(uinsByPVCnt, friendsByaddFriendSrc)
 		uinsByPVCnt = uinsByPVCnt[:12]
 	}
 
-	log.Debugf("uin %d, friendUins %d, uinsByVote %+v,  uinsByAddFriendTime %+v, uinsByPVCnt %+v", uin, len(friendUins), uinsByVote, uinsByAddFriendTime, uinsByPVCnt)
-
-	randomUins := friendUins
-	if nextQGender == 1 {
-		randomUins = boyUins
-	} else if nextQGender == 2 {
-		randomUins = girlUins
+	randomUins = ReOrderUinsByAddFriendSrc(randomUins, friendsByaddFriendSrc)
+	randomUins, _ = OptionsByProbaility(uin, friendUins)
+	if len(randomUins) > 12 {
+		randomUins = randomUins[:12]
 	}
+
+	log.Debugf("uin %d, friendUins %d, uinsByVote %+v,  uinsByAddFriendTime %+v, uinsByPVCnt %+v", uin, len(friendUins), uinsByVote, uinsByAddFriendTime, uinsByPVCnt)
 
 	allOptionUins, err := PrepareAllOptionsUin2(uin, uinsByVote, uinsByAddFriendTime, uinsByPVCnt, randomUins)
 	if err != nil {
@@ -449,5 +469,157 @@ func GetNextQIdByPreGeneCursor(uin int64, lastCursor int) (qid, newCursor int, e
 		return
 	}
 
+	return
+}
+
+func OptionsByProbaility(uin int64, uids []int64) (newUids []int64, err error) {
+	log.Errorf("start OptionsByProbaility uids:%+v", uids)
+
+	if uin == 0 || len(uids) == 0 {
+		log.Errorf("uids is empty")
+		return
+	}
+
+	app, err := myredis.GetApp(constant.ENUM_REDIS_APP_USER_LOOKED_OPTION_UINS)
+	if err != nil {
+		log.Errorf(err.Error())
+
+		//如果出错 保持原有顺序
+		newUids = uids
+		return
+	}
+
+	keyStr := fmt.Sprintf("%d", uin)
+
+	vals, err := app.HGetAll(keyStr)
+	if err != nil {
+		log.Errorf(err.Error())
+
+		//如果出错 保持原有顺序
+		newUids = uids
+		return
+	}
+
+	log.Errorf("uin = %d, vals:%+v", uin, vals)
+
+	//按出现次数降序排序
+	rvals := make(map[int]int)
+
+	//所有的出现过的uin列表
+	for k, v := range vals {
+
+		log.Errorf("k:%s, v:%s", k, v)
+
+		ik, _ := strconv.ParseInt(k, 10, 64)
+		iv, _ := strconv.ParseInt(v, 10, 32)
+		rvals[int(ik)] = int(iv)
+	}
+
+	//按好友被看到最少的在最前
+	tmpUids1 := make([]int64, 0)
+
+	pairs := util.SortMap1(rvals)
+	for _, p := range pairs {
+		tmpUids1 = append(tmpUids1, int64(p.Key))
+	}
+
+	//找出在本次题目候选人集合和在用户这一轮答题候选人列表中都出现过的所有人
+	tmpUids2 := make([]int64, 0)
+	for _, uid := range tmpUids1 {
+		find := false
+		for _, u := range uids {
+			if u == uid {
+				find = true
+				break
+			}
+		}
+
+		if find {
+			tmpUids2 = append(tmpUids2, uid)
+		}
+	}
+
+	//将出现过的人排在本次题目候选人集合最后
+	for _, uid := range uids {
+		find := false
+		for _, u := range tmpUids2 {
+			if u == uid {
+				find = true
+				break
+			}
+		}
+
+		if !find {
+			newUids = append(newUids, uid)
+		}
+	}
+	newUids = append(newUids, tmpUids2...)
+
+	log.Errorf("end OptionsByProbaility newUids:%+v", newUids)
+	return
+}
+
+func ClearOptionUinsLookedCnt(uin int64) (err error) {
+	log.Errorf("start ClearOptionUinsLookedCnt")
+	if uin == 0 {
+		return
+	}
+
+	app, err := myredis.GetApp(constant.ENUM_REDIS_APP_USER_LOOKED_OPTION_UINS)
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+
+	keyStr := fmt.Sprintf("%d", uin)
+
+	err = app.Del(keyStr)
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+
+	log.Errorf("end ClearOptionUinsLookedCnt")
+	return
+}
+
+func AddOptionUinsLookedCnt(uin int64, options []*st.OptionInfo2) (err error) {
+
+	log.Errorf("start AddOptionUinsLookedCnt")
+	if len(options) == 0 || uin == 0 {
+		return
+	}
+
+	optionUins := make([]int64, 0)
+
+	for _, option := range options {
+		if option.Uin > 0 {
+			optionUins = append(optionUins, option.Uin)
+		}
+	}
+
+	app, err := myredis.GetApp(constant.ENUM_REDIS_APP_USER_LOOKED_OPTION_UINS)
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+
+	keyStr := fmt.Sprintf("%d", uin)
+
+	for _, uid := range optionUins {
+		if uid == 0 {
+			continue
+		}
+
+		fieldStr := fmt.Sprintf("%d", uid)
+
+		_, err = app.HIncrBy(keyStr, fieldStr, 1)
+		if err != nil {
+			log.Errorf(err.Error())
+			return
+		}
+
+	}
+	log.Errorf("end AddOptionUinsLookedCnt")
 	return
 }

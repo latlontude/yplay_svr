@@ -954,3 +954,46 @@ func (this *RedisApp) HMSet(key string, vals map[string]string) (err error) {
 
 	return
 }
+
+func (this *RedisApp) HGetAll(key string) (vals map[string]string, err error) {
+
+	conn, err := this.GetConn()
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+	defer conn.Close()
+
+	rkey := fmt.Sprintf("%s_%s", this.AppId, key)
+
+	vals, err = redis.StringMap(conn.Do("hgetall", rkey))
+	if err != nil {
+		err = rest.NewAPIError(constant.E_REDIS_HGETALL, "hgetall error,"+err.Error())
+		log.Errorf(err.Error())
+		return
+	}
+
+	return
+}
+
+func (this *RedisApp) HIncrBy(key string, field string, cnt int) (val int, err error) {
+
+	conn, err := this.GetConn()
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+	defer conn.Close()
+
+	rkey := fmt.Sprintf("%s_%s", this.AppId, key)
+
+	reply, err := redis.Int(conn.Do("hincrby", rkey, field, cnt))
+	if err != nil {
+		err = rest.NewAPIError(constant.E_REDIS_INCR, "incr error "+err.Error())
+		return
+	}
+
+	val = reply
+
+	return
+}

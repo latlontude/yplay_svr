@@ -540,7 +540,7 @@ func GetNextQuestionAndOptions(uin int64, uuid int64) (qinfo *st.QuestionInfo, o
 	return
 }
 
-func PrepareAllOptionsUin2(uin int64, uinsByVote, uinsByAddFriendTime, uinsByPVCnt, friendUins []int64) (allOptionUins []int64, err error) {
+func PrepareAllOptionsUin2(uin int64, uinsByVote, uinsByAddFriendTime, uinsByPVCnt, randomUins []int64) (allOptionUins []int64, err error) {
 
 	if len(uinsByVote) < 4 || len(uinsByAddFriendTime) < 4 || len(uinsByPVCnt) < 4 {
 		err = rest.NewAPIError(constant.E_INVALID_PARAM, "GetAllOptionsUin invalid param")
@@ -645,11 +645,11 @@ func PrepareAllOptionsUin2(uin int64, uinsByVote, uinsByAddFriendTime, uinsByPVC
 	}
 
 	//找2个随机
-	orders3 := rand.Perm(len(friendUins))
+	orders3 := rand.Perm(len(randomUins))
 
 	for _, order := range orders3 {
 
-		uid := friendUins[order]
+		uid := randomUins[order]
 
 		find := false
 
@@ -682,7 +682,7 @@ func PrepareAllOptionsUin2(uin int64, uinsByVote, uinsByAddFriendTime, uinsByPVC
 		allOptionUins = append(allOptionUins, selUins4[0])
 	}
 
-	//第一批2个最合适 + 1个钻石少 + 1个随机好友
+	//第二批1个最合适 + 2个钻石少 + 1个随机好友
 	allOptionUins = append(allOptionUins, selUins1[2])
 	if len(selUins2) >= 2 {
 		allOptionUins = append(allOptionUins, selUins2[1])
@@ -1284,7 +1284,7 @@ func GetUinsGemCnt(uins []int64) (res map[int64]int, err error) {
 }
 
 func GetUinsPVCnt(uins []int64) (res map[int]int, err error) {
-
+	log.Errorf("start GetUinsPVCnt")
 	res = make(map[int]int)
 
 	if len(uins) == 0 {
@@ -1316,13 +1316,15 @@ func GetUinsPVCnt(uins []int64) (res map[int]int, err error) {
 		return
 	}
 
+	log.Errorf("ret : %+v", r)
+
 	for _, uin := range uins {
 
 		res[int(uin)] = 0
 
-		key1 := fmt.Sprintf("%d_%d", uin, y1, w1)
-		key2 := fmt.Sprintf("%d_%d", uin, y2, w2)
-		key3 := fmt.Sprintf("%d_%d", uin, y3, w3)
+		key1 := fmt.Sprintf("%d_%d_%d", uin, y1, w1)
+		key2 := fmt.Sprintf("%d_%d_%d", uin, y2, w2)
+		key3 := fmt.Sprintf("%d_%d_%d", uin, y3, w3)
 
 		if v, ok := r[key1]; ok {
 			t, _ := strconv.Atoi(v)
@@ -1339,13 +1341,13 @@ func GetUinsPVCnt(uins []int64) (res map[int]int, err error) {
 			res[int(uin)] += t
 		}
 	}
-
+	log.Errorf("end GetUinsPVCnt res:%+v", res)
 	return
 }
 
-func GetUinsByAddFriendSrc(uin int64) (uins []int64, err error) {
-
-	uins = make([]int64, 0)
+func GetUinsByAddFriendSrc(uin int64) (uinsMap map[int64]int, err error) {
+	log.Errorf("start GetUinsByAddFriendSrc")
+	uinsMap = make(map[int64]int)
 
 	if uin == 0 {
 		return
@@ -1357,7 +1359,7 @@ func GetUinsByAddFriendSrc(uin int64) (uins []int64, err error) {
 		log.Error(err)
 		return
 	}
-	sql := fmt.Sprintf(`select toUin, srcType from addFriendMsg where fromUin = %d`, uin)
+	sql := fmt.Sprintf(`select fromUin, toUin, srcType, mts from addFriendMsg where fromUin = %d or toUin = %d`, uin, uin)
 
 	rows, err := inst.Query(sql)
 	if err != nil {
@@ -1372,12 +1374,29 @@ func GetUinsByAddFriendSrc(uin int64) (uins []int64, err error) {
 	uids4 := make([]int64, 0)
 	uids5 := make([]int64, 0)
 
+	friendUinsMap := make(map[int64]int)
 	for rows.Next() {
-		var uid int64
+		var fromUin int64
+		var toUin int64
 		var srcType int
-		rows.Scan(&uid, &srcType)
+		var mts int
+		var uid int64
+		rows.Scan(&fromUin, &toUin, &srcType, &mts)
 
-		if srcType == 2 {
+		if mts == 0 { // 发送了添加好友请求，但目前还不是好友
+			continue
+		}
+		if fromUin == uin {
+			uid = toUin
+		} else {
+			uid = fromUin
+		}
+
+		friendUinsMap[uid] = srcType
+	}
+
+	for uid, srcType := range friendUinsMap {
+		if srcType == 1 || srcType == 0 {
 			//通讯录好友
 			uids1 = append(uids1, uid)
 		} else if srcType == 8 {
@@ -1395,84 +1414,65 @@ func GetUinsByAddFriendSrc(uin int64) (uins []int64, err error) {
 		}
 	}
 
-	//map去重
-	uinsM := make(map[int64]int)
+	log.Errorf("uids1:%+v, uids2:%+v, uids3:%+v, uids4:%+v, uids5:%+v", uids1, uids2, uids3, uids4, uids5)
 
 	for _, uid := range uids1 {
-
-		if _, ok := uinsM[uid]; ok {
-			continue
-		}
-
-		uins = append(uins, uid)
-		uinsM[uid] = 1
+		uinsMap[uid] = 1
 	}
 	for _, uid := range uids2 {
-		if _, ok := uinsM[uid]; ok {
-			continue
-		}
-		uins = append(uins, uid)
-		uinsM[uid] = 1
+		uinsMap[uid] = 2
 	}
 	for _, uid := range uids3 {
-		if _, ok := uinsM[uid]; ok {
-			continue
-		}
-		uins = append(uins, uid)
-		uinsM[uid] = 1
+		uinsMap[uid] = 3
 	}
 	for _, uid := range uids4 {
-		if _, ok := uinsM[uid]; ok {
-			continue
-		}
-		uins = append(uins, uid)
-		uinsM[uid] = 1
+		uinsMap[uid] = 4
 	}
 	for _, uid := range uids5 {
-		if _, ok := uinsM[uid]; ok {
-			continue
-		}
-		uins = append(uins, uid)
-		uinsM[uid] = 1
+		uinsMap[uid] = 5
 	}
 
+	log.Errorf("end GetUinsByAddFriendSrc uinsMap:%+v", uinsMap)
 	return
 }
 
-func ReOrderUinsByAddFriendSrc(uins, uinsByaddFriendSrc []int64) (ordered []int64) {
+func ReOrderUinsByAddFriendSrc(uins []int64, uinsByaddFriendSrc map[int64]int) (ordered []int64) {
 
+	log.Errorf("start ReOrderUinsByAddFriendSrc  uins:%+v", uins)
 	//按照friendsByAddFriendSrc的顺序
 	ordered = make([]int64, 0)
-	for _, uid := range uinsByaddFriendSrc {
 
-		find := false
-		for _, uid2 := range uins {
-			if uid == uid2 {
-				find = true
-				break
-			}
-		}
-
-		if find {
-			ordered = append(ordered, uid)
-		}
-	}
+	uids1 := make([]int64, 0)
+	uids2 := make([]int64, 0)
+	uids3 := make([]int64, 0)
+	uids4 := make([]int64, 0)
+	uids5 := make([]int64, 0)
 
 	for _, uid := range uins {
-
-		find := false
-		for _, uid2 := range ordered {
-
-			if uid == uid2 {
-				find = true
-				break
+		if src, ok := uinsByaddFriendSrc[uid]; ok {
+			switch src {
+			case 1:
+				uids1 = append(uids1, uid)
+			case 2:
+				uids2 = append(uids2, uid)
+			case 3:
+				uids3 = append(uids3, uid)
+			case 4:
+				uids4 = append(uids4, uid)
+			case 5:
+				uids5 = append(uids5, uid)
+			default:
+				log.Errorf("wrong src : %d", src)
 			}
-		}
-
-		if !find {
-			ordered = append(ordered, uid)
 		}
 	}
 
+	ordered = append(ordered, uids1...)
+	ordered = append(ordered, uids2...)
+	ordered = append(ordered, uids3...)
+	ordered = append(ordered, uids4...)
+	ordered = append(ordered, uids5...)
+
+	log.Errorf("end ReOrderUinsByAddFriendSrc ordered:%+v", ordered)
 	return
 }
