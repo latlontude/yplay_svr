@@ -1447,6 +1447,7 @@ func ReOrderUinsByAddFriendSrc(uins []int64, uinsByaddFriendSrc map[int64]int) (
 	uids3 := make([]int64, 0)
 	uids4 := make([]int64, 0)
 	uids5 := make([]int64, 0)
+	uids6 := make([]int64, 0) // 不能判断添加好友来源的好友列表
 
 	for _, uid := range uins {
 		if src, ok := uinsByaddFriendSrc[uid]; ok {
@@ -1464,6 +1465,8 @@ func ReOrderUinsByAddFriendSrc(uins []int64, uinsByaddFriendSrc map[int64]int) (
 			default:
 				log.Errorf("wrong src : %d", src)
 			}
+		} else {
+			uids6 = append(uids6, uid)
 		}
 	}
 
@@ -1472,6 +1475,7 @@ func ReOrderUinsByAddFriendSrc(uins []int64, uinsByaddFriendSrc map[int64]int) (
 	ordered = append(ordered, uids3...)
 	ordered = append(ordered, uids4...)
 	ordered = append(ordered, uids5...)
+	ordered = append(ordered, uids6...)
 
 	log.Errorf("end ReOrderUinsByAddFriendSrc ordered:%+v", ordered)
 	return

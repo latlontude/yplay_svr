@@ -63,9 +63,9 @@ func doGene(req *GeneQIdsReq, r *http.Request) (rsp *GeneQIdsRsp, err error) {
 }
 
 func Gene(uin int64) (total int, err error) {
-
 	log.Errorf("begin Gene uin %d", uin)
 
+	startTs := time.Now().UnixNano()
 	rand.Seed(time.Now().Unix())
 
 	//所有提交的问题ID
@@ -107,7 +107,9 @@ func Gene(uin int64) (total int, err error) {
 	}
 
 	total = len(qids)
-
+	endTs := time.Now().UnixNano()
+	log.Debugf("generate questions total duration %dms", (endTs-startTs)/1000000)
+	log.Errorf("end Gene uin %d", uin)
 	return
 }
 
@@ -503,15 +505,30 @@ func GeneQIds(uin int64) (qids []int, err error) {
 	votedCntQidsMap := make(map[int][]int)
 	votedCntSlice := make([]int, 0)
 
-	for _, qid := range unAnsweredQidsSlice {
+	ts1 := time.Now().UnixNano()
+	retMap, err := vote.BatchGetRankingList(uin, unAnsweredQidsSlice)
+	if err != nil {
+		log.Errorf("BatchGetRankingList err")
+		qids = append(qids, unAnsweredQidsSlice...) // 未回答题目
+		qids = append(qids, answeredQidsSlice...)   // 已回答题目
+		return
+	}
+	ts2 := time.Now().UnixNano()
+	log.Debugf(" before qids total :%d", len(unAnsweredQidsSlice))
+	log.Debugf("retMap total :%d", len(retMap))
+	log.Debugf("total duration %dms", (ts2-ts1)/1000000)
 
-		info, _ := vote.GetRankingList(uin, qid)
-		scoreInSchool, err1 := strconv.Atoi(info.RankingPercentInSameSchool[:len(info.RankingPercentInSameSchool)-1])
-		scoreInFriends, err2 := strconv.Atoi(info.RankingPercentInSameSchool[:len(info.RankingPercentInSameSchool)-1])
+	for qid, info := range retMap {
+		scoreInSchool := 0
+		scoreInFriends := 0
 
-		if err1 != nil || err2 != nil {
-			log.Errorf("ParseFloat err")
-			continue
+		if info.RankingPercentInSameSchool != "" || info.RankingPercentInFriends != "" {
+			scoreInSchool, err = strconv.Atoi(info.RankingPercentInSameSchool[:len(info.RankingPercentInSameSchool)-1])
+			scoreInFriends, err = strconv.Atoi(info.RankingPercentInFriends[:len(info.RankingPercentInFriends)-1])
+			if err != nil {
+				log.Errorf("strconv Atoi err")
+				continue
+			}
 		}
 
 		if scoreInFriends > scoreInSchool {
@@ -567,6 +584,9 @@ func GeneQIds(uin int64) (qids []int, err error) {
 	qids = append(qids, sortCntQidsSlice...)      // 没有打败任何好友，按好友和同校同年级前三名在该题下被投次数总数降序
 	qids = append(qids, answeredQidsSlice...)     // 已回答题目
 
+	log.Debugf("sortUnsweredQidsSlice total:%d", len(sortUnsweredQidsSlice))
+	log.Debugf("sortCntQidsSlice total:%d", len(sortCntQidsSlice))
+	log.Debugf("after qids total:%d", len(qids))
 	log.Errorf("end GeneQIds")
 	return
 }

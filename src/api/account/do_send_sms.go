@@ -66,9 +66,9 @@ func SendLoginSms(phone string) (code string, err error) {
 		return
 	}
 
-	if phone == "18682235582" || phone == "13480970139" {
+	/*if phone == "18682235582" || phone == "13480970139" {
 		return
-	}
+	}*/
 
 	err = sms.SendPhoneCode(phone, randNumStr)
 	if err != nil {
