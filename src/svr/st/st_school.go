@@ -2,12 +2,17 @@ package st
 
 import (
 	"common/constant"
+	"common/mydb"
+	"common/rest"
+	"fmt"
 )
 
 type SchoolInfo struct {
 	SchoolId   int    `json:"schoolId"`
 	SchoolType int    `json:"schoolType"`
 	SchoolName string `json:"school"`
+	DeptId     int    `json:"deptId"`
+	DeptName   int    `json:"deptName"`
 
 	Country  string `json:"country"`
 	Province string `json:"province"`
@@ -24,6 +29,8 @@ type SchoolInfo2 struct {
 	SchoolId   int     `json:"schoolId"`
 	SchoolType int     `json:"schoolType"`
 	SchoolName string  `json:"school"`
+	DeptId     int     `json:"deptId"`
+	DeptName   int     `json:"deptName"`
 	Country    string  `json:"country"`
 	Province   string  `json:"province"`
 	City       string  `json:"city"`
@@ -32,6 +39,11 @@ type SchoolInfo2 struct {
 	Status     int     `json:"status"`
 	Ts         int     `json:"ts"`
 	MemberCnt  int     `json:"memberCnt"`
+}
+
+type DeptInfo struct {
+	DeptId   int    `json:"deptId"`
+	DeptName string `json:"deptName"`
 }
 
 func GetGradeDescBySchool(schoolType int, grade int) (desc string) {
@@ -75,6 +87,38 @@ func GetGradeDescBySchool(schoolType int, grade int) (desc string) {
 		} else if grade == 100 {
 			desc = "初中毕业"
 		}
+	}
+
+	return
+}
+
+func GetDeptsBySchool(schoolId int) (infos []*DeptInfo, err error) {
+
+	infos = make([]*DeptInfo, 0)
+
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		return
+	}
+	sql := fmt.Sprintf(`select deptId, deptName from departments where schoolId = %d`, schoolId)
+
+	rows, err := inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+
+		var info DeptInfo
+
+		rows.Scan(
+			&info.DeptId,
+			&info.DeptName)
+
+		infos = append(infos, &info)
 	}
 
 	return

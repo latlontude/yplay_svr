@@ -21,6 +21,9 @@ type UpdateSchoolInfoReq struct {
 	Grade      int    `schema:"grade"`
 	SchoolName string `schema:"schoolName"`
 
+	DeptId   int    `schema:"deptId"`
+	DeptName string `schema:"deptName"`
+
 	Flag int `schema:"flag"` //1表示要记入修改次数限制中
 }
 
@@ -31,7 +34,7 @@ func doUpdateSchoolInfo(req *UpdateSchoolInfoReq, r *http.Request) (rsp *UpdateS
 
 	log.Errorf("uin %d, UpdateSchoolInfoReq %+v", req.Uin, req)
 
-	err = UpdateUserSchoolInfo(req.Uin, req.SchoolId, req.SchoolName, req.Grade, req.Flag)
+	err = UpdateUserSchoolInfo(req.Uin, req.SchoolId, req.SchoolName, req.Grade, req.DeptId, req.DeptName, req.Flag)
 	if err != nil {
 		log.Errorf("uin %d, UpdateSchoolInfoRsp error, %s", req.Uin, err.Error())
 		return
@@ -42,9 +45,9 @@ func doUpdateSchoolInfo(req *UpdateSchoolInfoReq, r *http.Request) (rsp *UpdateS
 	return
 }
 
-func UpdateUserSchoolInfo(uin int64, schoolId int, schoolName string, grade int, flag int) (err error) {
+func UpdateUserSchoolInfo(uin int64, schoolId int, schoolName string, grade int, deptId int, deptName string, flag int) (err error) {
 
-	log.Errorf("start UpdateUserSchoolInfo uin:%d, schoolId:%d, schoolName:%s, grade:%d, flag:%d", uin, schoolId, schoolName, grade, flag)
+	log.Errorf("start UpdateUserSchoolInfo uin:%d, schoolId:%d, schoolName:%s, grade:%d, flag:%d", uin, schoolId, schoolName, grade, deptId, deptName, flag)
 
 	if uin == 0 {
 		return
@@ -107,8 +110,12 @@ func UpdateUserSchoolInfo(uin int64, schoolId int, schoolName string, grade int,
 
 	if info, ok := cache.SCHOOLS[schoolId]; ok {
 
-		//更新学校信息
-		sql = fmt.Sprintf(`update profiles set 
+		//如果不是大学 或者大学的deptId为0
+		//则不会更改学院信息
+		if info.SchoolType != constant.ENUM_SCHOOL_TYPE_UNIVERSITY || deptId == 0 {
+
+			//更新学校信息
+			sql = fmt.Sprintf(`update profiles set 
 							grade = %d, 
 							schoolId = %d, 
 							schoolType = %d, 
@@ -117,12 +124,12 @@ func UpdateUserSchoolInfo(uin int64, schoolId int, schoolName string, grade int,
 							province = "%s", 
 							city = "%s" 
 							where uin = %d`,
-			grade, info.SchoolId, info.SchoolType, info.SchoolName, info.Country, info.Province, info.City, uin)
+				grade, info.SchoolId, info.SchoolType, info.SchoolName, info.Country, info.Province, info.City, uin)
 
-		//不更新grade
-		if grade == 0 {
+			//不更新grade
+			if grade == 0 {
 
-			sql = fmt.Sprintf(`update profiles set 							
+				sql = fmt.Sprintf(`update profiles set 							
 							schoolId = %d, 
 							schoolType = %d, 
 							schoolName = "%s", 
@@ -130,7 +137,40 @@ func UpdateUserSchoolInfo(uin int64, schoolId int, schoolName string, grade int,
 							province = "%s", 
 							city = "%s" 
 							where uin = %d`,
-				info.SchoolId, info.SchoolType, info.SchoolName, info.Country, info.Province, info.City, uin)
+					info.SchoolId, info.SchoolType, info.SchoolName, info.Country, info.Province, info.City, uin)
+			}
+
+		} else {
+
+			//更新学校信息
+			sql = fmt.Sprintf(`update profiles set 
+							grade = %d, 
+							schoolId = %d, 
+							schoolType = %d, 
+							schoolName = "%s", 
+							deptId = %d,
+							deptName = "%s",
+							country = "%s", 
+							province = "%s", 
+							city = "%s" 
+							where uin = %d`,
+				grade, info.SchoolId, info.SchoolType, info.SchoolName, deptId, deptName, info.Country, info.Province, info.City, uin)
+
+			//不更新grade
+			if grade == 0 {
+
+				sql = fmt.Sprintf(`update profiles set 							
+							schoolId = %d, 
+							schoolType = %d, 
+							schoolName = "%s", 
+							deptId = %d,
+							deptName = "%s",
+							country = "%s", 
+							province = "%s", 
+							city = "%s" 
+							where uin = %d`,
+					info.SchoolId, info.SchoolType, info.SchoolName, deptId, deptName, info.Country, info.Province, info.City, uin)
+			}
 		}
 
 	} else { // 该学校待审核
