@@ -33,13 +33,12 @@ type RecommendInfo struct {
 	NickName   string `json:"nickName"`
 	HeadImgUrl string `json:"headImgUrl"`
 	Gender     int    `json:"gender"`
-	//	Age        int    `json:"age"`
+
 	Grade      int    `json:"grade"`
 	SchoolId   int    `json:"schoolId"`
 	SchoolType int    `json:"schoolType"`
 	SchoolName string `json:"schoolName"`
 	Phone      string `json:"phone"`
-	//	GemCnt     int    `json:"gemCnt"`
 
 	Status        int    `json:"status"`        //0非好友 1好友 2已经邀请对方 3对方已经邀请我
 	RecommendType int    `json:"recommendType"` //同校 通讯录已注册但是非好友 通讯录未注册
@@ -181,6 +180,13 @@ func GetRecommendsFromSameSchool(uin int64, subType int, pageNum, pageSize int) 
 	} else if subType == constant.ENUM_RECOMMEND_FRIEND_TYPE_SAME_SCHOOL_GIRL {
 
 		conditions += fmt.Sprintf(` and gender = 2 `)
+
+	} else if subType == constant.ENUM_RECOMMEND_FRIEND_TYPE_SAME_SCHOOL_DEPT {
+
+		if ui.DeptId > 0 {
+
+			conditions += fmt.Sprintf(` and deptId = %d `, ui.DeptId)
+		}
 	}
 
 	//过滤掉昵称为空的

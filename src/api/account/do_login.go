@@ -164,8 +164,8 @@ func GetUinByPhone(phone string) (uin int64, isNewUser int, err error) {
 		return
 	}
 
-	stmt, err := inst.Prepare(`insert into profiles(uin, userName, phone, nickName, headImgUrl, gender, age, grade, schoolId, schoolType, schoolName, country, province, city, status, ts) 
-		values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+	stmt, err := inst.Prepare(`insert into profiles(uin, userName, phone, nickName, headImgUrl, gender, age, grade, schoolId, schoolType, schoolName, deptId, deptName, country, province, city, status, ts) 
+		values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
 
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_PREPARE, err.Error())
@@ -187,10 +187,12 @@ func GetUinByPhone(phone string) (uin int64, isNewUser int, err error) {
 	province := ""
 	city := ""
 	status := 0
+	deptId := 0
+	deptName := ""
 
 	ts := time.Now().Unix()
 
-	res, err := stmt.Exec(0, userName, phone, nickName, headImgUrl, gender, age, grade, schoolId, schoolType, schoolName, country, province, city, status, ts)
+	res, err := stmt.Exec(0, userName, phone, nickName, headImgUrl, gender, age, grade, schoolId, schoolType, schoolName, deptId, deptName, country, province, city, status, ts)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
 		log.Error(err.Error())
