@@ -353,8 +353,6 @@ func GetNextQuestionAndOptionsByPreGene(uin int64, uuid int64) (qinfo *st.Questi
 		randomUins = girlUins
 	}
 
-	log.Errorf("filter users by question option gender")
-
 	//前面已经校验过不可能<4
 	if len(uinsByVote) < constant.ENUM_OPTION_BATCH_SIZE || len(uinsByAddFriendTime) < constant.ENUM_OPTION_BATCH_SIZE || len(uinsByPVCnt) < constant.ENUM_OPTION_BATCH_SIZE {
 		err = rest.NewAPIError(constant.E_VOTE_INFO_ERR, "vote info error")
@@ -388,7 +386,7 @@ func GetNextQuestionAndOptionsByPreGene(uin int64, uuid int64) (qinfo *st.Questi
 	}
 
 	randomUins = ReOrderUinsByAddFriendSrc(randomUins, friendsByaddFriendSrc)
-	randomUins, _ = OptionsByProbaility(uin, friendUins)
+	randomUins, _ = OptionsByProbaility(uin, randomUins)
 	if len(randomUins) > 12 {
 		randomUins = randomUins[:12]
 	}
