@@ -11,8 +11,6 @@ type SchoolInfo struct {
 	SchoolId   int    `json:"schoolId"`
 	SchoolType int    `json:"schoolType"`
 	SchoolName string `json:"school"`
-	DeptId     int    `json:"deptId"`
-	DeptName   int    `json:"deptName"`
 
 	Country  string `json:"country"`
 	Province string `json:"province"`
@@ -29,8 +27,6 @@ type SchoolInfo2 struct {
 	SchoolId   int     `json:"schoolId"`
 	SchoolType int     `json:"schoolType"`
 	SchoolName string  `json:"school"`
-	DeptId     int     `json:"deptId"`
-	DeptName   int     `json:"deptName"`
 	Country    string  `json:"country"`
 	Province   string  `json:"province"`
 	City       string  `json:"city"`

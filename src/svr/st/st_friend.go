@@ -17,6 +17,8 @@ type FriendInfo struct {
 	SchoolId   int    `json:"schoolId"`
 	SchoolType int    `json:"schoolType"`
 	SchoolName string `json:"schoolName"`
+	DeptId     int    `json:"deptId"`
+	DeptName   string `json:"deptName"`
 
 	Ts int `json:"ts"` //成为好友的时间
 }
@@ -116,6 +118,8 @@ func GetMyFriends(uin int64, pageNum, pageSize int) (total int, friends []*Frien
 			friend.SchoolId = v.SchoolId
 			friend.SchoolType = v.SchoolType
 			friend.SchoolName = v.SchoolName
+			friend.DeptId = v.DeptId
+			friend.DeptName = v.DeptName
 			friend.Ts = uinsTs[v.Uin]
 
 			friends = append(friends, &friend)
