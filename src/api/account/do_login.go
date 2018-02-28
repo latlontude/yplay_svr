@@ -190,9 +190,6 @@ func GetUinByPhone(phone string) (uin int64, isNewUser int, err error) {
 	deptId := 0
 	deptName := ""
 
-	deptId := 0
-	deptName := ""
-
 	ts := time.Now().Unix()
 
 	res, err := stmt.Exec(0, userName, phone, nickName, headImgUrl, gender, age, grade, schoolId, schoolType, schoolName, deptId, deptName, country, province, city, status, ts)
