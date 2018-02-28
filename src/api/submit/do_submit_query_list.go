@@ -280,6 +280,11 @@ func SubmitQueryList(uin int64, typ int, pageNum, pageSize int) (retInfos []*Sub
 			if ui2, ok := res[uid]; ok {
 
 				if ui2.SchoolId == ui.SchoolId && ui2.Grade == ui.Grade {
+
+					if ui.SchoolType == 3 && ui.DeptId != ui2.DeptId {
+						continue // 用户学校为大学时，查找同校同学院同年级的用户
+					}
+
 					cntTotal += cnt
 
 					if _, ok := newQidsCntMap[qid][uid]; ok {
