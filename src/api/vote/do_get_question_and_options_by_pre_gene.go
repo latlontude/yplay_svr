@@ -255,23 +255,57 @@ func GetNextQuestionAndOptionsByPreGene(uin int64, uuid int64) (qinfo *st.Questi
 		}
 	}()
 
-	//好友人数小于4人, 当前好友 + 单项添加过的好友 + 通讯录好友 + 默认补充
-	if len(friendUins) < 4 {
+	if nextQGender != 0 {
 
-		//预先计算好的选项字符串
-		for _, uid := range friendUins {
-			prepared += fmt.Sprintf("%d:", uid)
+		//从中过滤出男性朋友或者女性朋友
+		newUinsByVote := make([]int64, 0)
+		newUinsByAddFriendTime := make([]int64, 0)
+		newUinsByPVCnt := make([]int64, 0)
+
+		for _, uid := range uinsByVote {
+			if friendInfos[uid].Gender == nextQGender {
+				newUinsByVote = append(newUinsByVote, uid)
+			}
 		}
 
-		if len(prepared) > 0 {
-			prepared = prepared[:len(prepared)-1]
-		} else {
-			prepared = ""
+		for _, uid := range uinsByAddFriendTime {
+			if friendInfos[uid].Gender == nextQGender {
+				newUinsByAddFriendTime = append(newUinsByAddFriendTime, uid)
+			}
 		}
 
-		log.Debugf("uin %d, friendUins(%d)<4,  prepared %s", uin, len(friendUins), prepared)
+		for _, uid := range uinsByPVCnt {
+			if friendInfos[uid].Gender == nextQGender {
+				newUinsByPVCnt = append(newUinsByPVCnt, uid)
+			}
+		}
 
-		combinOptions, err1 := GetOptionsByCombine(uin, uuid, friendUins, nextQGender, 4-len(friendUins))
+		uinsByVote = newUinsByVote
+		uinsByAddFriendTime = newUinsByAddFriendTime
+		uinsByPVCnt = newUinsByPVCnt
+	}
+
+	randomUins := friendUins
+	if nextQGender == 1 {
+		randomUins = boyUins
+	} else if nextQGender == 2 {
+		randomUins = girlUins
+	}
+
+	// 为用户准备好题库后，用户增删过好友 导致一些题目已经不适合ta, 需要为该题目重新准备候选人
+	if len(uinsByVote) < constant.ENUM_OPTION_BATCH_SIZE || len(uinsByAddFriendTime) < constant.ENUM_OPTION_BATCH_SIZE || len(uinsByPVCnt) < constant.ENUM_OPTION_BATCH_SIZE {
+		log.Debugf(" start prepare candidates list")
+		log.Debugf("uinsByvote:%+v uinsByAddFriendTime:%+v  uinsByPVCnt:%+v", uinsByVote)
+
+		cnt := len(uinsByVote)
+		if len(uinsByAddFriendTime) < cnt {
+			cnt = len(uinsByAddFriendTime)
+		}
+		if len(uinsByPVCnt) < cnt {
+			cnt = len(uinsByPVCnt)
+		}
+
+		combinOptions, err1 := GetOptionsByCombine(uin, uuid, friendUins, nextQGender, 4-cnt)
 		if err1 != nil {
 			err = err1
 			log.Errorf(err.Error())
@@ -311,52 +345,7 @@ func GetNextQuestionAndOptionsByPreGene(uin int64, uuid int64) (qinfo *st.Questi
 			}
 		}
 
-		return
-	}
-
-	log.Errorf("the number of my friends is biger than 4")
-
-	if nextQGender != 0 {
-
-		//从中过滤出男性朋友或者女性朋友
-		newUinsByVote := make([]int64, 0)
-		newUinsByAddFriendTime := make([]int64, 0)
-		newUinsByPVCnt := make([]int64, 0)
-
-		for _, uid := range uinsByVote {
-			if friendInfos[uid].Gender == nextQGender {
-				newUinsByVote = append(newUinsByVote, uid)
-			}
-		}
-
-		for _, uid := range uinsByAddFriendTime {
-			if friendInfos[uid].Gender == nextQGender {
-				newUinsByAddFriendTime = append(newUinsByAddFriendTime, uid)
-			}
-		}
-
-		for _, uid := range uinsByPVCnt {
-			if friendInfos[uid].Gender == nextQGender {
-				newUinsByPVCnt = append(newUinsByPVCnt, uid)
-			}
-		}
-
-		uinsByVote = newUinsByVote
-		uinsByAddFriendTime = newUinsByAddFriendTime
-		uinsByPVCnt = newUinsByPVCnt
-	}
-
-	randomUins := friendUins
-	if nextQGender == 1 {
-		randomUins = boyUins
-	} else if nextQGender == 2 {
-		randomUins = girlUins
-	}
-
-	//前面已经校验过不可能<4
-	if len(uinsByVote) < constant.ENUM_OPTION_BATCH_SIZE || len(uinsByAddFriendTime) < constant.ENUM_OPTION_BATCH_SIZE || len(uinsByPVCnt) < constant.ENUM_OPTION_BATCH_SIZE {
-		err = rest.NewAPIError(constant.E_VOTE_INFO_ERR, "vote info error")
-		log.Errorf(err.Error())
+		log.Debugf(" end  prepare candidates list options:%+v", options)
 		return
 	}
 

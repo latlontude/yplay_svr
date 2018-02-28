@@ -796,7 +796,6 @@ func GetNextQIdByGender(uin int64, qgender int, cursor int) (qid int, err error)
 }
 
 //从单向加好友->通讯录好友->固定一批名人
-//qgender必定等于0
 //没有计算这些人被选中的次数
 func GetOptionsByCombine(uin int64, uuid int64, excludeUins []int64, qgender int, cnt int) (options []*st.OptionInfo2, err error) {
 
@@ -807,7 +806,7 @@ func GetOptionsByCombine(uin int64, uuid int64, excludeUins []int64, qgender int
 	}
 
 	//从单向添加好友中获取
-	options, err = GetOptionsFromAddFriendMsg(uin, cnt)
+	options, err = GetOptionsFromAddFriendMsg(uin, cnt, qgender)
 	if err != nil {
 		log.Errorf(err.Error())
 		return
@@ -850,7 +849,7 @@ func GetOptionsByCombine(uin int64, uuid int64, excludeUins []int64, qgender int
 	log.Debugf("uin %d, GetOptionsFromAddrBook needCnt %d, uuid %d, excludeUins %+v", uin, needCnt, uuid, newExcludeUins)
 
 	//从通讯录中获取
-	options2, err := GetOptionsFromAddrBook(uin, uuid, newExcludeUins, needCnt)
+	options2, err := GetOptionsFromAddrBook(uin, uuid, newExcludeUins, needCnt, qgender)
 	if err != nil {
 		log.Errorf(err.Error())
 		return
@@ -889,7 +888,6 @@ func GetOptionsByCombine(uin int64, uuid int64, excludeUins []int64, qgender int
 	ALL_GIRL_STARS := []string{"李宇春", "周冬雨", "迪丽热巴", "杨幂"}
 	ALL_BOY_STARS := []string{"吴亦凡", "王思聪", "刘昊然", "薛之谦"}
 
-	//qgender必定为0
 	for idx, _ := range midxs {
 
 		nickName := ""
@@ -914,7 +912,7 @@ func GetOptionsByCombine(uin int64, uuid int64, excludeUins []int64, qgender int
 	return
 }
 
-func GetOptionsFromAddFriendMsg(uin int64, cnt int) (options []*st.OptionInfo2, err error) {
+func GetOptionsFromAddFriendMsg(uin int64, cnt int, qgender int) (options []*st.OptionInfo2, err error) {
 
 	if uin == 0 || cnt == 0 {
 		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid params")
@@ -935,7 +933,7 @@ func GetOptionsFromAddFriendMsg(uin int64, cnt int) (options []*st.OptionInfo2, 
 	options = make([]*st.OptionInfo2, 0)
 
 	//检查是否存在这样的消息 必须不是好友
-	sql := fmt.Sprintf(`select count(toUin) from addFriendMsg where fromUin = %d and status != 1`, uin)
+	sql := fmt.Sprintf(`select toUin from addFriendMsg where fromUin = %d and status != 1`, uin)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -945,9 +943,13 @@ func GetOptionsFromAddFriendMsg(uin int64, cnt int) (options []*st.OptionInfo2, 
 	defer rows.Close()
 
 	total := 0
+	unfriendsUids := make([]int64, 0)
 	for rows.Next() {
-		rows.Scan(&total)
+		var uid int64
+		rows.Scan(&uid)
+		unfriendsUids = append(unfriendsUids, uid)
 	}
+	total = len(unfriendsUids)
 
 	log.Debugf("uin %d, GetOptionsFromAddFriendMsg, total %d", uin, total)
 
@@ -955,45 +957,29 @@ func GetOptionsFromAddFriendMsg(uin int64, cnt int) (options []*st.OptionInfo2, 
 		return
 	}
 
-	s := 0
-
-	//从单向添加过的好友里面满足所有的信息
-	if total >= cnt {
-		s = rand.Intn(total - cnt + 1)
-	} else {
-		cnt = total
-	}
-
-	sql = fmt.Sprintf(`select toUin from addFriendMsg where fromUin = %d and status != 1 limit %d,%d`, uin, s, cnt)
-	rows, err = inst.Query(sql)
-	if err != nil {
-		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
-		log.Errorf(err.Error())
-		return
-	}
-
-	uins := make([]int64, 0)
-	for rows.Next() {
-		var uid int64
-		rows.Scan(&uid)
-
-		uins = append(uins, uid)
-	}
-
-	res, err := st.BatchGetUserProfileInfo(uins)
+	res, err := st.BatchGetUserProfileInfo(unfriendsUids)
 	if err != nil {
 		log.Errorf(err.Error())
 		return
 	}
 
-	for _, v := range res {
-
-		if len(v.NickName) == 0 {
+	unfriendsUidsInfo := make([]*st.UserProfileInfo, 0)
+	for _, info := range res {
+		if len(info.NickName) == 0 {
 			continue
 		}
+		if info.Gender == qgender {
+			unfriendsUidsInfo = append(unfriendsUidsInfo, info)
+		}
+	}
 
-		option := &st.OptionInfo2{v.Uin, v.NickName, 0}
+	a := rand.Perm(len(unfriendsUidsInfo))
+	for _, idx := range a {
+		option := &st.OptionInfo2{unfriendsUidsInfo[idx].Uin, unfriendsUidsInfo[idx].NickName, 0}
 		options = append(options, option)
+		if len(options) == cnt {
+			break
+		}
 	}
 
 	log.Debugf("uin %d, GetOptionsFromAddFriendMsg, options %+v", uin, options)
@@ -1002,7 +988,7 @@ func GetOptionsFromAddFriendMsg(uin int64, cnt int) (options []*st.OptionInfo2, 
 }
 
 //从通讯录随机选取，尽可能的返回，可能不足
-func GetOptionsFromAddrBook(uin, uuid int64, excludeUins []int64, needCnt int) (options []*st.OptionInfo2, err error) {
+func GetOptionsFromAddrBook(uin, uuid int64, excludeUins []int64, needCnt int, qgender int) (options []*st.OptionInfo2, err error) {
 
 	options = make([]*st.OptionInfo2, 0)
 
@@ -1010,7 +996,7 @@ func GetOptionsFromAddrBook(uin, uuid int64, excludeUins []int64, needCnt int) (
 		return
 	}
 
-	ops, err := GetOptionsFromAddrBookRegister(uin, uuid, excludeUins, needCnt)
+	ops, err := GetOptionsFromAddrBookRegister(uin, uuid, excludeUins, needCnt, qgender)
 	if err != nil {
 		log.Error(err.Error())
 		return
@@ -1024,21 +1010,21 @@ func GetOptionsFromAddrBook(uin, uuid int64, excludeUins []int64, needCnt int) (
 		return
 	}
 
-	ops2, err := GetOptionsFromAddrBookUnRegister(uin, uuid, needCnt-len(options))
-	if err != nil {
-		log.Error(err.Error())
-		return
-	}
+	/*	ops2, err := GetOptionsFromAddrBookUnRegister(uin, uuid, needCnt-len(options), qgender)
+		if err != nil {
+			log.Error(err.Error())
+			return
+		}
 
-	for _, op := range ops2 {
-		options = append(options, op)
-	}
-
+		for _, op := range ops2 {
+			options = append(options, op)
+		}
+	*/
 	return
 }
 
 //从通讯录随机选取，尽可能的返回，可能不足
-func GetOptionsFromAddrBookRegister(uin, uuid int64, excludeUins []int64, needCnt int) (options []*st.OptionInfo2, err error) {
+func GetOptionsFromAddrBookRegister(uin, uuid int64, excludeUins []int64, needCnt int, qgender int) (options []*st.OptionInfo2, err error) {
 
 	options = make([]*st.OptionInfo2, 0)
 
@@ -1059,9 +1045,9 @@ func GetOptionsFromAddrBookRegister(uin, uuid int64, excludeUins []int64, needCn
 		strs += fmt.Sprintf("%d,", uid)
 	}
 	strs += fmt.Sprintf("%d,", uin)
-	strs += fmt.Sprintf("%d", 0) //查找注册好友
+	strs += fmt.Sprintf("%d", 0) //查找注册非好友
 
-	sql := fmt.Sprintf(`select count(friendUin) from addrBook where uuid = %d and friendUin not in (%s)`, uuid, strs)
+	sql := fmt.Sprintf(`select friendUin from addrBook where uuid = %d and friendUin not in (%s)`, uuid, strs)
 
 	rows, err := inst.Query(sql)
 	if err != nil {
@@ -1071,60 +1057,39 @@ func GetOptionsFromAddrBookRegister(uin, uuid int64, excludeUins []int64, needCn
 	}
 	defer rows.Close()
 
-	var total int
+	registerUnfriendsUins := make([]int64, 0)
 	for rows.Next() {
-		rows.Scan(&total)
+		var uid int64
+		rows.Scan(&uid)
+		registerUnfriendsUins = append(registerUnfriendsUins, uid)
 	}
 
-	if total == 0 {
+	if len(registerUnfriendsUins) == 0 {
 		return
 	}
 
-	//实际总数比需要的要少
-	if needCnt >= total {
-		needCnt = total
+	res, err := st.BatchGetUserProfileInfo(registerUnfriendsUins)
+	if err != nil {
+		log.Errorf(err.Error())
+		return
 	}
 
-	idxs := GetRandomIdxs(total, needCnt)
-
-	validUins := make([]int64, 0)
-
-	for _, idx := range idxs {
-
-		sql = fmt.Sprintf(`select friendUin, friendName from addrBook where uuid = %d and friendUin not in (%s) limit %d, %d`, uuid, strs, idx, 1)
-
-		rows, err = inst.Query(sql)
-		if err != nil {
-			err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
-			log.Error(err)
-			return
+	registerUnfriendsUidsInfo := make([]*st.UserProfileInfo, 0)
+	for _, info := range res {
+		if len(info.NickName) == 0 {
+			continue
 		}
-
-		defer rows.Close()
-
-		for rows.Next() {
-			var option st.OptionInfo2
-			rows.Scan(&option.Uin, &option.NickName)
-
-			options = append(options, &option)
-
-			if option.Uin > 0 {
-				validUins = append(validUins, option.Uin)
-			}
+		if info.Gender == qgender {
+			registerUnfriendsUidsInfo = append(registerUnfriendsUidsInfo, info)
 		}
 	}
 
-	//从通讯录里面选取的昵称要改成注册用户的正式昵称
-	//默认通讯录好友有昵称
-	res, _ := st.BatchGetUserProfileInfo(validUins)
-	for i, option := range options {
-
-		if ui, ok := res[option.Uin]; ok {
-
-			//如果个人资料的昵称为空，则不替换
-			if len(ui.NickName) > 0 {
-				options[i].NickName = ui.NickName
-			}
+	a := rand.Perm(len(registerUnfriendsUidsInfo))
+	for _, idx := range a {
+		option := &st.OptionInfo2{registerUnfriendsUidsInfo[idx].Uin, registerUnfriendsUidsInfo[idx].NickName, 0}
+		options = append(options, option)
+		if len(options) == needCnt {
+			break
 		}
 	}
 
