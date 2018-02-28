@@ -1064,6 +1064,7 @@ func GetOptionsFromAddrBookRegister(uin, uuid int64, excludeUins []int64, needCn
 		registerUnfriendsUins = append(registerUnfriendsUins, uid)
 	}
 
+	log.Debugf("registerUnfriendsUins:%+v", registerUnfriendsUins)
 	if len(registerUnfriendsUins) == 0 {
 		return
 	}
@@ -1079,7 +1080,7 @@ func GetOptionsFromAddrBookRegister(uin, uuid int64, excludeUins []int64, needCn
 		if len(info.NickName) == 0 {
 			continue
 		}
-		if info.Gender == qgender {
+		if info.Gender == qgender || qgender == 0 {
 			registerUnfriendsUidsInfo = append(registerUnfriendsUidsInfo, info)
 		}
 	}

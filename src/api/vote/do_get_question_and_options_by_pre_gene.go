@@ -295,7 +295,7 @@ func GetNextQuestionAndOptionsByPreGene(uin int64, uuid int64) (qinfo *st.Questi
 	// 为用户准备好题库后，用户增删过好友 导致一些题目已经不适合ta, 需要为该题目重新准备候选人
 	if len(uinsByVote) < constant.ENUM_OPTION_BATCH_SIZE || len(uinsByAddFriendTime) < constant.ENUM_OPTION_BATCH_SIZE || len(uinsByPVCnt) < constant.ENUM_OPTION_BATCH_SIZE {
 		log.Debugf(" start prepare candidates list")
-		log.Debugf("uinsByvote:%+v uinsByAddFriendTime:%+v  uinsByPVCnt:%+v", uinsByVote)
+		log.Debugf("uinsByvote:%+v uinsByAddFriendTime:%+v  uinsByPVCnt:%+v", uinsByVote, uinsByAddFriendTime, uinsByPVCnt)
 
 		cnt := len(uinsByVote)
 		if len(uinsByAddFriendTime) < cnt {
