@@ -692,6 +692,34 @@ func (this *RedisApp) ZAdd(key string, score int64, member string) (err error) {
 	return
 }
 
+func (this *RedisApp) ZMulAdd(key string, mem2score map[int64]string) (err error) {
+
+	conn, err := this.GetConn()
+	if err != nil {
+		log.Error(err.Error())
+		return
+	}
+	defer conn.Close()
+
+	rkey := fmt.Sprintf("%s_%s", this.AppId, key)
+
+	params := make([]interface{}, 0)
+	params = append(params, rkey)
+	for k, v := range mem2score {
+		params = append(params, fmt.Sprintf("%d", k))
+		params = append(params, fmt.Sprintf("%s", v))
+	}
+
+	_, err = redis.Int(conn.Do("ZADD", params...))
+	if err != nil {
+		err = rest.NewAPIError(constant.E_REDIS_ZMSET, "zmuladd error,"+err.Error())
+		log.Errorf(err.Error())
+		return
+	}
+
+	return
+}
+
 func (this *RedisApp) ZScore(key string, member string) (score int64, err error) {
 
 	conn, err := this.GetConn()

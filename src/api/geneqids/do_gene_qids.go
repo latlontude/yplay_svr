@@ -685,6 +685,7 @@ func UpdateQIds(uin int64, qids []int) (err error) {
 	}
 
 	log.Debugf("begin UpdateQIds, uin %d", uin)
+	startTs := time.Now().UnixNano()
 
 	app, err := myredis.GetApp(constant.ENUM_REDIS_APP_PRE_GENE_QIDS)
 	if err != nil {
@@ -744,16 +745,25 @@ func UpdateQIds(uin int64, qids []int) (err error) {
 		return
 	}
 
+	updateStartTs := time.Now().UnixNano()
 	//新生成的
+	scoreQidMap := make(map[int64]string)
 	for i, qid := range qids {
 		if qid == cacheQid {
 			continue
 		}
-		err = app.ZAdd(keyStr2, int64(i), fmt.Sprintf("%d", qid))
-		if err != nil {
-			log.Errorf(err.Error())
-		}
+		mem := fmt.Sprintf("%d", qid)
+		scoreQidMap[int64(i)] = mem
 	}
+
+	err = app.ZMulAdd(keyStr2, scoreQidMap)
+	if err != nil {
+		log.Errorf(err.Error())
+	}
+
+	updateEndTs := time.Now().UnixNano()
+	log.Debugf("update redis total duration %dms", (updateEndTs-updateStartTs)/1000000)
+	log.Debugf("update redis total questions: %d", len(qids))
 
 	//重置进度
 	valsMap := make(map[string]string)
@@ -771,7 +781,8 @@ func UpdateQIds(uin int64, qids []int) (err error) {
 	if err != nil {
 		log.Errorf(err.Error())
 	}
-
+	endTs := time.Now().UnixNano()
+	log.Debugf("update total duration %dms", (endTs-startTs)/1000000)
 	log.Debugf("end UpdateQIds, uin %d", uin)
 
 	return

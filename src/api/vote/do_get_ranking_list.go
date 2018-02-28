@@ -181,7 +181,7 @@ func BatchGetRankingList(uin int64, qids []int) (retInfosMap map[int]GetRankingL
 				}
 			}
 
-			log.Errorf("before total:%d, userinfos:%+v", len(userInfos), userInfos)
+			//log.Errorf("before total:%d, userinfos:%+v", len(userInfos), userInfos)
 			//对获得钻石数目相同的用户按照最新获得钻石的时间降序排列
 			start := 0
 			end := 0
@@ -218,7 +218,7 @@ func BatchGetRankingList(uin int64, qids []int) (retInfosMap map[int]GetRankingL
 				}
 
 			}
-			log.Errorf("after total:%d, userinfos:%+v", len(userInfos), userInfos)
+			//log.Errorf("after total:%d, userinfos:%+v", len(userInfos), userInfos)
 
 			//该用户一定存在
 			ui := res[uin]
@@ -254,7 +254,7 @@ func BatchGetRankingList(uin int64, qids []int) (retInfosMap map[int]GetRankingL
 				}
 			}
 
-			log.Errorf("allSameSchoolAndGradeCnt:%d", allSameSchoolAndGradeCnt)
+			//	log.Errorf("allSameSchoolAndGradeCnt:%d", allSameSchoolAndGradeCnt)
 
 			tmpRetInfo.RankingInSameSchool = tmpUserInfos1
 
@@ -272,7 +272,7 @@ func BatchGetRankingList(uin int64, qids []int) (retInfosMap map[int]GetRankingL
 				}
 			}
 
-			log.Errorf("qid:%d allSameSchoolAndGradeCnt:%d myPos in allSameSchoolAndGrade is:%d(%s) ", qid, allSameSchoolAndGradeCnt, myPos, tmpRetInfo.RankingPercentInSameSchool)
+			//	log.Errorf("qid:%d allSameSchoolAndGradeCnt:%d myPos in allSameSchoolAndGrade is:%d(%s) ", qid, allSameSchoolAndGradeCnt, myPos, tmpRetInfo.RankingPercentInSameSchool)
 
 			tmpUserInfos2 := make([]UserInfo, 0)
 			allVotedMyFriendsCnt := 0
@@ -305,7 +305,7 @@ func BatchGetRankingList(uin int64, qids []int) (retInfosMap map[int]GetRankingL
 
 			}
 
-			log.Errorf("allVotedMyFriendsCnt:%d", allVotedMyFriendsCnt)
+			//	log.Errorf("allVotedMyFriendsCnt:%d", allVotedMyFriendsCnt)
 
 			tmpRetInfo.RankingInFriends = tmpUserInfos2
 			if allVotedMyFriendsCnt == 0 {
@@ -321,7 +321,7 @@ func BatchGetRankingList(uin int64, qids []int) (retInfosMap map[int]GetRankingL
 					tmpRetInfo.RankingPercentInFriends = strconv.Itoa(100*(allVotedMyFriendsCnt-myPosInMyFriends)/(allVotedMyFriendsCnt-1)) + "%"
 				}
 			}
-			log.Errorf("qid:%d allVotedMyFriendsCnt:%d myPos in allMyFriends is %d(%s)", qid, allVotedMyFriendsCnt, myPosInMyFriends, tmpRetInfo.RankingPercentInFriends)
+			//	log.Errorf("qid:%d allVotedMyFriendsCnt:%d myPos in allMyFriends is %d(%s)", qid, allVotedMyFriendsCnt, myPosInMyFriends, tmpRetInfo.RankingPercentInFriends)
 
 			retInfosMap[qid] = tmpRetInfo
 		}
