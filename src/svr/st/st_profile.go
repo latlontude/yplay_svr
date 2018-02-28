@@ -20,6 +20,8 @@ type UserProfileInfo struct {
 	SchoolId   int    `json:"schoolId"`
 	SchoolType int    `json:"schoolType"`
 	SchoolName string `json:"schoolName"`
+	DeptId     int    `json:"deptId"`   //大学的学院信息
+	DeptName   string `json:"deptName"` //大学的学院信息
 
 	Country  string `json:"country"`
 	Province string `json:"province"`
@@ -40,6 +42,8 @@ type UserProfileInfo2 struct {
 	SchoolId   int    `json:"schoolId"`
 	SchoolType int    `json:"schoolType"`
 	SchoolName string `json:"schoolName"`
+	DeptId     int    `json:"deptId"`   //大学的学院信息
+	DeptName   string `json:"deptName"` //大学的学院信息
 
 	Country  string `json:"country"`
 	Province string `json:"province"`
@@ -52,45 +56,46 @@ type UserProfileInfo2 struct {
 
 func (this *UserProfileInfo) String() string {
 
-	return fmt.Sprintf(`UserProfileInfo{Uin:%d, UserName:%s, Phone:%s, NickName:%s, HeadImgUrl:%s, Gender:%d, Age:%d, Grade:%d, SchoolId:%d, SchoolType:%d, SchoolName:%s}`,
-		this.Uin, this.UserName, this.Phone, this.NickName, this.HeadImgUrl, this.Gender, this.Age, this.Grade, this.SchoolId, this.SchoolType, this.SchoolName)
+	return fmt.Sprintf(`UserProfileInfo{Uin:%d, UserName:%s, Phone:%s, NickName:%s, HeadImgUrl:%s, Gender:%d, Age:%d, Grade:%d, SchoolId:%d, SchoolType:%d, SchoolName:%s, DeptId:%d, DeptName:%s}`,
+		this.Uin, this.UserName, this.Phone, this.NickName, this.HeadImgUrl, this.Gender, this.Age, this.Grade, this.SchoolId, this.SchoolType, this.SchoolName, this.DeptId, this.DeptName)
 }
 
 func (this *UserProfileInfo2) String() string {
 
-	return fmt.Sprintf(`UserProfileInfo2{Uin:%d, UserName:%s, Phone:%s, NickName:%s, HeadImgUrl:%s, Gender:%d, Age:%d, Grade:%d, SchoolId:%d, SchoolType:%d, SchoolName:%s, GemCnt:%d, FriendCnt:%d}`,
-		this.Uin, this.UserName, this.Phone, this.NickName, this.HeadImgUrl, this.Gender, this.Age, this.Grade, this.SchoolId, this.SchoolType, this.SchoolName, this.GemCnt, this.FriendCnt)
+	return fmt.Sprintf(`UserProfileInfo2{Uin:%d, UserName:%s, Phone:%s, NickName:%s, HeadImgUrl:%s, Gender:%d, Age:%d, Grade:%d, SchoolId:%d, SchoolType:%d, SchoolName:%s, DeptId:%d, DeptName:%s, GemCnt:%d, FriendCnt:%d}`,
+		this.Uin, this.UserName, this.Phone, this.NickName, this.HeadImgUrl, this.Gender, this.Age, this.Grade, this.SchoolId, this.SchoolType, this.SchoolName, this.DeptId, this.DeptName, this.GemCnt, this.FriendCnt)
 }
 
-func CopyProfileInfo2ProfileInfo2(info *UserProfileInfo, info2 *UserProfileInfo2) {
-	if info == nil || info2 == nil {
-		return
-	}
+// func CopyProfileInfo2ProfileInfo2(info *UserProfileInfo, info2 *UserProfileInfo2) {
+// 	if info == nil || info2 == nil {
+// 		return
+// 	}
 
-	info2.Uin = info.Uin
-	info2.UserName = info.UserName
-	info2.Phone = info.Phone
-	info2.NickName = info.NickName
-	info2.HeadImgUrl = info.HeadImgUrl
-	info2.Gender = info.Gender
-	info2.Age = info.Age
-	info2.Grade = info.Grade
+// 	info2.Uin = info.Uin
+// 	info2.UserName = info.UserName
+// 	info2.Phone = info.Phone
+// 	info2.NickName = info.NickName
+// 	info2.HeadImgUrl = info.HeadImgUrl
+// 	info2.Gender = info.Gender
+// 	info2.Age = info.Age
+// 	info2.Grade = info.Grade
 
-	info2.SchoolId = info.SchoolId
-	info2.SchoolType = info.SchoolType
-	info2.SchoolName = info.SchoolName
+// 	info2.SchoolId = info.SchoolId
+// 	info2.SchoolType = info.SchoolType
+// 	info2.SchoolName = info.SchoolName
 
-	info2.Country = info.Country
-	info2.Province = info.Province
-	info2.City = info.City
-	info2.Ts = info.Ts
+// 	info2.Country = info.Country
+// 	info2.Province = info.Province
+// 	info2.City = info.City
+// 	info2.Ts = info.Ts
 
-	return
-}
+// 	return
+// }
 
 func GetUserProfileInfo(uin int64) (info *UserProfileInfo, err error) {
 
 	if uin == 0 {
+		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid param")
 		return
 	}
 
@@ -99,7 +104,7 @@ func GetUserProfileInfo(uin int64) (info *UserProfileInfo, err error) {
 		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
 		return
 	}
-	sql := fmt.Sprintf(`select uin, userName, phone, nickName, headImgUrl, gender, age, grade, schoolId, schoolType, schoolName, country, province, city from profiles where uin = %d`, uin)
+	sql := fmt.Sprintf(`select uin, userName, phone, nickName, headImgUrl, gender, age, grade, schoolId, schoolType, schoolName, deptId, deptName, country, province, city from profiles where uin = %d`, uin)
 
 	rows, err := inst.Query(sql)
 	if err != nil {
@@ -126,6 +131,8 @@ func GetUserProfileInfo(uin int64) (info *UserProfileInfo, err error) {
 			&info.SchoolId,
 			&info.SchoolType,
 			&info.SchoolName,
+			&info.DeptId,
+			&info.DeptName,
 			&info.Country,
 			&info.Province,
 			&info.City)
@@ -169,7 +176,7 @@ func BatchGetUserProfileInfo(uins []int64) (res map[int64]*UserProfileInfo, err 
 		log.Error(err)
 		return
 	}
-	sql := fmt.Sprintf(`select uin, userName, phone, nickName, headImgUrl, gender, age, grade, schoolId, schoolType, schoolName, country, province, city from profiles where uin in (%s)`, str)
+	sql := fmt.Sprintf(`select uin, userName, phone, nickName, headImgUrl, gender, age, grade, schoolId, schoolType, schoolName, deptId, deptName, country, province, city from profiles where uin in (%s)`, str)
 
 	rows, err := inst.Query(sql)
 	if err != nil {
@@ -193,6 +200,8 @@ func BatchGetUserProfileInfo(uins []int64) (res map[int64]*UserProfileInfo, err 
 			&info.SchoolId,
 			&info.SchoolType,
 			&info.SchoolName,
+			&info.DeptId,
+			&info.DeptName,
 			&info.Country,
 			&info.Province,
 			&info.City)
@@ -210,6 +219,7 @@ func BatchGetUserProfileInfo(uins []int64) (res map[int64]*UserProfileInfo, err 
 func GetUserProfileInfo2(uin int64) (info *UserProfileInfo2, err error) {
 
 	if uin == 0 {
+		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid param")
 		return
 	}
 
@@ -218,7 +228,7 @@ func GetUserProfileInfo2(uin int64) (info *UserProfileInfo2, err error) {
 		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
 		return
 	}
-	sql := fmt.Sprintf(`select uin, userName, phone, nickName, headImgUrl, gender, age, grade, schoolId, schoolType, schoolName, country, province, city from profiles where uin = %d`, uin)
+	sql := fmt.Sprintf(`select uin, userName, phone, nickName, headImgUrl, gender, age, grade, schoolId, schoolType, schoolName, deptId, deptName, country, province, city from profiles where uin = %d`, uin)
 
 	rows, err := inst.Query(sql)
 	if err != nil {
@@ -245,6 +255,8 @@ func GetUserProfileInfo2(uin int64) (info *UserProfileInfo2, err error) {
 			&info.SchoolId,
 			&info.SchoolType,
 			&info.SchoolName,
+			&info.DeptId,
+			&info.DeptName,
 			&info.Country,
 			&info.Province,
 			&info.City)
@@ -314,7 +326,7 @@ func BatchGetUserProfileInfo2(uins []int64) (res map[int64]*UserProfileInfo2, er
 		log.Error(err)
 		return
 	}
-	sql := fmt.Sprintf(`select uin, userName, phone, nickName, headImgUrl, gender, age, grade, schoolId, schoolType, schoolName, country, province, city from profiles where uin in (%s)`, str)
+	sql := fmt.Sprintf(`select uin, userName, phone, nickName, headImgUrl, gender, age, grade, schoolId, schoolType, schoolName, deptId, deptName, country, province, city from profiles where uin in (%s)`, str)
 
 	rows, err := inst.Query(sql)
 	if err != nil {
@@ -338,6 +350,8 @@ func BatchGetUserProfileInfo2(uins []int64) (res map[int64]*UserProfileInfo2, er
 			&info.SchoolId,
 			&info.SchoolType,
 			&info.SchoolName,
+			&info.DeptId,
+			&info.DeptName,
 			&info.Country,
 			&info.Province,
 			&info.City)

@@ -11,6 +11,7 @@ var (
 		//"/login":             auth.Apify(doLogin),              //登录
 		"/sendsms":           auth.Apify(doSendSms),            //发送短信
 		"/getnearestschools": auth.Apify2(doGetNearestSchools), //根据查询关键词获取学校列表
+		"/getdeptsbyschool":  auth.Apify2(doGetDeptsBySchool),  //获取大学的学院信息
 
 		"/searchschools": auth.Apify2(doSearchSchools), //根据查询关键词获取学校列表
 		"/submitschool":  auth.Apify2(doSubmitSchool),  //提交增加学校信息

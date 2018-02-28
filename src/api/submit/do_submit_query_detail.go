@@ -29,6 +29,8 @@ type QidStatInfo struct {
 	Grade      int    `json:"grade"`
 	SchoolId   int    `json:"schoolId"`
 	SchoolType int    `json:"schoolType"`
+	DeptId     int    `json:"deptId"`
+	DeptName   string `json:"deptName"`
 	SchoolName string `json:"schoolName"`
 	VotedCnt   int    `json:"votedCnt"`
 }
@@ -120,6 +122,8 @@ func SubmitQueryDetail(uin int64, qid int) (total int, infos []*QidStatInfo, err
 					info.SchoolId = v.SchoolId
 					info.SchoolType = v.SchoolType
 					info.SchoolName = v.SchoolName
+					info.DeptId = v.DeptId
+					info.DeptName = v.DeptName
 
 					ninfos = append(ninfos, info)
 				}

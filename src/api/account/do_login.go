@@ -187,6 +187,8 @@ func GetUinByPhone(phone string) (uin int64, isNewUser int, err error) {
 	province := ""
 	city := ""
 	status := 0
+	deptId := 0
+	deptName := ""
 
 	deptId := 0
 	deptName := ""

@@ -107,7 +107,7 @@ func QueryByPhone(uin int64, data string) (infos []*st.UserProfileInfo, err erro
 		return
 	}
 
-	sql := fmt.Sprintf(`select uin, userName, phone, nickName, headImgUrl, gender, age, grade, schoolId, schoolType, schoolName, country, province, city from profiles where status = 1 and phone in (%s)`, phoneStr)
+	sql := fmt.Sprintf(`select uin, userName, phone, nickName, headImgUrl, gender, age, grade, schoolId, schoolType, schoolName, deptId, deptName, country, province, city from profiles where status = 1 and phone in (%s)`, phoneStr)
 
 	rows, err := inst.Query(sql)
 	if err != nil {
@@ -132,6 +132,8 @@ func QueryByPhone(uin int64, data string) (infos []*st.UserProfileInfo, err erro
 			&info.SchoolId,
 			&info.SchoolType,
 			&info.SchoolName,
+			&info.DeptId,
+			&info.DeptName,
 			&info.Country,
 			&info.Province,
 			&info.City)

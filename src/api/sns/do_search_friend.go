@@ -28,7 +28,10 @@ type SearchFriendInfo struct {
 	SchoolId   int    `json:"schoolId"`
 	SchoolType int    `json:"schoolType"`
 	SchoolName string `json:"schoolName"`
-	Phone      string `json:"phone"`
+	DeptId     int    `json:"deptId"`
+	DeptName   string `json:"deptName"`
+
+	Phone string `json:"phone"`
 
 	Status int   `json:"status"` //0非好友 1好友 2已经邀请对方 3对方已经邀请我
 	MsgId  int64 `json:"msgId"`  //邀请消息ID
@@ -70,7 +73,7 @@ func SearchFriends(uin int64, userName string) (friends []*SearchFriendInfo, err
 		return
 	}
 
-	sql := fmt.Sprintf(`select uin, phone, nickName, headImgUrl, gender, grade, schoolId, schoolType, schoolName from profiles where userName = ?`)
+	sql := fmt.Sprintf(`select uin, phone, nickName, headImgUrl, gender, grade, schoolId, schoolType, schoolName, deptId, deptName from profiles where userName = ?`)
 	rows, err := inst.Query(sql, userName)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -82,7 +85,7 @@ func SearchFriends(uin int64, userName string) (friends []*SearchFriendInfo, err
 	for rows.Next() {
 
 		var fi SearchFriendInfo
-		rows.Scan(&fi.Uin, &fi.Phone, &fi.NickName, &fi.HeadImgUrl, &fi.Gender, &fi.Grade, &fi.SchoolId, &fi.SchoolType, &fi.SchoolName)
+		rows.Scan(&fi.Uin, &fi.Phone, &fi.NickName, &fi.HeadImgUrl, &fi.Gender, &fi.Grade, &fi.SchoolId, &fi.SchoolType, &fi.SchoolName, &fi.DeptId, &fi.DeptName)
 
 		if len(fi.HeadImgUrl) > 0 {
 			fi.HeadImgUrl = fmt.Sprintf("http://yplay-1253229355.image.myqcloud.com/headimgs/%s", fi.HeadImgUrl)
