@@ -45,11 +45,14 @@ func doUpdateSchoolInfo(req *UpdateSchoolInfoReq, r *http.Request) (rsp *UpdateS
 	return
 }
 
+//正常情况学校 学校 + 年级 + 院系 是一起修改不会只修改年级
 func UpdateUserSchoolInfo(uin int64, schoolId int, schoolName string, grade int, deptId int, deptName string, flag int) (err error) {
 
-	log.Errorf("start UpdateUserSchoolInfo uin:%d, schoolId:%d, schoolName:%s, grade:%d, flag:%d", uin, schoolId, schoolName, grade, deptId, deptName, flag)
+	log.Errorf("start UpdateUserSchoolInfo uin:%d, schoolId:%d, schoolName:%s, grade:%d, deptId:%d, deptName:%s flag:%d", uin, schoolId, schoolName, grade, deptId, deptName, flag)
 
 	if uin == 0 {
+		err = rest.NewAPIError(constant.E_INVALID_PARAM, "uin invalid")
+		log.Errorf(err.Error())
 		return
 	}
 
@@ -67,11 +70,17 @@ func UpdateUserSchoolInfo(uin int64, schoolId int, schoolName string, grade int,
 		return
 	}
 
-	if _, ok := cache.SCHOOLS[schoolId]; !ok && (schoolId <= 9999999 && schoolId >= 9999997) { //999999[7~9] 代表用户自己输入学校 初中/高中/大学
+	if _, ok := cache.SCHOOLS[schoolId]; !ok && !(schoolId <= 9999999 && schoolId >= 9999997) {
+		err = rest.NewAPIError(constant.E_INVALID_PARAM, "schoolId invalid")
+		log.Errorf(err.Error())
+		return
+	}
+
+	if schoolId <= 9999999 && schoolId >= 9999997 { //999999[7~9] 代表用户自己输入学校 初中/高中/大学
 
 		log.Errorf("uin:%d, pending schoolName:%s ", uin, schoolName)
 		stmt, err1 := inst.Prepare(`insert into pendingSchool values(?, ?, ?, ?, ?, ?)`)
-		if err != nil {
+		if err1 != nil {
 			err = rest.NewAPIError(constant.E_DB_PREPARE, err1.Error())
 			log.Error(err)
 			return
@@ -173,7 +182,10 @@ func UpdateUserSchoolInfo(uin int64, schoolId int, schoolName string, grade int,
 			}
 		}
 
-	} else { // 该学校待审核
+	} else {
+
+		// 该学校待审核
+		//ischoolId <= 9999999 && schoolId >= 999999
 
 		tschoolType := 0
 

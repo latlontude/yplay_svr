@@ -95,6 +95,7 @@ func (this *UserProfileInfo2) String() string {
 func GetUserProfileInfo(uin int64) (info *UserProfileInfo, err error) {
 
 	if uin == 0 {
+		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid param")
 		return
 	}
 
@@ -218,6 +219,7 @@ func BatchGetUserProfileInfo(uins []int64) (res map[int64]*UserProfileInfo, err 
 func GetUserProfileInfo2(uin int64) (info *UserProfileInfo2, err error) {
 
 	if uin == 0 {
+		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid param")
 		return
 	}
 

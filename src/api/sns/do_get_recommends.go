@@ -84,7 +84,7 @@ func GetRecommends(uin int64, typ int, uuid int64, pageNum, pageSize int) (total
 		return
 	}
 
-	if typ == constant.ENUM_RECOMMEND_FRIEND_TYPE_SAME_SCHOOL || typ == constant.ENUM_RECOMMEND_FRIEND_TYPE_SAME_SCHOOL_GRADE || typ == constant.ENUM_RECOMMEND_FRIEND_TYPE_SAME_SCHOOL_BOY || typ == constant.ENUM_RECOMMEND_FRIEND_TYPE_SAME_SCHOOL_GIRL {
+	if typ == constant.ENUM_RECOMMEND_FRIEND_TYPE_SAME_SCHOOL || typ == constant.ENUM_RECOMMEND_FRIEND_TYPE_SAME_SCHOOL_GRADE || typ == constant.ENUM_RECOMMEND_FRIEND_TYPE_SAME_SCHOOL_BOY || typ == constant.ENUM_RECOMMEND_FRIEND_TYPE_SAME_SCHOOL_GIRL || typ == constant.ENUM_RECOMMEND_FRIEND_TYPE_SAME_SCHOOL_DEPT {
 
 		total, friends, err = GetRecommendsFromSameSchool(uin, typ, pageNum, pageSize)
 
