@@ -109,6 +109,9 @@ func SubmitQueryDetail(uin int64, qid int) (total int, infos []*QidStatInfo, err
 
 			//同校同年级的前3名
 			if v.SchoolId == ui.SchoolId && v.Grade == ui.Grade {
+                                if ui.SchoolType == 3 && ui.DeptId != v.DeptId {
+                                           continue // 用户学校为大学时，查找同校同学院同年级的用户
+                                }
 
 				//总数也只是计算同校同年级的
 				total += info.VotedCnt
