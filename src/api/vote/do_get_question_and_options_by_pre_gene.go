@@ -255,67 +255,6 @@ func GetNextQuestionAndOptionsByPreGene(uin int64, uuid int64) (qinfo *st.Questi
 		}
 	}()
 
-	//好友人数小于4人, 当前好友 + 单项添加过的好友 + 通讯录好友 + 默认补充
-	if len(friendUins) < 4 {
-
-		//预先计算好的选项字符串
-		for _, uid := range friendUins {
-			prepared += fmt.Sprintf("%d:", uid)
-		}
-
-		if len(prepared) > 0 {
-			prepared = prepared[:len(prepared)-1]
-		} else {
-			prepared = ""
-		}
-
-		log.Debugf("uin %d, friendUins(%d)<4,  prepared %s", uin, len(friendUins), prepared)
-
-		combinOptions, err1 := GetOptionsByCombine(uin, uuid, friendUins, nextQGender, 4-len(friendUins))
-		if err1 != nil {
-			err = err1
-			log.Errorf(err.Error())
-			return
-		}
-
-		log.Debugf("uin %d, friendUins(%d)<4,  GetOptionsByCombine %+v", uin, len(friendUins), combinOptions)
-
-		//我的好友数据
-		for _, uid := range friendUins {
-
-			option := &st.OptionInfo2{uid, friendInfos[uid].NickName, uinsVoteCntMap[int(uid)]}
-			options = append(options, option)
-		}
-
-		uids := make([]int64, 0)
-		//单向加好友或者通讯录或者明星
-		for _, option := range combinOptions {
-			options = append(options, option)
-
-			if option.Uin != 0 {
-				uids = append(uids, option.Uin)
-			}
-		}
-
-		if len(uids) == 0 {
-			return
-		}
-
-		//单向加好友或者通讯录好友在该题目下被选择的次数
-		voteCntMap, _ := st.GetUinsVotedCnt(newQId, uids)
-
-		for i, option := range options {
-
-			if v, ok := voteCntMap[int(option.Uin)]; ok {
-				options[i].BeSelCnt = v
-			}
-		}
-
-		return
-	}
-
-	log.Errorf("the number of my friends is biger than 4")
-
 	if nextQGender != 0 {
 
 		//从中过滤出男性朋友或者女性朋友
@@ -353,12 +292,66 @@ func GetNextQuestionAndOptionsByPreGene(uin int64, uuid int64) (qinfo *st.Questi
 		randomUins = girlUins
 	}
 
-	log.Errorf("filter users by question option gender")
-
-	//前面已经校验过不可能<4
+	// 为用户准备好题库后，用户增删过好友 导致一些题目已经不适合ta, 需要为该题目重新准备候选人
 	if len(uinsByVote) < constant.ENUM_OPTION_BATCH_SIZE || len(uinsByAddFriendTime) < constant.ENUM_OPTION_BATCH_SIZE || len(uinsByPVCnt) < constant.ENUM_OPTION_BATCH_SIZE {
-		err = rest.NewAPIError(constant.E_VOTE_INFO_ERR, "vote info error")
-		log.Errorf(err.Error())
+		log.Debugf(" start prepare candidates list")
+		log.Debugf("uinsByvote:%+v uinsByAddFriendTime:%+v  uinsByPVCnt:%+v", uinsByVote, uinsByAddFriendTime, uinsByPVCnt)
+
+		cnt := len(uinsByVote)
+		if len(uinsByAddFriendTime) < cnt {
+			cnt = len(uinsByAddFriendTime)
+		}
+		if len(uinsByPVCnt) < cnt {
+			cnt = len(uinsByPVCnt)
+		}
+
+		combinOptions, err1 := GetOptionsByCombine(uin, uuid, randomUins, nextQGender, 4-cnt)
+		if err1 != nil {
+			err = err1
+			log.Errorf(err.Error())
+			return
+		}
+
+		if nextQGender == 1 {
+			log.Debugf("uin %d, boyCnt(%d) < 4 GetOptionsByCombine %+v", uin, len(randomUins), combinOptions)
+		} else if nextQGender == 2 {
+			log.Debugf("uin %d, girlCnt(%d) < 4 GetOptionsByCombine %+v", uin, len(randomUins), combinOptions)
+		} else {
+			log.Debugf("uin %d, friendsCnt(%d) < 4  GetOptionsByCombine %+v", uin, len(randomUins), combinOptions)
+		}
+
+		//我的好友数据
+		for _, uid := range randomUins {
+
+			option := &st.OptionInfo2{uid, friendInfos[uid].NickName, uinsVoteCntMap[int(uid)]}
+			options = append(options, option)
+		}
+
+		uids := make([]int64, 0)
+		//单向加好友或者通讯录或者明星
+		for _, option := range combinOptions {
+			options = append(options, option)
+
+			if option.Uin != 0 {
+				uids = append(uids, option.Uin)
+			}
+		}
+
+		if len(uids) == 0 {
+			return
+		}
+
+		//单向加好友或者通讯录好友在该题目下被选择的次数
+		voteCntMap, _ := st.GetUinsVotedCnt(newQId, uids)
+
+		for i, option := range options {
+
+			if v, ok := voteCntMap[int(option.Uin)]; ok {
+				options[i].BeSelCnt = v
+			}
+		}
+
+		log.Debugf(" end  prepare candidates list options:%+v", options)
 		return
 	}
 
@@ -388,12 +381,12 @@ func GetNextQuestionAndOptionsByPreGene(uin int64, uuid int64) (qinfo *st.Questi
 	}
 
 	randomUins = ReOrderUinsByAddFriendSrc(randomUins, friendsByaddFriendSrc)
-	randomUins, _ = OptionsByProbaility(uin, friendUins)
+	randomUins, _ = OptionsByProbaility(uin, randomUins)
 	if len(randomUins) > 12 {
 		randomUins = randomUins[:12]
 	}
 
-	log.Debugf("uin %d, friendUins %d, uinsByVote %+v,  uinsByAddFriendTime %+v, uinsByPVCnt %+v", uin, len(friendUins), uinsByVote, uinsByAddFriendTime, uinsByPVCnt)
+	//log.Debugf("uin %d, friendUins %d, uinsByVote %+v,  uinsByAddFriendTime %+v, uinsByPVCnt %+v", uin, len(friendUins), uinsByVote, uinsByAddFriendTime, uinsByPVCnt)
 
 	allOptionUins, err := PrepareAllOptionsUin2(uin, uinsByVote, uinsByAddFriendTime, uinsByPVCnt, randomUins)
 	if err != nil {
