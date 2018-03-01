@@ -305,17 +305,23 @@ func GetNextQuestionAndOptionsByPreGene(uin int64, uuid int64) (qinfo *st.Questi
 			cnt = len(uinsByPVCnt)
 		}
 
-		combinOptions, err1 := GetOptionsByCombine(uin, uuid, friendUins, nextQGender, 4-cnt)
+		combinOptions, err1 := GetOptionsByCombine(uin, uuid, randomUins, nextQGender, 4-cnt)
 		if err1 != nil {
 			err = err1
 			log.Errorf(err.Error())
 			return
 		}
 
-		log.Debugf("uin %d, friendUins(%d)<4,  GetOptionsByCombine %+v", uin, len(friendUins), combinOptions)
+		if nextQGender == 1 {
+			log.Debugf("uin %d, boyCnt(%d) < 4 GetOptionsByCombine %+v", uin, len(randomUins), combinOptions)
+		} else if nextQGender == 2 {
+			log.Debugf("uin %d, girlCnt(%d) < 4 GetOptionsByCombine %+v", uin, len(randomUins), combinOptions)
+		} else {
+			log.Debugf("uin %d, friendsCnt(%d) < 4  GetOptionsByCombine %+v", uin, len(randomUins), combinOptions)
+		}
 
 		//我的好友数据
-		for _, uid := range friendUins {
+		for _, uid := range randomUins {
 
 			option := &st.OptionInfo2{uid, friendInfos[uid].NickName, uinsVoteCntMap[int(uid)]}
 			options = append(options, option)
@@ -380,7 +386,7 @@ func GetNextQuestionAndOptionsByPreGene(uin int64, uuid int64) (qinfo *st.Questi
 		randomUins = randomUins[:12]
 	}
 
-	log.Debugf("uin %d, friendUins %d, uinsByVote %+v,  uinsByAddFriendTime %+v, uinsByPVCnt %+v", uin, len(friendUins), uinsByVote, uinsByAddFriendTime, uinsByPVCnt)
+	//log.Debugf("uin %d, friendUins %d, uinsByVote %+v,  uinsByAddFriendTime %+v, uinsByPVCnt %+v", uin, len(friendUins), uinsByVote, uinsByAddFriendTime, uinsByPVCnt)
 
 	allOptionUins, err := PrepareAllOptionsUin2(uin, uinsByVote, uinsByAddFriendTime, uinsByPVCnt, randomUins)
 	if err != nil {

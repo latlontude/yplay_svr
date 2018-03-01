@@ -968,7 +968,7 @@ func GetOptionsFromAddFriendMsg(uin int64, cnt int, qgender int) (options []*st.
 		if len(info.NickName) == 0 {
 			continue
 		}
-		if info.Gender == qgender {
+		if info.Gender == qgender || qgender == 0 {
 			unfriendsUidsInfo = append(unfriendsUidsInfo, info)
 		}
 	}
