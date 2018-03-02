@@ -72,7 +72,7 @@ func IsValidPhone(phone string) (ok bool) {
 	return false
 }
 
-func SendPhoneMsg(phone string, text string) (err error) {
+func SendPhoneMsg(phone string, text1, text2 string, minute string) (err error) {
 
 	const SMS_SDK_APPID = 1400031527
 	const SMS_APPKEY = "a0a26597a1d8c60ac486b1b33359345a"
@@ -101,7 +101,7 @@ func SendPhoneMsg(phone string, text string) (err error) {
 	req.Extend = ""
 	req.Ext = ""
 
-	req.Params = []string{"[YPLAY]", text, "365*24*60"}
+	req.Params = []string{text1, text2, minute}
 
 	d, err := json.Marshal(req)
 	if err != nil {

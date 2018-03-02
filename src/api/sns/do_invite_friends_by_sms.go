@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"svr/st"
 	//"common/myredis"
+	"common/env"
 	"time"
 )
 
@@ -94,11 +95,7 @@ func InviteFriendsBySms(uin int64, data string) (err error) {
 
 	ts := time.Now().Unix()
 
-	msg := fmt.Sprintf("%s的%s，希望加你为好友, 一起来玩呗! http://x.y.z", ui.SchoolName, ui.NickName)
-
-	if len(ui.SchoolName) == 0 {
-		msg = fmt.Sprintf("%s，希望加你为好友, 一起来玩呗! http://x.y.z", ui.NickName)
-	}
+	msg := fmt.Sprintf("%s的学生，希望加你为好友, 一起来玩呗! http://yplay.vivacampus.com/api/hepler/downloadredirect", ui.SchoolName)
 
 	for _, phone := range phones {
 
@@ -106,8 +103,11 @@ func InviteFriendsBySms(uin int64, data string) (err error) {
 			continue
 		}
 
-		//不实际发送短信
-		//go sms.SendPhoneMsg(phone, msg)
+		//发送短信开关是否打开
+		if env.Config.Sms.InviteFriendSend > 0 {
+			go sms.SendPhoneMsg(phone, ui.NickName, msg, "365*24*60")
+		}
+
 		fmt.Sprintf("phone %s, msg %+v", phone, msg)
 
 		_, err = stmt.Exec(0, uin, phone, 0, ts)

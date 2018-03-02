@@ -11,6 +11,8 @@ import (
 	"fmt"
 	"net/http"
 	//"strings"
+	"strconv"
+	"strings"
 	"svr/st"
 )
 
@@ -149,7 +151,89 @@ func Login2(phone string, code string, uuid int64, device, os, appVer string) (r
 		return
 	}
 
+	//根据版本号来打开验证码校验机制
+	needInviteCode := CheckNeedInviteCode(device, os, appVer)
+
+	//如果不需要验证码，则将验证码校验机制关闭
+	if needInviteCode == 0 {
+		hasCheckInviteCode = 1
+	}
+
 	rsp = &Login2Rsp{hasCheckInviteCode, uin, token, env.Config.Token.VER, isNewUser, info}
+
+	return
+}
+
+//无版本号或者ios< 1.0.159 安卓<1.0.1466 需要邀请码
+func CheckNeedInviteCode(device, os, appVer string) (needInviteCode int) {
+
+	//默认需要校验码
+	needInviteCode = 1
+
+	//老的版本没有appver信息，需要验证码
+	if len(appVer) == 0 {
+		return
+	}
+
+	//os版本小写
+	nos := strings.ToLower(os)
+
+	//如果是IOS
+	if strings.Contains(nos, "ios") {
+
+		//版本号1.0.159
+		a := strings.Split(appVer, ".")
+		if len(a) != 3 {
+			return
+		}
+
+		major, _ := strconv.Atoi(a[0])
+		minor, _ := strconv.Atoi(a[1])
+		buildN, _ := strconv.Atoi(a[2])
+
+		//主版本号 > 1 或者 1.1以上
+		if major > 1 || (major == 1 && minor > 0) {
+			needInviteCode = 0
+			return
+		}
+
+		//1.0.159以上
+		if major == 1 && minor == 0 && buildN >= 159 {
+			needInviteCode = 0
+			return
+		}
+
+	} else if strings.Contains(nos, "android") {
+
+		//版本号1.0.1466_2018-02-25 13:23:31_beta
+
+		a := strings.Split(appVer, ".")
+		if len(a) != 3 {
+			return
+		}
+
+		major, _ := strconv.Atoi(a[0])
+		minor, _ := strconv.Atoi(a[1])
+
+		a1 := strings.Split(a[2], "_")
+		if len(a[1]) == 0 {
+			return
+		}
+
+		buildN, _ := strconv.Atoi(a1[0])
+
+		//主版本号 > 1 或者 1.1以上
+		if major > 1 || (major == 1 && minor > 0) {
+			needInviteCode = 0
+			return
+		}
+
+		//1.0.1466以上
+		if major == 1 && minor == 0 && buildN >= 1466 {
+			needInviteCode = 0
+			return
+		}
+	}
 
 	return
 }

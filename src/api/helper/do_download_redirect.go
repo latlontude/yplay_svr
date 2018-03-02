@@ -12,8 +12,6 @@ type DownloadRedirectReq struct {
 
 func doDownloadRedirect(req *DownloadRedirectReq, r *http.Request) (rsp *rest.RedirectInfo, err error) {
 
-	log.Debugf("DownloadRedirectReq %+v", req)
-
 	h := r.Header
 
 	agentStr := ""
@@ -21,45 +19,53 @@ func doDownloadRedirect(req *DownloadRedirectReq, r *http.Request) (rsp *rest.Re
 		agentStr = strings.Join(v, ";")
 	}
 
+	log.Debugf("DownloadRedirectReq %+v, agentStr %s", req, agentStr)
+
 	redirectUrl := ""
 
 	if REG_IOS.MatchString(agentStr) {
 
-		redirectUrl = "https://itunes.apple.com/us/app/%E5%BC%80%E6%B5%AA/id1324604165?l=zh&ls=1&mt=8"
+		redirectUrl = "https://itunes.apple.com/cn/app/%E5%99%97%E5%99%97/id1324604165?mt=8"
 
 	} else if REG_MAC.MatchString(agentStr) {
 
-		redirectUrl = "https://itunes.apple.com/us/app/%E5%BC%80%E6%B5%AA/id1324604165?l=zh&ls=1&mt=8"
+		redirectUrl = "https://itunes.apple.com/cn/app/%E5%99%97%E5%99%97/id1324604165?mt=8"
 
 	} else if REG_MI.MatchString(agentStr) {
 
-		redirectUrl = "http://app.mi.com/details?id=com.zhihu.android"
+		redirectUrl = "http://app.mi.com/detail/548878"
+
+	} else if REG_MIX.MatchString(agentStr) {
+
+		redirectUrl = "http://app.mi.com/detail/548878"
 
 	} else if REG_REDMI.MatchString(agentStr) {
 
-		redirectUrl = "http://app.mi.com/details?id=com.zhihu.android"
+		redirectUrl = "http://app.mi.com/detail/548878"
 
 	} else if REG_HUAWEI.MatchString(agentStr) {
 
-		redirectUrl = "http://a.vmall.com/app/C10047082"
+		redirectUrl = "http://a.vmall.com/app/C100118923"
 
 	} else if REG_HONOR.MatchString(agentStr) {
 
-		redirectUrl = "http://a.vmall.com/app/C10047082"
+		redirectUrl = "http://a.vmall.com/app/C100118923"
 
 	} else if REG_OPPO.MatchString(agentStr) {
 
-		redirectUrl = "https://play.google.com/store/apps/details?id=com.zhihu.android"
+		redirectUrl = "http://sj.qq.com/myapp/detail.htm?apkName=com.yeejay.yplay"
 
 	} else if REG_VIVO.MatchString(agentStr) {
 
+		redirectUrl = "http://info.appstore.vivo.com.cn/detail/2021675"
+
 	} else if REG_SM.MatchString(agentStr) {
 
-		redirectUrl = "https://play.google.com/store/apps/details?id=com.zhihu.android"
+		redirectUrl = "http://sj.qq.com/myapp/detail.htm?apkName=com.yeejay.yplay"
 
 	} else if REG_AND.MatchString(agentStr) {
 
-		redirectUrl = "https://play.google.com/store/apps/details?id=com.zhihu.android"
+		redirectUrl = "http://sj.qq.com/myapp/detail.htm?apkName=com.yeejay.yplay"
 
 	}
 

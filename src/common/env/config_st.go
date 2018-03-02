@@ -73,7 +73,8 @@ type YPLAYSvrConfig struct {
 	}
 
 	Sms struct {
-		TTL int
+		TTL              int
+		InviteFriendSend int
 	}
 
 	Feed struct {

@@ -19,6 +19,7 @@ var (
 
 	//小米
 	REG_MI    = regexp.MustCompile(`\(Linux(.*?); MI (.*?)Build/(.*?)\) AppleWebKit`)
+	REG_MIX   = regexp.MustCompile(`\(Linux(.*?); MIX (.*?)Build/(.*?)\) AppleWebKit`)
 	REG_REDMI = regexp.MustCompile(`\(Linux(.*?); Redmi (.*?)Build/(.*?)\) AppleWebKit`)
 
 	//华为
