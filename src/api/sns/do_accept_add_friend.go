@@ -168,6 +168,8 @@ func AcceptAddFriend(uin int64, msgId int64, act int) (err error) {
 	//更新好友的好友关系
 	go im.SendAcceptAddFriendMsg(fromUin, toUin)
 
+	go CreateNewSnapSession(fromUin, toUin)
+
 	go JudgeNeedGeneQids(fromUin, toUin)
 
 	return
@@ -257,5 +259,26 @@ func IncrFriendCnt(uin, friendUin int64) (err error) {
 		}
 	}
 
+	return
+}
+
+func CreateNewSnapSession(uin, uid int64) (err error) {
+
+	log.Errorf("begin uin %d, uid %d, CreateNewSnapSession ", uin, uid)
+
+	if uin == uid || uin <= 0 || uid <= 0 {
+		log.Errorf("invalid uin %d, uid %d", uin, uid)
+		return
+	}
+
+	groupId, err := im.CreateSnapChatSesson(uin, uid)
+	if err != nil {
+		log.Errorf("uin %d, uid %d, create snap chat session error %s", uin, uid, err.Error())
+		return
+	}
+
+	log.Errorf("uin1 %d, uin2 %d, create snap chat session success, groupId %s", uin, uid, groupId)
+
+	log.Errorf("end CreateNewSnapSession")
 	return
 }
