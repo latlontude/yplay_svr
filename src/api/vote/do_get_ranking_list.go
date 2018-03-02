@@ -234,9 +234,9 @@ func BatchGetRankingList(uin int64, qids []int) (retInfosMap map[int]GetRankingL
 
 					//同校同年级的前3名
 					if v.SchoolId == ui.SchoolId && v.Grade == ui.Grade {
-						if v.SchoolType == 3 && v.DeptId != ui.DeptId {
+				/*		if v.SchoolType == 3 && v.DeptId != ui.DeptId {
 							continue // 用户学校为大学时，查找同校同学院同年级的用户
-						}
+						} */
 
 						if flag {
 							myPos++
@@ -470,9 +470,9 @@ func GetRankingList(uin int64, qid int) (retInfo GetRankingListRsp, err error) {
 
 			//同校同年级的前3名
 			if v.SchoolId == ui.SchoolId && v.Grade == ui.Grade {
-				if v.SchoolType == 3 && v.DeptId != ui.DeptId {
+			/*	if v.SchoolType == 3 && v.DeptId != ui.DeptId {
 					continue // 用户学校为大学时，查找同校同学院同年级的用户
-				}
+				} */
 
 				if flag {
 					myPos++
