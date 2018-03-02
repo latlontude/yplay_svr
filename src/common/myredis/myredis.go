@@ -321,6 +321,31 @@ func (this *RedisApp) SetEx(key string, val string, ttl uint32) (err error) {
 	return
 }
 
+func (this *RedisApp) Pexpire(key string, ttl uint32) (err error) {
+
+	conn, err := this.GetConn()
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+	defer conn.Close()
+
+	rkey := fmt.Sprintf("%s_%s", this.AppId, key)
+
+	reply, err := redis.String(conn.Do("pexpire", rkey, ttl))
+	if err != nil {
+		err = rest.NewAPIError(constant.E_REDIS_PEXPIRE, "pexpire error"+err.Error())
+		return
+	}
+
+	if reply != "OK" {
+		err = rest.NewAPIError(constant.E_REDIS_PEXPIRE, "pexpire error"+reply)
+		return
+	}
+
+	return
+}
+
 func (this *RedisApp) Exist(key string) (exist bool, err error) {
 
 	conn, err := this.GetConn()

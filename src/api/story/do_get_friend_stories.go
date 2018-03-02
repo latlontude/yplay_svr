@@ -159,7 +159,14 @@ func GetFriendStories(uin int64, ts int64, cnt int) (stories []*st.StoryInfo, er
 		}
 
 		var si st.StoryInfo
-		if json.Unmarshal([]byte(storyVal), &si) != nil {
+		err = json.Unmarshal([]byte(storyVal), &si)
+		if err != nil {
+			log.Errorf(err.Error())
+			return
+		} else {
+			storyId, _ := strconv.ParseInt(svid, 10, 64)
+			viewRecord, _ := GetStoryViewRecord(storyId)
+			si.ViewCnt = len(viewRecord)
 			stories = append(stories, &si)
 			//uinsM[si.Uin] = 1
 		}

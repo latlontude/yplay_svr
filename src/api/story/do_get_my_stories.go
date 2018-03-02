@@ -42,6 +42,7 @@ func doGetMyStories(req *GetMyStoriesReq, r *http.Request) (rsp *GetMyStoriesRsp
 }
 
 func GetMyStories(uin int64, ts int64, cnt int) (stories []*st.StoryInfo, err error) {
+	log.Debugf("start GetMyStories uin:%d", uin)
 
 	stories = make([]*st.StoryInfo, 0)
 
@@ -84,8 +85,11 @@ func GetMyStories(uin int64, ts int64, cnt int) (stories []*st.StoryInfo, err er
 
 	//没有最新story
 	if len(valsStr) == 0 {
+		log.Debugf("have not new story")
 		return
 	}
+
+	log.Debugf("valsStr:%+v", valsStr)
 
 	if len(valsStr)%2 != 0 {
 		err = rest.NewAPIError(constant.E_REDIS_ZSET, "ZRevRangeWithScore return values cnt not even(2X)")
@@ -123,6 +127,8 @@ func GetMyStories(uin int64, ts int64, cnt int) (stories []*st.StoryInfo, err er
 		}
 	}
 
+	log.Debugf("orderVids:%+v", orderVids)
+
 	if len(orderVids) == 0 {
 		return
 	}
@@ -144,6 +150,8 @@ func GetMyStories(uin int64, ts int64, cnt int) (stories []*st.StoryInfo, err er
 		return
 	}
 
+	log.Debugf("storyVals:%+v", storyVals)
+
 	//获取需要拉取用户资料的UIS列表
 	//uinsM := make(map[int64]int)
 
@@ -156,7 +164,14 @@ func GetMyStories(uin int64, ts int64, cnt int) (stories []*st.StoryInfo, err er
 		}
 
 		var si st.StoryInfo
-		if json.Unmarshal([]byte(storyVal), &si) != nil {
+		err = json.Unmarshal([]byte(storyVal), &si)
+		if err != nil {
+			log.Errorf(err.Error())
+			return
+		} else {
+			storyId, _ := strconv.ParseInt(svid, 10, 64)
+			viewRecord, _ := GetStoryViewRecord(storyId)
+			si.ViewCnt = len(viewRecord)
 			stories = append(stories, &si)
 			//uinsM[si.Uin] = 1
 		}
@@ -176,6 +191,6 @@ func GetMyStories(uin int64, ts int64, cnt int) (stories []*st.StoryInfo, err er
 				return
 			}
 	*/
-
+	log.Debugf("end GetMyStories uin:%d", uin)
 	return
 }

@@ -93,6 +93,7 @@ func AddStory(uin int64, typ int, data, text, thumbnailImgUrl string) (sid int64
 		return
 	}
 
+	keyStr = fmt.Sprintf("%d", uin)
 	//先删除24小时之前发表的
 	expireTs := time.Now().UnixNano()/1000000 - 86400000
 	_, err1 := app.ZRemRangeByScore(keyStr, 0, expireTs)
@@ -126,6 +127,7 @@ func GeneNewStory(uin int64, storyId int64) (err error) {
 		return
 	}
 
+	friendUins = append(friendUins, uin) //朋友圈也能看到自己发表的动态
 	app, err := myredis.GetApp(constant.ENUM_REDIS_APP_FRIEND_STORY_LIST)
 	if err != nil {
 		log.Error(err.Error())
