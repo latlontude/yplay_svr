@@ -60,11 +60,40 @@ func GetMyStories(uin int64, ts int64, cnt int) (stories []*st.StoryInfo, err er
 
 	keyStr := fmt.Sprintf("%d", uin)
 
-	//先删除24小时之前发表的
+	//获取24小时之前发表的
 	expireTs := time.Now().UnixNano()/1000000 - 86400000
-	_, err1 := app.ZRemRangeByScore(keyStr, 0, expireTs)
-	if err1 != nil {
-		log.Errorf(err1.Error())
+	vals, err := app.ZRangeByScoreWithoutLimit(keyStr, -1, expireTs)
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+
+	if len(vals) > 0 { // 有24小时之前发表的动态
+
+		log.Debugf("have %d subjects before 24 hours", len(vals))
+
+		app1, err1 := myredis.GetApp(constant.ENUM_REDIS_APP_STORY_STAT)
+		if err1 != nil {
+			log.Error(err1.Error())
+			return
+		}
+
+		//从动态观看总数列表列表中移除该用户24小时之前发表的动态
+		keyStr1 := fmt.Sprintf("total")
+		_, err1 = app1.ZMRem(keyStr1, vals)
+		if err1 != nil {
+			log.Error(err1.Error())
+			return
+		}
+
+	} else {
+		log.Debugf("no subjects before 24 hours")
+	}
+
+	//先删除24小时之前发表的
+	_, err = app.ZRemRangeByScore(keyStr, 0, expireTs)
+	if err != nil {
+		log.Errorf(err.Error())
 	}
 
 	//获取新的STORY ID
@@ -152,6 +181,43 @@ func GetMyStories(uin int64, ts int64, cnt int) (stories []*st.StoryInfo, err er
 
 	log.Debugf("storyVals:%+v", storyVals)
 
+	// 获取动态观看总数
+	app3, err := myredis.GetApp(constant.ENUM_REDIS_APP_STORY_STAT)
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+
+	viewVals, err := app3.ZRangeWithScores("total", 0, -1)
+	if err != nil {
+		log.Errorf(err.Error())
+		log.Errorf("failed to  get view cnt")
+		return
+	}
+
+	storyviewCntIdMap := make(map[string]int64)
+
+	for i, viewVal := range viewVals {
+
+		var storyId string
+		var viewCnt int64
+		if i%2 == 0 {
+			storyId = viewVal
+		} else {
+
+			viewCnt, err = strconv.ParseInt(viewVal, 10, 64)
+			if err != nil {
+				err = rest.NewAPIError(constant.E_REDIS_ZSET, "ZRangeWithScore value not interge")
+				log.Error(err.Error())
+				return
+			}
+
+			if len(storyId) > 0 {
+				storyviewCntIdMap[storyId] = viewCnt
+			}
+		}
+	}
+
 	//获取需要拉取用户资料的UIS列表
 	//uinsM := make(map[int64]int)
 
@@ -169,9 +235,9 @@ func GetMyStories(uin int64, ts int64, cnt int) (stories []*st.StoryInfo, err er
 			log.Errorf(err.Error())
 			return
 		} else {
-			storyId, _ := strconv.ParseInt(svid, 10, 64)
-			viewRecord, _ := GetStoryViewRecord(storyId)
-			si.ViewCnt = len(viewRecord)
+			if cnt, ok := storyviewCntIdMap[svid]; ok {
+				si.ViewCnt = int(cnt)
+			}
 			stories = append(stories, &si)
 			//uinsM[si.Uin] = 1
 		}

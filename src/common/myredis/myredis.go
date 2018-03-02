@@ -561,6 +561,39 @@ func (this *RedisApp) ZRangeByScore(key string, min, max int64, offset, count in
 	return
 }
 
+func (this *RedisApp) ZRangeByScoreWithoutLimit(key string, min, max int64) (vals []string, err error) {
+
+	vals = make([]string, 0)
+
+	conn, err := this.GetConn()
+	if err != nil {
+		log.Error(err.Error())
+		return
+	}
+	defer conn.Close()
+
+	rkey := fmt.Sprintf("%s_%s", this.AppId, key)
+
+	maxStr := fmt.Sprintf("%d", max)
+	if max == -1 {
+		maxStr = "+inf"
+	}
+
+	minStr := fmt.Sprintf("%d", min)
+	if min == -1 {
+		minStr = "-inf"
+	}
+
+	vals, err = redis.Strings(conn.Do("ZRANGEBYSCORE", rkey, minStr, maxStr))
+	if err != nil {
+		err = rest.NewAPIError(constant.E_REDIS_ZSET, "range error,"+err.Error())
+		log.Errorf(err.Error())
+		return
+	}
+
+	return
+}
+
 func (this *RedisApp) ZRangeByScoreWithScores(key string, min, max int64, offset, count int) (vals []string, err error) {
 
 	vals = make([]string, 0)
@@ -867,7 +900,34 @@ func (this *RedisApp) ZRem(key string, member string) (remCnt int, err error) {
 
 	remCnt, err = redis.Int(conn.Do("ZREM", rkey, member))
 	if err != nil {
-		err = rest.NewAPIError(constant.E_REDIS_ZSET, "zrem error,"+err.Error())
+		err = rest.NewAPIError(constant.E_REDIS_ZREM, "zrem error,"+err.Error())
+		log.Errorf(err.Error())
+		return
+	}
+
+	return
+}
+
+func (this *RedisApp) ZMRem(key string, members []string) (remCnt int, err error) {
+
+	conn, err := this.GetConn()
+	if err != nil {
+		log.Error(err.Error())
+		return
+	}
+	defer conn.Close()
+
+	rkey := fmt.Sprintf("%s_%s", this.AppId, key)
+
+	params := make([]interface{}, 0)
+	params = append(params, rkey)
+	for _, member := range members {
+		params = append(params, member)
+	}
+
+	remCnt, err = redis.Int(conn.Do("ZREM", params...))
+	if err != nil {
+		err = rest.NewAPIError(constant.E_REDIS_ZMREM, "zmrem error,"+err.Error())
 		log.Errorf(err.Error())
 		return
 	}

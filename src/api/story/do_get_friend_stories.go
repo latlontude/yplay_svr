@@ -61,12 +61,41 @@ func GetFriendStories(uin int64, ts int64, cnt int) (stories []*st.StoryInfo, er
 	}
 
 	keyStr := fmt.Sprintf("%d", uin)
+	//获取24小时之前发表的
+	expireTs := time.Now().UnixNano()/1000000 - 86400000
+	vals, err := app.ZRangeByScoreWithoutLimit(keyStr, -1, expireTs)
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+
+	if len(vals) > 0 { // 有24小时之前发表的动态
+
+		log.Debugf("have %d subjects before 24 hours", len(vals))
+
+		app1, err1 := myredis.GetApp(constant.ENUM_REDIS_APP_STORY_STAT)
+		if err1 != nil {
+			log.Error(err1.Error())
+			return
+		}
+
+		//从动态观看总数列表列表中移除该用户24小时之前发表的动态
+		keyStr1 := fmt.Sprintf("total")
+		_, err1 = app1.ZMRem(keyStr1, vals)
+		if err1 != nil {
+			log.Error(err1.Error())
+			return
+		}
+
+	} else {
+		log.Debugf("no subjects before 24 hours")
+	}
 
 	//先删除24小时之前发表的
-	expireTs := time.Now().UnixNano()/1000000 - 86400000
-	_, err1 := app.ZRemRangeByScore(keyStr, 0, expireTs)
-	if err1 != nil {
-		log.Errorf(err1.Error())
+	expireTs = time.Now().UnixNano()/1000000 - 86400000
+	_, err = app.ZRemRangeByScore(keyStr, 0, expireTs)
+	if err != nil {
+		log.Errorf(err.Error())
 	}
 
 	//获取新的STORY ID
@@ -164,9 +193,6 @@ func GetFriendStories(uin int64, ts int64, cnt int) (stories []*st.StoryInfo, er
 			log.Errorf(err.Error())
 			return
 		} else {
-			storyId, _ := strconv.ParseInt(svid, 10, 64)
-			viewRecord, _ := GetStoryViewRecord(storyId)
-			si.ViewCnt = len(viewRecord)
 			stories = append(stories, &si)
 			//uinsM[si.Uin] = 1
 		}
