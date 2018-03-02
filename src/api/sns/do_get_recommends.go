@@ -168,6 +168,11 @@ func GetRecommendsFromSameSchool(uin int64, subType int, pageNum, pageSize int) 
 		return
 	}
 
+	if ui.SchoolId <= 9999999 && ui.SchoolId >= 9999997 {
+		log.Debugf("your school is in pending")
+		return
+	}
+
 	//同校已经注册的
 	conditions := fmt.Sprintf(`schoolId = %d and uin not in (%s)`, ui.SchoolId, strs)
 
