@@ -40,6 +40,8 @@ func doGetStoryViewRecord(req *GetStoryViewRecordReq, r *http.Request) (rsp *Get
 func GetStoryViewRecord(storyId int64) (ret map[int64]int64, err error) {
 	log.Debugf("start GetStoryViewRecord storyId:%d", storyId)
 
+	ret = make(map[int64]int64)
+
 	if storyId <= 0 {
 		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid params")
 		log.Errorf(err.Error())

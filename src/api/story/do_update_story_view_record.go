@@ -69,7 +69,9 @@ func UpdateStoryViewRecord(uin, storyId, ts int64) (err error) {
 			log.Errorf(err.Error())
 			return
 		}
-		err1 := app.Pexpire(keyStr, 86400) // 24小时过期
+
+		log.Debugf("first view")
+		err1 := app.Expire(keyStr, 86400) // 24小时过期
 		if err1 != nil {
 			log.Errorf(err1.Error())
 			return
@@ -77,19 +79,7 @@ func UpdateStoryViewRecord(uin, storyId, ts int64) (err error) {
 		return
 	}
 
-	score, err := app.ZScore(keyStr, member)
-	if err != nil {
-		log.Errorf("zscore err")
-		log.Errorf(err.Error())
-		return
-	}
-
-	if score != 0 { // 此用户已经观看过此条动态
-		log.Debugf("uin:%d has viewed this subject")
-		return
-	}
-
-	score = ts // 此用户第一次观看此条动态
+	score := ts
 	err = app.ZAdd(keyStr, score, member)
 	if err != nil {
 		log.Errorf(err.Error())
