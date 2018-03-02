@@ -17,7 +17,7 @@ type GetStoryViewRecordReq struct {
 }
 
 type GetStoryViewRecordRsp struct {
-	viewInfo map[int64]int64 `json:"viewInfo"`
+	ViewInfo map[int64]int64 `json:"viewInfo"`
 }
 
 func doGetStoryViewRecord(req *GetStoryViewRecordReq, r *http.Request) (rsp *GetStoryViewRecordRsp, err error) {

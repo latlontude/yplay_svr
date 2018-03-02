@@ -195,12 +195,13 @@ func GetMyStories(uin int64, ts int64, cnt int) (stories []*st.StoryInfo, err er
 		return
 	}
 
+	log.Debugf("viewVals:%+v", viewVals)
+
 	storyviewCntIdMap := make(map[string]int64)
+	var storyId string
+	var viewCnt int64
 
 	for i, viewVal := range viewVals {
-
-		var storyId string
-		var viewCnt int64
 		if i%2 == 0 {
 			storyId = viewVal
 		} else {
@@ -217,6 +218,8 @@ func GetMyStories(uin int64, ts int64, cnt int) (stories []*st.StoryInfo, err er
 			}
 		}
 	}
+
+	log.Debugf("storyviewCntIdMap %+v", storyviewCntIdMap)
 
 	//获取需要拉取用户资料的UIS列表
 	//uinsM := make(map[int64]int)
