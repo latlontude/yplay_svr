@@ -494,17 +494,17 @@ func GetNextQuestionAndOptions(uin int64, uuid int64) (qinfo *st.QuestionInfo, o
 	}
 
 	if len(uinsByVote) > 12 {
-		uinsByVote = ReOrderUinsByAddFriendSrc(uinsByVote, friendsByaddFriendSrc)
+		uinsByVote = ReOrderUinsByAddFriendSrc(uin, uinsByVote, friendsByaddFriendSrc)
 		uinsByVote = uinsByVote[:12]
 	}
 
 	if len(uinsByAddFriendTime) > 12 {
-		uinsByAddFriendTime = ReOrderUinsByAddFriendSrc(uinsByAddFriendTime, friendsByaddFriendSrc)
+		uinsByAddFriendTime = ReOrderUinsByAddFriendSrc(uin, uinsByAddFriendTime, friendsByaddFriendSrc)
 		uinsByAddFriendTime = uinsByAddFriendTime[:12]
 	}
 
 	if len(uinsByPVCnt) > 12 {
-		uinsByPVCnt = ReOrderUinsByAddFriendSrc(uinsByPVCnt, friendsByaddFriendSrc)
+		uinsByPVCnt = ReOrderUinsByAddFriendSrc(uin, uinsByPVCnt, friendsByaddFriendSrc)
 		uinsByPVCnt = uinsByPVCnt[:12]
 	}
 
@@ -1402,9 +1402,9 @@ func GetUinsByAddFriendSrc(uin int64) (uinsMap map[int64]int, err error) {
 	return
 }
 
-func ReOrderUinsByAddFriendSrc(uins []int64, uinsByaddFriendSrc map[int64]int) (ordered []int64) {
+func ReOrderUinsByAddFriendSrc(uin int64, uins []int64, uinsByaddFriendSrc map[int64]int) (ordered []int64) {
 
-	log.Errorf("start ReOrderUinsByAddFriendSrc  uins:%+v", uins)
+	log.Errorf("start ReOrderUinsByAddFriendSrc uin:%d uinsCnt:%d", uin, len(uins))
 	//按照friendsByAddFriendSrc的顺序
 	ordered = make([]int64, 0)
 
@@ -1436,13 +1436,77 @@ func ReOrderUinsByAddFriendSrc(uins []int64, uinsByaddFriendSrc map[int64]int) (
 		}
 	}
 
+	//同校学生按照 同校同学院同年级 》同校同学院非同年级 》同校非同学院同年级 》非同学院非同年级 排序
+	sameSchoolUids := make([]int64, 0)
+	otherSchoolUids := make([]int64, 0) // 添加好友时来源是同校，现在该好友或自己已经更改了学校
+	orderSameSchoolUids := make([]int64, 0)
+
+	sameSchoolUids = append(sameSchoolUids, uids3...)
+	sameSchoolUids = append(sameSchoolUids, uids4...)
+	sameSchoolUids = append(sameSchoolUids, uin) // 获取自己的信息
+
+	userInfos, err := st.BatchGetUserProfileInfo(sameSchoolUids)
+	if err != nil {
+		orderSameSchoolUids = sameSchoolUids
+	} else {
+
+		sameDeptSameGradeUids := make([]int64, 0)
+		sameDeptOtherGradeUids := make([]int64, 0)
+		unKnowDeptSameGradeUids := make([]int64, 0)
+		unKnowDeptOtherGradeUids := make([]int64, 0)
+		otherDeptSameGradeUids := make([]int64, 0)
+		otherDeptOtherGradeUids := make([]int64, 0)
+
+		for uid, _ := range userInfos {
+			if uid == uin {
+				continue
+			}
+
+			if userInfos[uin].SchoolId == userInfos[uid].SchoolId && userInfos[uin].DeptId == userInfos[uid].DeptId && userInfos[uin].DeptId != 0 && userInfos[uin].Grade == userInfos[uin].Grade {
+				sameDeptSameGradeUids = append(sameDeptSameGradeUids, uid)
+			} else if userInfos[uin].SchoolId == userInfos[uid].SchoolId && userInfos[uin].DeptId == userInfos[uid].DeptId && userInfos[uin].DeptId != 0 {
+				sameDeptOtherGradeUids = append(sameDeptOtherGradeUids, uid)
+			} else if userInfos[uin].SchoolId == userInfos[uid].SchoolId && userInfos[uin].DeptId == userInfos[uid].DeptId && userInfos[uin].DeptId == 0 && userInfos[uin].Grade == userInfos[uin].Grade {
+				unKnowDeptSameGradeUids = append(unKnowDeptSameGradeUids, uid)
+			} else if userInfos[uin].SchoolId == userInfos[uid].SchoolId && userInfos[uin].DeptId == userInfos[uid].DeptId && userInfos[uin].DeptId == 0 {
+				unKnowDeptOtherGradeUids = append(unKnowDeptOtherGradeUids, uid)
+			} else if userInfos[uin].SchoolId == userInfos[uid].SchoolId && userInfos[uin].Grade == userInfos[uin].Grade {
+				otherDeptSameGradeUids = append(otherDeptSameGradeUids, uid)
+			} else if userInfos[uin].SchoolId == userInfos[uid].SchoolId {
+				otherDeptOtherGradeUids = append(otherDeptOtherGradeUids, uid)
+			} else {
+				otherSchoolUids = append(otherSchoolUids, uid)
+			}
+		}
+
+		orderSameSchoolUids = append(orderSameSchoolUids, sameDeptSameGradeUids...)
+		orderSameSchoolUids = append(orderSameSchoolUids, sameDeptOtherGradeUids...)
+		orderSameSchoolUids = append(orderSameSchoolUids, unKnowDeptSameGradeUids...)
+		orderSameSchoolUids = append(orderSameSchoolUids, unKnowDeptOtherGradeUids...)
+		orderSameSchoolUids = append(orderSameSchoolUids, otherDeptSameGradeUids...)
+		orderSameSchoolUids = append(orderSameSchoolUids, otherDeptOtherGradeUids...)
+	}
+
+	allOtherSchoolsUids := make([]int64, 0)
+	orderAllOtherSchoolsUids := make([]int64, 0)
+	allOtherSchoolsUids = append(allOtherSchoolsUids, uids5...)
+	allOtherSchoolsUids = append(allOtherSchoolsUids, uids6...)
+	if len(otherSchoolUids) > 0 {
+		allOtherSchoolsUids = append(allOtherSchoolsUids, otherSchoolUids...)
+		a := rand.Perm(len(allOtherSchoolsUids))
+		for _, idx := range a {
+			orderAllOtherSchoolsUids = append(orderAllOtherSchoolsUids, allOtherSchoolsUids[idx])
+		}
+
+	} else {
+		orderAllOtherSchoolsUids = allOtherSchoolsUids
+	}
+
 	ordered = append(ordered, uids1...)
 	ordered = append(ordered, uids2...)
-	ordered = append(ordered, uids3...)
-	ordered = append(ordered, uids4...)
-	ordered = append(ordered, uids5...)
-	ordered = append(ordered, uids6...)
+	ordered = append(ordered, orderSameSchoolUids...)
+	ordered = append(ordered, orderAllOtherSchoolsUids...)
 
-	log.Errorf("end ReOrderUinsByAddFriendSrc ordered:%+v", ordered)
+	log.Errorf("end ReOrderUinsByAddFriendSrc orderedCnt:%d", len(ordered))
 	return
 }
