@@ -362,25 +362,25 @@ func GetNextQuestionAndOptionsByPreGene(uin int64, uuid int64) (qinfo *st.Questi
 		log.Errorf(err1.Error())
 	}
 
-	uinsByVote = ReOrderUinsByAddFriendSrc(uinsByVote, friendsByaddFriendSrc)
+	uinsByVote = ReOrderUinsByAddFriendSrc(uin, uinsByVote, friendsByaddFriendSrc)
 	uinsByVote, _ = OptionsByProbaility(uin, uinsByVote) // /将用户这一轮次答题中出现过的候选人往后排
 	if len(uinsByVote) > 12 {
 		uinsByVote = uinsByVote[:12]
 	}
 
-	uinsByAddFriendTime = ReOrderUinsByAddFriendSrc(uinsByAddFriendTime, friendsByaddFriendSrc)
+	uinsByAddFriendTime = ReOrderUinsByAddFriendSrc(uin, uinsByAddFriendTime, friendsByaddFriendSrc)
 	uinsByAddFriendTime, _ = OptionsByProbaility(uin, uinsByAddFriendTime)
 	if len(uinsByAddFriendTime) > 12 {
 		uinsByAddFriendTime = uinsByAddFriendTime[:12]
 	}
 
-	uinsByPVCnt = ReOrderUinsByAddFriendSrc(uinsByPVCnt, friendsByaddFriendSrc)
+	uinsByPVCnt = ReOrderUinsByAddFriendSrc(uin, uinsByPVCnt, friendsByaddFriendSrc)
 	uinsByPVCnt, _ = OptionsByProbaility(uin, uinsByPVCnt)
 	if len(uinsByPVCnt) > 12 {
 		uinsByPVCnt = uinsByPVCnt[:12]
 	}
 
-	randomUins = ReOrderUinsByAddFriendSrc(randomUins, friendsByaddFriendSrc)
+	randomUins = ReOrderUinsByAddFriendSrc(uin, randomUins, friendsByaddFriendSrc)
 	randomUins, _ = OptionsByProbaility(uin, randomUins)
 	if len(randomUins) > 12 {
 		randomUins = randomUins[:12]
@@ -466,7 +466,7 @@ func GetNextQIdByPreGeneCursor(uin int64, lastCursor int) (qid, newCursor int, e
 }
 
 func OptionsByProbaility(uin int64, uids []int64) (newUids []int64, err error) {
-	log.Errorf("start OptionsByProbaility uids:%+v", uids)
+	log.Errorf("start OptionsByProbaility uin:%d", uin)
 
 	if uin == 0 || len(uids) == 0 {
 		log.Errorf("uids is empty")
@@ -545,12 +545,12 @@ func OptionsByProbaility(uin int64, uids []int64) (newUids []int64, err error) {
 	}
 	newUids = append(newUids, tmpUids2...)
 
-	log.Errorf("end OptionsByProbaility newUids:%+v", newUids)
+	log.Errorf("end OptionsByProbaility uin:%d", uin)
 	return
 }
 
 func ClearOptionUinsLookedCnt(uin int64) (err error) {
-	log.Errorf("start ClearOptionUinsLookedCnt")
+	log.Errorf("start ClearOptionUinsLookedCnt uin:%d", uin)
 	if uin == 0 {
 		return
 	}
@@ -569,13 +569,13 @@ func ClearOptionUinsLookedCnt(uin int64) (err error) {
 		return
 	}
 
-	log.Errorf("end ClearOptionUinsLookedCnt")
+	log.Errorf("end ClearOptionUinsLookedCnt uin:%d", uin)
 	return
 }
 
 func AddOptionUinsLookedCnt(uin int64, options []*st.OptionInfo2) (err error) {
 
-	log.Errorf("start AddOptionUinsLookedCnt")
+	log.Errorf("start AddOptionUinsLookedCnt uin:%d", uin)
 	if len(options) == 0 || uin == 0 {
 		return
 	}
@@ -610,6 +610,6 @@ func AddOptionUinsLookedCnt(uin int64, options []*st.OptionInfo2) (err error) {
 		}
 
 	}
-	log.Errorf("end AddOptionUinsLookedCnt")
+	log.Errorf("end AddOptionUinsLookedCnt uin:%d", uin)
 	return
 }

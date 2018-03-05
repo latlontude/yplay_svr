@@ -176,7 +176,7 @@ func GetMyInviteUins(uin int64) (inviteUins []int64, err error) {
 		return
 	}
 
-	sql := fmt.Sprintf(`select toUin from addFriendMsg where fromUin = %d `, uin)
+	sql := fmt.Sprintf(`select toUin from addFriendMsg where fromUin = %d and status = 0 `, uin)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())

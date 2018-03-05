@@ -106,6 +106,8 @@ func GetRecommends(uin int64, typ int, uuid int64, pageNum, pageSize int) (total
 
 func GetRecommendsFromSameSchool(uin int64, subType int, pageNum, pageSize int) (total int, friends []*RecommendInfo, err error) {
 
+	log.Debugf("start GetRecommendsFromSameSchool uin:%d", uin)
+
 	friends = make([]*RecommendInfo, 0)
 
 	if uin == 0 {
@@ -166,6 +168,11 @@ func GetRecommendsFromSameSchool(uin int64, subType int, pageNum, pageSize int) 
 		return
 	}
 
+	if ui.SchoolId <= 9999999 && ui.SchoolId >= 9999997 {
+		log.Debugf("your school is in pending")
+		return
+	}
+
 	//同校已经注册的
 	conditions := fmt.Sprintf(`schoolId = %d and uin not in (%s)`, ui.SchoolId, strs)
 
@@ -186,6 +193,9 @@ func GetRecommendsFromSameSchool(uin int64, subType int, pageNum, pageSize int) 
 		if ui.DeptId > 0 {
 
 			conditions += fmt.Sprintf(` and deptId = %d `, ui.DeptId)
+		} else {
+			log.Debugf("deptId is zero")
+			return
 		}
 	}
 
@@ -211,7 +221,7 @@ func GetRecommendsFromSameSchool(uin int64, subType int, pageNum, pageSize int) 
 		return
 	}
 
-	sql = fmt.Sprintf(`select uin, phone, nickName, headImgUrl, gender, grade, schoolId, schoolType, schoolName from profiles where %s order by abs(grade - %d) limit %d, %d`, conditions, ui.Grade, s, e)
+	sql = fmt.Sprintf(`select uin, phone, nickName, headImgUrl, gender, grade, schoolId, schoolType, schoolName, deptId, deptName from profiles where %s order by abs(grade - %d) limit %d, %d`, conditions, ui.Grade, s, e)
 	rows, err = inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -221,11 +231,16 @@ func GetRecommendsFromSameSchool(uin int64, subType int, pageNum, pageSize int) 
 	defer rows.Close()
 
 	recommUins := make([]int64, 0)
+	recommUinsMap := make(map[int64]*RecommendInfo)
+	recommUinsMaptmp := make(map[int64]int)
 
 	for rows.Next() {
 
 		var fi RecommendInfo
-		rows.Scan(&fi.Uin, &fi.Phone, &fi.NickName, &fi.HeadImgUrl, &fi.Gender, &fi.Grade, &fi.SchoolId, &fi.SchoolType, &fi.SchoolName)
+		var deptId int
+		var deptName string
+
+		rows.Scan(&fi.Uin, &fi.Phone, &fi.NickName, &fi.HeadImgUrl, &fi.Gender, &fi.Grade, &fi.SchoolId, &fi.SchoolType, &fi.SchoolName, &deptId, &deptName)
 
 		if len(fi.HeadImgUrl) > 0 {
 			fi.HeadImgUrl = fmt.Sprintf("http://yplay-1253229355.image.myqcloud.com/headimgs/%s", fi.HeadImgUrl)
@@ -236,8 +251,45 @@ func GetRecommendsFromSameSchool(uin int64, subType int, pageNum, pageSize int) 
 		fi.RecommendType = subType
 		fi.RecommendDesc = fmt.Sprintf("同校%s", st.GetGradeDescBySchool(fi.SchoolType, fi.Grade))
 
-		friends = append(friends, &fi)
-		recommUins = append(recommUins, fi.Uin)
+		if subType == constant.ENUM_RECOMMEND_FRIEND_TYPE_SAME_SCHOOL {
+			recommUinsMap[fi.Uin] = &fi
+			recommUinsMaptmp[fi.Uin] = deptId
+			recommUins = append(recommUins, fi.Uin)
+		} else {
+			friends = append(friends, &fi)
+		}
+	}
+
+	// 同校同学按:同校同学院同年级 >> 同校同学院其他年级 >> 同校其他学院同年级 >>  同校其他学院其他年级
+	if subType == constant.ENUM_RECOMMEND_FRIEND_TYPE_SAME_SCHOOL {
+		sameDeptSameGradeUins := make([]int64, 0)
+		sameDeptOtherGradeUins := make([]int64, 0)
+		otherDeptSameGradeUins := make([]int64, 0)
+		otherDeptOtherGradeUins := make([]int64, 0)
+
+		for _, uid := range recommUins {
+			if recommUinsMaptmp[uid] == ui.DeptId && recommUinsMap[uid].Grade == ui.Grade {
+				sameDeptSameGradeUins = append(sameDeptSameGradeUins, uid)
+			} else if recommUinsMaptmp[uid] == ui.DeptId {
+				sameDeptOtherGradeUins = append(sameDeptOtherGradeUins, uid)
+			} else if recommUinsMaptmp[uid] != ui.DeptId && recommUinsMap[uid].Grade == ui.Grade {
+				otherDeptSameGradeUins = append(otherDeptSameGradeUins, uid)
+			} else {
+				otherDeptOtherGradeUins = append(otherDeptOtherGradeUins, uid)
+			}
+		}
+
+		allUids := make([]int64, 0)
+		allUids = append(allUids, sameDeptSameGradeUins...)
+		allUids = append(allUids, sameDeptOtherGradeUins...)
+		allUids = append(allUids, otherDeptSameGradeUins...)
+		allUids = append(allUids, otherDeptOtherGradeUins...)
+
+		for _, uid := range allUids {
+			if info, ok := recommUinsMap[uid]; ok {
+				friends = append(friends, info)
+			}
+		}
 	}
 
 	//是否已经发送加好友请求
