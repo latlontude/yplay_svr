@@ -97,7 +97,7 @@ func GetDeptsBySchool(schoolId int) (infos []*DeptInfo, err error) {
 		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
 		return
 	}
-	sql := fmt.Sprintf(`select deptId, deptName from departments where schoolId = %d`, schoolId)
+	sql := fmt.Sprintf(`select deptId, deptName from departments where schoolId = %d order by convert(deptName using gbk)asc`, schoolId)
 
 	rows, err := inst.Query(sql)
 	if err != nil {
@@ -106,6 +106,7 @@ func GetDeptsBySchool(schoolId int) (infos []*DeptInfo, err error) {
 	}
 	defer rows.Close()
 
+	var otherDeptInfo DeptInfo
 	for rows.Next() {
 
 		var info DeptInfo
@@ -114,8 +115,13 @@ func GetDeptsBySchool(schoolId int) (infos []*DeptInfo, err error) {
 			&info.DeptId,
 			&info.DeptName)
 
-		infos = append(infos, &info)
+		if info.DeptName == "其它院系" {
+			otherDeptInfo = info
+		} else {
+			infos = append(infos, &info)
+		}
 	}
 
+	infos = append(infos, &otherDeptInfo)
 	return
 }
