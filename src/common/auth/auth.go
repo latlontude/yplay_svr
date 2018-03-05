@@ -135,3 +135,11 @@ func Apify3(fun interface{}) http.Handler {
 		rest.REDIRECT,
 	}
 }
+
+//无token校验
+func Apify4(fun interface{}) http.Handler {
+	return rest.HandlerChain{
+		rest.RPC(fun),
+		rest.RAW,
+	}
+}

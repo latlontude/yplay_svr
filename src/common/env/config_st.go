@@ -9,6 +9,7 @@ var (
 	Calc2DegreeConfig   Calc2DegreeSvrConfig
 	FrozenMonitorConfig FrozenMonitorSvrConfig
 	PreGeneQIdsConfig   PreGeneQIdsSvrConfig
+	WxPublicConfig      WxPublicSvrConfig
 )
 
 type DataBase struct {
@@ -145,4 +146,18 @@ type PreGeneQIdsSvrConfig struct {
 
 	GeneGap         int
 	ReStartGeneFlag int
+}
+
+type WxPublicSvrConfig struct {
+	HttpServer struct {
+		BindAddr string
+	}
+
+	Log struct {
+		LogPath     string
+		LogFileName string
+		LogLevel    string //"fatal,error,warning,info,debug"
+	}
+
+	DbInsts map[string]DataBase
 }

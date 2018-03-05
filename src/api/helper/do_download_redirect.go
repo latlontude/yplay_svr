@@ -25,11 +25,11 @@ func doDownloadRedirect(req *DownloadRedirectReq, r *http.Request) (rsp *rest.Re
 
 	if REG_IOS.MatchString(agentStr) {
 
-		redirectUrl = "https://itunes.apple.com/cn/app/%E5%99%97%E5%99%97/id1324604165?mt=8"
+		redirectUrl = "https://itunes.apple.com/cn/app/%E5%99%97%E5%99%97/id1324604165"
 
 	} else if REG_MAC.MatchString(agentStr) {
 
-		redirectUrl = "https://itunes.apple.com/cn/app/%E5%99%97%E5%99%97/id1324604165?mt=8"
+		redirectUrl = "https://itunes.apple.com/cn/app/%E5%99%97%E5%99%97/id1324604165"
 
 	} else if REG_MI.MatchString(agentStr) {
 
