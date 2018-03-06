@@ -76,7 +76,9 @@ func GetRandomRedPacket(openId string) (amount int, err error) {
 	}
 
 	if find {
-		err = rest.NewAPIError(constant.E_USER_ALREADY_GET_RED_PACKET, "user already get redpacket")
+		amount = 0
+		//err = rest.NewAPIError(constant.E_USER_ALREADY_GET_RED_PACKET, openId+" user already get redpacket")
+		//log.Errorf(err.Error())
 		return
 	}
 
@@ -84,7 +86,7 @@ func GetRandomRedPacket(openId string) (amount int, err error) {
 	redPacketMux.Lock()
 	defer redPacketMux.Unlock()
 
-	sql = fmt.Sprintf(`select index, amount from redPacket where status = 0`)
+	sql = fmt.Sprintf(`select idx, amount from redPacket where status = 0`)
 
 	rows, err = inst.Query(sql)
 	if err != nil {
@@ -100,15 +102,18 @@ func GetRandomRedPacket(openId string) (amount int, err error) {
 		rows.Scan(&index, &amount)
 	}
 
-	if index <= 0 || amount == 0 {
-		err = rest.NewAPIError(constant.E_DB_QUERY, "db query index amount ret error")
-		log.Errorf(err.Error())
+	log.Errorf("user %s, GetRandomRedPacket query from db, index %d, amount %d", openId, index, amount)
+
+	//没有红包了
+	if amount == 0 {
+		//err = rest.NewAPIError(constant.E_DB_QUERY, "db query index amount ret error")
+		//log.Errorf(err.Error())
 		return
 	}
 
 	ts := time.Now().Unix()
 
-	sql = fmt.Sprintf(`update redPacket set userOpenId = "%s", status = 1, ts = %d where index = %d`, openId, index, ts)
+	sql = fmt.Sprintf(`update redPacket set userOpenId = "%s", status = 1, ts = %d where idx = %d`, openId, ts, idx)
 	_, err = inst.Exec(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
@@ -116,7 +121,7 @@ func GetRandomRedPacket(openId string) (amount int, err error) {
 		return
 	}
 
-	log.Errorf("user %s, GetRandomRedPacket ret amount %d", openId, amount)
+	log.Errorf("user %s, GetRandomRedPacket succ ret, index %d, amount %d", openId, index, amount)
 
 	return
 }
@@ -146,7 +151,7 @@ func HasGetRandomRedPacket(openId string) (hasGet int, err error) {
 	//status = 0 未分配的红包
 	//status = 1 已经分配, 但可能给用户发送红包失败
 	//status = 2 已经分配，并且给用户发送红包成功
-	sql := fmt.Sprintf(`select index from redPacket where userOpenId = "%s"`, openId)
+	sql := fmt.Sprintf(`select idx from redPacket where userOpenId = "%s"`, openId)
 
 	rows, err := inst.Query(sql)
 	if err != nil {
