@@ -86,7 +86,7 @@ func GetRandomRedPacket(openId string) (amount int, err error) {
 	redPacketMux.Lock()
 	defer redPacketMux.Unlock()
 
-	sql = fmt.Sprintf(`select idx, amount from redPacket where status = 0`)
+	sql = fmt.Sprintf(`select idx, amount from redPacket where status = 0 order by idx limit 1`)
 
 	rows, err = inst.Query(sql)
 	if err != nil {
