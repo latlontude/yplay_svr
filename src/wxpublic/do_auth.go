@@ -149,6 +149,9 @@ func doAuth(req *AuthReq, r *http.Request) (replyStr *string, err error) {
 			if ret != 0 {
 				content := getContent(ret)
 				replyMsg.Content = content
+			} else {
+				content := "已经发送红包给您，请您查收"
+				replyMsg.Content = content
 			}
 		}
 	}
@@ -269,7 +272,7 @@ func saveCode(openId string, code int, phone string) {
 }
 
 func doSendRedPacket(openId string) (code int) {
-	log.Debugf("start doSendRedPacket openId:%d", openId)
+	log.Debugf("start doSendRedPacket openId:%s", openId)
 
 	hasGet, err := HasGetRandomRedPacket(openId)
 	if err == nil {
@@ -290,7 +293,7 @@ func doSendRedPacket(openId string) (code int) {
 		}
 	}
 
-	log.Debugf("end doSendRedPacket opendId:%d, code:%d", openId, code)
+	log.Debugf("end doSendRedPacket opendId:%s, code:%d", openId, code)
 	return
 }
 
