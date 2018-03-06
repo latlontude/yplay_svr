@@ -13,6 +13,7 @@ import (
 
 type GetRandomRedPacketReq struct {
 	UserOpenId string `schema:"userOpenId"`
+	Phone      string `schema:"phone"`
 }
 
 type GetRandomRedPacketRsp struct {
@@ -27,7 +28,7 @@ func doGetRandomRedPacket(req *GetRandomRedPacketReq, r *http.Request) (rsp *Get
 
 	log.Debugf("GetRandomPacketNumReq %+v", req)
 
-	amount, err := GetRandomRedPacket(req.UserOpenId)
+	amount, err := GetRandomRedPacket(req.UserOpenId, req.Phone)
 
 	if err != nil {
 		log.Errorf("openId %s, GetRandomRedPacket error %s", req.UserOpenId, err.Error())
@@ -40,10 +41,10 @@ func doGetRandomRedPacket(req *GetRandomRedPacketReq, r *http.Request) (rsp *Get
 	return
 }
 
-func GetRandomRedPacket(openId string) (amount int, err error) {
+func GetRandomRedPacket(openId, phone string) (amount int, err error) {
 
-	if len(openId) == 0 {
-		err = rest.NewAPIError(constant.E_INVALID_PARAM, "openId invalid, length 0!")
+	if len(phone) == 0 {
+		err = rest.NewAPIError(constant.E_INVALID_PARAM, "phone invalid, length 0!")
 		log.Errorf(err.Error())
 		return
 	}
@@ -59,7 +60,7 @@ func GetRandomRedPacket(openId string) (amount int, err error) {
 	//status = 0 未分配的红包
 	//status = 1 已经分配, 但可能给用户发送红包失败
 	//status = 2 已经分配，并且给用户发送红包成功
-	sql := fmt.Sprintf(`select idx from redPacket where userOpenId = "%s" and status >= 1`, openId)
+	sql := fmt.Sprintf(`select idx from redPacket where phone = "%s" and status >= 1`, phone)
 
 	rows, err := inst.Query(sql)
 	if err != nil {
@@ -102,7 +103,7 @@ func GetRandomRedPacket(openId string) (amount int, err error) {
 		rows.Scan(&index, &amount)
 	}
 
-	log.Errorf("user %s, GetRandomRedPacket query from db, index %d, amount %d", openId, index, amount)
+	log.Errorf("user %s, phone %s, GetRandomRedPacket query from db, index %d, amount %d", openId, phone, index, amount)
 
 	//没有红包了
 	if amount == 0 {
@@ -113,7 +114,7 @@ func GetRandomRedPacket(openId string) (amount int, err error) {
 
 	ts := time.Now().Unix()
 
-	sql = fmt.Sprintf(`update redPacket set userOpenId = "%s", status = 1, ts = %d where idx = %d`, openId, ts, index)
+	sql = fmt.Sprintf(`update redPacket set userOpenId = "%s", phone = "%s", status = 1, ts = %d where idx = %d`, openId, phone, ts, index)
 	_, err = inst.Exec(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
@@ -121,21 +122,21 @@ func GetRandomRedPacket(openId string) (amount int, err error) {
 		return
 	}
 
-	log.Errorf("user %s, GetRandomRedPacket succ ret, index %d, amount %d", openId, index, amount)
+	log.Errorf("user %s, phone %s, GetRandomRedPacket succ ret, index %d, amount %d", openId, phone, index, amount)
 
 	return
 }
 
-func HasGetRandomRedPacket(openId string) (hasGet int, err error) {
+func HasGetRandomRedPacket(phone string) (hasGet int, err error) {
 
 	hasGet = 1
 
 	defer func() {
-		log.Errorf("user %s, hasGetRandomPacket %d", openId, hasGet)
+		log.Errorf("user phone %s, hasGetRandomPacket %d", phone, hasGet)
 	}()
 
-	if len(openId) == 0 {
-		err = rest.NewAPIError(constant.E_INVALID_PARAM, "openId invalid, length 0!")
+	if len(phone) == 0 {
+		err = rest.NewAPIError(constant.E_INVALID_PARAM, "phone invalid, length 0!")
 		log.Errorf(err.Error())
 		return
 	}
@@ -151,7 +152,7 @@ func HasGetRandomRedPacket(openId string) (hasGet int, err error) {
 	//status = 0 未分配的红包
 	//status = 1 已经分配, 但可能给用户发送红包失败
 	//status = 2 已经分配，并且给用户发送红包成功
-	sql := fmt.Sprintf(`select idx from redPacket where userOpenId = "%s"`, openId)
+	sql := fmt.Sprintf(`select idx from redPacket where phone = "%s"`, phone)
 
 	rows, err := inst.Query(sql)
 	if err != nil {
@@ -176,9 +177,9 @@ func HasGetRandomRedPacket(openId string) (hasGet int, err error) {
 	return
 }
 
-func UpdateRedPacketReceiveRecord(openId string) (err error) {
+func UpdateRedPacketReceiveRecord(openId, phoneNum string) (err error) {
 
-	log.Debugf("start UpdateRedPacketReceiveRecord openId:%s", openId)
+	log.Debugf("start UpdateRedPacketReceiveRecord openId:%s, phone %s", openId, phoneNum)
 
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
 	if inst == nil {
@@ -187,7 +188,7 @@ func UpdateRedPacketReceiveRecord(openId string) (err error) {
 		return
 	}
 
-	sql := fmt.Sprintf(`update redPacket set status = %d where userOpenId = "%s"`, 2, openId)
+	sql := fmt.Sprintf(`update redPacket set status = %d where userOpenId = "%s" and phone = "%s"`, 2, openId, phoneNum)
 
 	rows, err := inst.Query(sql)
 	if err != nil {
@@ -197,6 +198,6 @@ func UpdateRedPacketReceiveRecord(openId string) (err error) {
 	}
 	defer rows.Close()
 
-	log.Debugf("end UpdateRedPacketReceiveRecord openId:%s", openId)
+	log.Debugf("end UpdateRedPacketReceiveRecord openId:%s, phone %s", openId, phoneNum)
 	return
 }
