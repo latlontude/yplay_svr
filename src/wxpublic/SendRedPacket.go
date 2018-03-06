@@ -104,7 +104,9 @@ func SendRedPacket(openId string, money int) (code int, err error) {
 	nonce_str := hex.EncodeToString(md5Ctx1.Sum(nil)) //随机数
 
 	//订单号
-	mch_billno := MCH_ID + time.Now().Format("20060102") + strconv.FormatInt(time.Now().Unix(), 10)
+	//mch_billno := MCH_ID + time.Now().Format("20060102") + strconv.FormatInt(time.Now().Unix(), 10)
+
+	mch_billno := MCH_ID + fmt.Sprintf("00000%d", time.Now().UnixNano()/1000000)
 
 	// 生成签名
 	s1 := "act_name=" + ACT_NAME + "&client_ip=" + CLIENT_IP + "&mch_billno=" + mch_billno + "&mch_id=" + MCH_ID + "&nonce_str=" + nonce_str + "&re_openid=" + openId + "&remark=" + REMARK + "&send_name=" + SEND_NAME + "&total_amount=" + strconv.Itoa(money) + "&total_num=" + strconv.Itoa(TOTAL_NUM) + "&wishing=" + WISHING + "&wxappid=" + WXAPPID + "&key=" + KEY

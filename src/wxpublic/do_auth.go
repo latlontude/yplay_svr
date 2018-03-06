@@ -393,32 +393,36 @@ func checkUserInput(openId, content string) (ok bool, code int, phoneNum string)
 			}
 		}
 	} else {
-		ret := strings.Split(content, "+")
-		if len(ret) != 2 { // 输入文本格式不正确
-			log.Errorf("Split:%+v", ret)
-			return false, 1, ""
-		} else {
-			if ret[0] == "地大女生" {
-				_, err := strconv.Atoi(ret[1])
-				if err != nil { // 手机号包含非数字
-					log.Errorf("ret[1]:%s err ", ret[1])
-					return false, 1, ""
-				} else {
-					ok := IsValidPhone(ret[1])
-					if ok { //是一个手机号
-						return true, SENDPHONECODE, ret[1]
-					} else {
-						return false, 1, "" //输入文本格式不正确
-					}
-				}
 
-			} else { // 输入文本格式不正确
-				log.Errorf("ret[0]:%s", ret[0])
-				return false, 1, ""
-			}
+		index := strings.Index(content, "地大女生")
+		lent := len(content)
+
+		log.Errorf("content:%s length %d, index(地大女生) %d", content, lent, index)
+
+		//地大女生13590457127 = 15个字符
+		if lent != 23 || index != 0 {
+			// 输入文本格式不正确
+			log.Errorf("content invalid %s", content)
+			return false, 1, ""
 		}
 
+		//必须是11个字符
+		phoneStr := content[12:]
+
+		_, err := strconv.Atoi(phoneStr)
+		if err != nil { // 手机号包含非数字
+			log.Errorf("phoneStr:%s err ", phoneStr)
+			return false, 1, ""
+		} else {
+			ok := IsValidPhone(phoneStr)
+			if ok { //是一个手机号
+				return true, SENDPHONECODE, phoneStr
+			} else {
+				return false, 1, "" //输入文本格式不正确
+			}
+		}
 	}
+
 	log.Debugf("start checkUserInput openId:%s, content:%s", openId, content)
 	return
 }
@@ -427,7 +431,7 @@ func getContent(code int) (content string) {
 	log.Debugf("code:%d", code)
 	switch code {
 	case 1:
-		content = "输入格式错误,请按如下格式输入：地大女生+手机号 "
+		content = "输入格式错误,请按如下格式输入：“地大女生”+“手机号”（注意:没有中间的加号哦）"
 	case 2:
 		content = "请输入地大女生节活动专属验证码"
 	case 3:
@@ -437,7 +441,7 @@ func getContent(code int) (content string) {
 	case 5:
 		content = "地大女生节活动专属验证码错误，请重新输入验证码"
 	case 6:
-		content = "地大女生节活动专属验证码已失效，请重新输入:地大女生+手机号,获取新的验证码"
+		content = "地大女生节活动专属验证码已失效，请重新输入:“地大女生”+“手机号”,获取新的验证码"
 	case 7:
 		content = "此活动只针对地大女生"
 	case 8:
