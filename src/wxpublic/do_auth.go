@@ -115,7 +115,7 @@ func doAuth(req *AuthReq, r *http.Request) (replyStr *string, err error) {
 	replyMsg.FromUserName = recvMsg.ToUserName
 	replyMsg.MsgType = "text"
 
-	ok, code, phoneNum := checkUserInput(recvMsg.Content, recvMsg.FromUserName)
+	ok, code, phoneNum := checkUserInput(recvMsg.FromUserName, recvMsg.Content)
 	if !ok {
 		content := getContent(code)
 		if len(content) == 0 {
@@ -230,12 +230,12 @@ func doSendRedPacket(openId string) (code int) {
 	log.Debugf("start doSendRedPacket openId:%d", openId)
 
 	hasGet, err := HasGetRandomRedPacket(openId)
-	if err != nil {
+	if err == nil {
 		if hasGet == 1 {
 			return 3 // 用户已经领取过红包
 		} else {
 			money, err := GetRandomRedPacket(openId)
-			if err != nil {
+			if err == nil { //
 				if money == 0 {
 					return 4 //红包派完了
 				}
@@ -286,7 +286,7 @@ func checkUserInput(openId, content string) (ok bool, code int, phoneNum string)
 				rows.Scan(&codeIn3)
 			}
 
-			sql = fmt.Sprintf(`select code from phoneCode where openId = %s`, openId) // 3分钟外code
+			sql = fmt.Sprintf(`select code from phoneCode where openId = %s order by ts desc limit 1`, openId) // 3分钟外code
 
 			rows, err = inst.Query(sql)
 			if err != nil {
@@ -317,11 +317,13 @@ func checkUserInput(openId, content string) (ok bool, code int, phoneNum string)
 	} else {
 		ret := strings.Split(content, "+")
 		if len(ret) != 2 { // 输入文本格式不正确
+			log.Errorf("Split:%+v", ret)
 			return false, 1, ""
 		} else {
 			if ret[0] == "地大女生" {
 				_, err := strconv.Atoi(ret[1])
 				if err != nil { // 手机号包含非数字
+					log.Errorf("ret[1]:%s err ", ret[1])
 					return false, 1, ""
 				} else {
 					ok := IsValidPhone(ret[1])
@@ -333,6 +335,7 @@ func checkUserInput(openId, content string) (ok bool, code int, phoneNum string)
 				}
 
 			} else { // 输入文本格式不正确
+				log.Errorf("ret[0]:%s", ret[0])
 				return false, 1, ""
 			}
 		}
@@ -354,13 +357,14 @@ func getContent(code int) (content string) {
 	case 4:
 		content = "哎呦，不好意思，红包派完了"
 	case 5:
-		content = "地大女生节活动专属验证码错误，请重新输入"
+		content = "地大女生节活动专属验证码错误，请重新输入验证码"
 	case 6:
 		content = "地大女生节活动专属验证码已失效，请重新输入:地大女生+手机号,获取新的验证码"
 	case 7:
 		content = "此活动只针对地大女生"
 	}
-	log.Debugf("code:%d, content:%s", content)
+
+	log.Debugf("code:%d, content:%s", code, content)
 	return
 }
 
@@ -407,7 +411,7 @@ func genePhoneCode(phone string) (code int) {
 	randNum := randor.Intn(9000) + 1000
 
 	code = randNum
-	log.Debugf("end GenePhoneCode phone:%s code:%s", phone, code)
+	log.Debugf("end GenePhoneCode phone:%s code:%d", phone, code)
 	return
 }
 
