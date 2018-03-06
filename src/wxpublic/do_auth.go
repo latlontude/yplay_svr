@@ -354,7 +354,7 @@ func getContent(code int) (content string) {
 	case 4:
 		content = "哎呦，不好意思，红包派完了"
 	case 5:
-		content = "地大女生节活动专属验证码错误，请重新输入"
+		content = "地大女生节活动专属验证码错误，请重新输入验证码"
 	case 6:
 		content = "地大女生节活动专属验证码已失效，请重新输入:地大女生+手机号,获取新的验证码"
 	case 7:
