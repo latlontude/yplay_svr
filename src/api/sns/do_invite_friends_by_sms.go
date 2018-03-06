@@ -95,7 +95,7 @@ func InviteFriendsBySms(uin int64, data string) (err error) {
 
 	ts := time.Now().Unix()
 
-	msg := fmt.Sprintf("%s的学生，希望加你为好友, 一起来玩呗! http://yplay.vivacampus.com/api/hepler/downloadredirect", ui.SchoolName)
+	msg := fmt.Sprintf("%s的学生，希望加你为好友, 一起来玩呗! http://yplay.vivacampus.com/api/helper/downloadredirect", ui.SchoolName)
 
 	for _, phone := range phones {
 
