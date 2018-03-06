@@ -137,6 +137,8 @@ func doAuth(req *AuthReq, r *http.Request) (replyStr *string, err error) {
 					saveCode(recvMsg.FromUserName, phoneCode, phoneNum)
 					replyMsg.Content = "请输入您接收到的地大女生节活动专属验证码"
 
+					go SaveUserPhone2OpenId(phoneNum, replyMsg.ToUserName)
+
 				} else { // 非地大女生
 					content := getContent(7) // 此活动只针对地大女生
 					replyMsg.Content = content
@@ -268,6 +270,36 @@ func saveCode(openId string, code int, phone string) {
 	}
 
 	log.Debugf("end saveCode openId:%s, code:%d, phone:%s", openId, code, phone)
+	return
+}
+
+func SaveUserPhone2OpenId(phone string, openId string) {
+
+	log.Debugf("start save phone2openId phone:%s, openId:%s", phone, openId)
+
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err := rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		log.Error(err)
+		return
+	}
+
+	stmt, err := inst.Prepare(`insert ignore into redPacketPhone2OpenId values(?, ?)`)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_PREPARE, err.Error())
+		log.Error(err)
+		return
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(phone, openId)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
+		log.Error(err.Error())
+		return
+	}
+
+	log.Debugf("start save phone2openId phone:%s, openId:%s", phone, openId)
 	return
 }
 

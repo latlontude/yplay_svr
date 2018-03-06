@@ -58,8 +58,8 @@ const (
 	MCH_ID    = "1498480632"
 	REMARK    = "先到先得，赶快下载【噗噗】注册吧！"
 	//SEND_NAME              = "深圳悦智网络科技有限公司"
-	SEND_NAME = "【噗噗】"
-	WISHING   = "祝你女生节快乐，在【噗噗】看你有多受欢迎！"
+	SEND_NAME = "噗噗"
+	WISHING   = "女生节快乐，在“噗噗”看你有多受欢迎！"
 	TOTAL_NUM = 1
 	//TOTAL_AMOUNT           = 100
 	WXAPPID                = "wxc6a993bffd64bb9a"
