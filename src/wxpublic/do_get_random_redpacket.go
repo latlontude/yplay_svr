@@ -170,3 +170,28 @@ func HasGetRandomRedPacket(openId string) (hasGet int, err error) {
 
 	return
 }
+
+func UpdateRedPacketReceiveRecord(openId string) (err error) {
+
+	log.Debugf("start UpdateRedPacketReceiveRecord openId:%s", openId)
+
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		log.Errorf(err.Error())
+		return
+	}
+
+	sql := fmt.Sprintf(`update redPacket set status = %d where userOpenId = "%s"`, 2, openId)
+
+	rows, err := inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Errorf(err.Error())
+		return
+	}
+	defer rows.Close()
+
+	log.Debugf("end UpdateRedPacketReceiveRecord openId:%s", openId)
+	return
+}
