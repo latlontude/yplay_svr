@@ -119,8 +119,8 @@ func SendRedPacket(openId string, money int) (code int, err error) {
 	data.Mch_id = MCH_ID
 	data.Wxappid = WXAPPID
 	data.Send_name = SEND_NAME
-	data.Re_openid = openId         //用户opendid
-	data.Total_amount = money * 100 // money 单位为元， total_amount 单位为分
+	data.Re_openid = openId   //用户opendid
+	data.Total_amount = money // money  单位为分
 	data.Total_num = TOTAL_NUM
 	data.Wishing = WISHING
 	data.Client_ip = CLIENT_IP

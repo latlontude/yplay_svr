@@ -125,20 +125,29 @@ func doAuth(req *AuthReq, r *http.Request) (replyStr *string, err error) {
 		}
 	} else {
 		if code == SENDPHONECODE {
-			phoneCode := genePhoneCode(phoneNum)
-			sendPhoneCode(phoneNum, phoneCode)
-			saveCode(recvMsg.FromUserName, phoneCode, phoneNum)
-			replyMsg.Content = "请输入您接收到的地大女生节活动专属验证码"
-		} else if code == SENDREDPACKET {
-			yes := checkUserInfo(phoneNum)
-			if yes {
-				ret := doSendRedPacket(recvMsg.FromUserName)
-				if ret != 0 {
-					content := getContent(ret)
+			yes := checkRegister(phoneNum)
+			if !yes {
+				content := getContent(8) // 未注册
+				replyMsg.Content = content
+			} else {
+				yes := checkUserInfo(phoneNum)
+				if yes {
+					phoneCode := genePhoneCode(phoneNum)
+					sendPhoneCode(phoneNum, phoneCode)
+					saveCode(recvMsg.FromUserName, phoneCode, phoneNum)
+					replyMsg.Content = "请输入您接收到的地大女生节活动专属验证码"
+
+				} else { // 非地大女生
+					content := getContent(7) // 此活动只针对地大女生
 					replyMsg.Content = content
 				}
-			} else {
-				content := getContent(7) // 此活动只针对地大女生
+
+			}
+		} else if code == SENDREDPACKET {
+
+			ret := doSendRedPacket(recvMsg.FromUserName)
+			if ret != 0 {
+				content := getContent(ret)
 				replyMsg.Content = content
 			}
 		}
@@ -162,6 +171,39 @@ func doAuth(req *AuthReq, r *http.Request) (replyStr *string, err error) {
 	return
 }
 
+func checkRegister(phoneNum string) (ret bool) {
+	log.Debugf("start checkRegister phone:%s", phoneNum)
+	ret = false
+
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err := rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		log.Error(err)
+		return
+	}
+
+	sql := fmt.Sprintf(`select uin from profiles where phone = %s`, phoneNum)
+
+	rows, err := inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Error(err.Error())
+		return
+	}
+	defer rows.Close()
+
+	var uin int64
+	for rows.Next() {
+		rows.Scan(&uin)
+	}
+
+	if uin > 0 {
+		ret = true
+	}
+
+	log.Debugf("end checkRegister phone:%s", phoneNum)
+	return
+}
 func checkUserInfo(phoneNum string) (ret bool) {
 	log.Debugf("start checkUserInfo phone:%s", phoneNum)
 	ret = false
@@ -172,7 +214,7 @@ func checkUserInfo(phoneNum string) (ret bool) {
 		return
 	}
 
-	sql := fmt.Sprintf(`select nickName, gender, schoolId from profiles where phone = %s`, phoneNum)
+	sql := fmt.Sprintf(`select nickName, gender, schoolId from profiles where phone = "%s"`, phoneNum)
 
 	rows, err := inst.Query(sql)
 	if err != nil {
@@ -240,7 +282,7 @@ func doSendRedPacket(openId string) (code int) {
 					return 4 //红包派完了
 				}
 
-				ret, _ := SendRedPacket(openId, money)
+				ret, _ := SendRedPacket(openId, money*100)
 				if ret == 1 { //发放成功
 					UpdateRedPacketReceiveRecord(openId)
 				}
@@ -270,8 +312,8 @@ func checkUserInput(openId, content string) (ok bool, code int, phoneNum string)
 			}
 
 			maxTs := time.Now().Unix()
-			minTs := maxTs - 3*60                                                                                                                       // 3分钟内有效
-			sql := fmt.Sprintf(`select code from phoneCode where openId = %s and ts >= %d and ts <= %d order by ts desc limit 1`, openId, minTs, maxTs) // 3分钟内code
+			minTs := maxTs - 3*60                                                                                                                         // 3分钟内有效
+			sql := fmt.Sprintf(`select code from phoneCode where openId = "%s" and ts >= %d and ts <= %d order by ts desc limit 1`, openId, minTs, maxTs) // 3分钟内code
 
 			rows, err := inst.Query(sql)
 			if err != nil {
@@ -286,7 +328,7 @@ func checkUserInput(openId, content string) (ok bool, code int, phoneNum string)
 				rows.Scan(&codeIn3)
 			}
 
-			sql = fmt.Sprintf(`select code from phoneCode where openId = %s order by ts desc limit 1`, openId) // 3分钟外code
+			sql = fmt.Sprintf(`select code from phoneCode where openId = "%s" order by ts desc limit 1`, openId) // 3分钟外code
 
 			rows, err = inst.Query(sql)
 			if err != nil {
@@ -301,12 +343,13 @@ func checkUserInput(openId, content string) (ok bool, code int, phoneNum string)
 				rows.Scan(&codeOut3)
 			}
 
+			log.Debugf("codeIn3:%d codeOut3:%d", codeIn3, codeOut3)
 			if codeIn3 == 0 && codeOut3 == 0 {
 				return false, 1, "" // 没有给该用户发送验证码，该用户输入了一个手机验证码
 			} else if codeIn3 == 0 && codeOut3 != 0 {
 				return false, 6, "" //验证码失效
 			} else if codeIn3 != 0 {
-				codeStr := fmt.Sprintf("%d", code)
+				codeStr := fmt.Sprintf("%d", codeIn3)
 				if codeStr == content { // 验证码校验成功
 					return true, SENDREDPACKET, ""
 				} else { //验证码校验失败
@@ -362,6 +405,9 @@ func getContent(code int) (content string) {
 		content = "地大女生节活动专属验证码已失效，请重新输入:地大女生+手机号,获取新的验证码"
 	case 7:
 		content = "此活动只针对地大女生"
+	case 8:
+		content = "该手机号还没有注册【噗噗】，请先注册"
+	default:
 	}
 
 	log.Debugf("code:%d, content:%s", code, content)

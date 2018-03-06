@@ -59,7 +59,7 @@ func GetRandomRedPacket(openId string) (amount int, err error) {
 	//status = 0 未分配的红包
 	//status = 1 已经分配, 但可能给用户发送红包失败
 	//status = 2 已经分配，并且给用户发送红包成功
-	sql := fmt.Sprintf(`select index from redPacket where userOpenId = "%s" and status >= 1`, openId)
+	sql := fmt.Sprintf(`select idx from redPacket where userOpenId = "%s" and status >= 1`, openId)
 
 	rows, err := inst.Query(sql)
 	if err != nil {
@@ -113,7 +113,7 @@ func GetRandomRedPacket(openId string) (amount int, err error) {
 
 	ts := time.Now().Unix()
 
-	sql = fmt.Sprintf(`update redPacket set userOpenId = "%s", status = 1, ts = %d where idx = %d`, openId, ts, idx)
+	sql = fmt.Sprintf(`update redPacket set userOpenId = "%s", status = 1, ts = %d where idx = %d`, openId, ts, index)
 	_, err = inst.Exec(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
