@@ -10,6 +10,7 @@ var (
 	APIMap = httputil.APIMap{
 		"/add":                    auth.Apify2(doSubmitQuestion),             //用户投稿问题
 		"/approve":                auth.Apify(doSubmitApprove),               //用户投稿审核通过
+		"/batchapprove":           auth.Apify(doBatchSubmitApprove),          //用户投稿批量审核通过
 		"/reject":                 auth.Apify(doSubmitReject),                //用户投稿审核拒绝
 		"/update":                 auth.Apify2(doSubmitUpdate),               //用户投稿更新
 		"/delete":                 auth.Apify2(doSubmitDelete),               //用户投稿审核未通过删除
