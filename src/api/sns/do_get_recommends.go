@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strconv"
 	"svr/st"
+        "strings"
 )
 
 type GetRecommendsReq struct {
@@ -100,6 +101,17 @@ func GetRecommends(uin int64, typ int, uuid int64, pageNum, pageSize int) (total
 
 		total, friends, err = GetRecommendsFrom2DegreeFriends(uin, pageNum, pageSize)
 	}
+
+        tmpFriends := make([]*RecommendInfo, 0)
+        for _, info := range friends {
+          if len(info.NickName) > 0{
+            if ! strings.ContainsAny(info.NickName, "%,。，、") {
+               tmpFriends = append(tmpFriends, info)
+            }
+          }
+        }
+      
+         friends = tmpFriends
 
 	return
 }
