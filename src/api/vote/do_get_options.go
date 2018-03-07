@@ -28,12 +28,12 @@ type GetOptionsRsp struct {
 
 func doGetOptions(req *GetOptionsReq, r *http.Request) (rsp *GetOptionsRsp, err error) {
 
-	log.Debugf("uin %d, GetOptionsReq %+v", req.Uin, req)
+	log.Debugf("uin %d, qid %d, GetOptionsReq %+v", req.Uin, req.QId, req)
 
 	uuid, err := token.GetUuidFromTokenString(req.Token, req.Ver)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_INVALID_SESSION, "token decrypt "+err.Error())
-		log.Errorf("uin %d, GetOptionsRsp error, %s", req.Uin, err.Error())
+		log.Errorf("uin %d, qid %d, GetOptionsRsp error, %s", req.Uin, req.QId, err.Error())
 		return
 	}
 
@@ -46,13 +46,13 @@ func doGetOptions(req *GetOptionsReq, r *http.Request) (rsp *GetOptionsRsp, err 
 	}
 
 	if err != nil {
-		log.Errorf("uin %d, GetOptionsRsp error, %s", req.Uin, err.Error())
+		log.Errorf("uin %d, qid %d, GetOptionsRsp error, %s", req.Uin, req.QId, err.Error())
 		return
 	}
 
 	rsp = &GetOptionsRsp{options}
 
-	log.Debugf("uin %d, GetOptionsRsp succ, %+v", req.Uin, rsp)
+	log.Debugf("uin %d, qid %d, GetOptionsRsp succ, %+v", req.Uin, req.QId, rsp)
 
 	return
 }
