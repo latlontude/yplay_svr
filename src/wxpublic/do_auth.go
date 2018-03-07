@@ -129,7 +129,7 @@ func doAuth(req *AuthReq, r *http.Request) (replyStr *string, err error) {
 	//包含注册文字 提示文案
 	if strings.Contains(recvMsg.Content, "注册") {
 
-		replyMsg.Content = "在应用商店搜索“噗噗”app，下载并注册成功后，来找我领红包～（注意：记得填写真实姓名）"
+		replyMsg.Content = "在应用商店搜索“噗噗”app，下载并注册成功后，来找我领红包～（注意：注册要填写真实姓名）"
 		nd, err1 := xml.Marshal(replyMsg)
 		if err1 != nil {
 			log.Errorf("marshal msg error " + err1.Error())
@@ -498,7 +498,7 @@ func getContent(code int) (content string) {
 	case 7:
 		content = "此活动只针对地大女生"
 	case 8:
-		content = "该手机号还没有注册【噗噗】，请先在应用商店下载并注册【噗噗】后，来找我领红包～（注意：记得填写真实姓名）"
+		content = "该手机号还没有注册【噗噗】，请先在应用商店下载并注册【噗噗】后，来找我领红包～（注意：注册要填写真实姓名）"
 	default:
 		content = "活动太热烈！请稍后再试"
 	}
