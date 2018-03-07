@@ -19,7 +19,7 @@ type SkipQuestionRsp struct {
 
 func doSkipQuestion(req *SkipQuestionReq, r *http.Request) (rsp *SkipQuestionRsp, err error) {
 
-	log.Debugf("uin %d, SkipQuestionReq %+v", req.Uin, req)
+	log.Debugf("uin %d, qid %d, SkipQuestionReq %+v", req.Uin, req.QId, req)
 
 	//if req.Uin == 100328 || req.Uin == 100446 {
 	if true {
@@ -29,13 +29,13 @@ func doSkipQuestion(req *SkipQuestionReq, r *http.Request) (rsp *SkipQuestionRsp
 	}
 
 	if err != nil {
-		log.Errorf("uin %d, SkipQuestionRsp error, %s", req.Uin, err.Error())
+		log.Errorf("uin %d, qid %d, SkipQuestionRsp error, %s", req.Uin, req.QId, err.Error())
 		return
 	}
 
 	rsp = &SkipQuestionRsp{}
 
-	log.Debugf("uin %d, SkipQuestionRsp succ, %+v", req.Uin, rsp)
+	log.Debugf("uin %d, qid %d, SkipQuestionRsp succ, %+v", req.Uin, req.QId, rsp)
 
 	go UserActRecords(req.Uin, req.QId, 0)
 
