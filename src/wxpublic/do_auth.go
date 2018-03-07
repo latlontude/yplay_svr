@@ -103,17 +103,45 @@ func doAuth(req *AuthReq, r *http.Request) (replyStr *string, err error) {
 
 	log.Debugf("recv msg body %+v", recvMsg)
 
-	if recvMsg.MsgType != "text" {
-		err = nil
-		log.Errorf("msg type not text ")
-		return
-	}
-
 	var replyMsg Msg
 	replyMsg.CreateTime = int(time.Now().Unix())
 	replyMsg.ToUserName = recvMsg.FromUserName
 	replyMsg.FromUserName = recvMsg.ToUserName
 	replyMsg.MsgType = "text"
+
+	//输入类型非文本消息
+	if recvMsg.MsgType != "text" {
+
+		replyMsg.Content = getContent(1)
+		nd, err1 := xml.Marshal(replyMsg)
+		if err1 != nil {
+			log.Errorf("marshal msg error " + err1.Error())
+			err = nil
+			return
+		}
+
+		ndstr := string(nd)
+		replyStr = &ndstr
+
+		return
+	}
+
+	//包含注册文字 提示文案
+	if strings.Contains(recvMsg.Content, "注册") {
+
+		replyMsg.Content = "在应用商店搜索“噗噗”app，下载并注册成功后，来找我领红包～（注意：记得填写真实姓名）"
+		nd, err1 := xml.Marshal(replyMsg)
+		if err1 != nil {
+			log.Errorf("marshal msg error " + err1.Error())
+			err = nil
+			return
+		}
+
+		ndstr := string(nd)
+		replyStr = &ndstr
+
+		return
+	}
 
 	ok, code, phoneNum := checkUserInput(recvMsg.FromUserName, recvMsg.Content)
 
@@ -470,7 +498,7 @@ func getContent(code int) (content string) {
 	case 7:
 		content = "此活动只针对地大女生"
 	case 8:
-		content = "该手机号还没有注册【噗噗】，请先注册"
+		content = "该手机号还没有注册【噗噗】，请先在应用商店下载并注册【噗噗】后，来找我领红包～（注意：记得填写真实姓名）"
 	default:
 		content = "活动太热烈！请稍后再试"
 	}
