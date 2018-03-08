@@ -119,7 +119,7 @@ func doSendVoteMsg(req *SendVoteMsgReq, r *http.Request) (rsp *SendVoteMsgRsp, e
 	return
 }
 
-func MakeIMVoteMsg(uin int64, qid int, voteToUin int64, optionStr string, groupId string) (msg IMMsg, err error) {
+func MakeIMVoteMsg(uin int64, qid int, voteToUin int64, optionStr, qtext string, groupId string) (msg IMMsg, err error) {
 
 	var options []st.OptionInfo2
 	err = json.Unmarshal([]byte(optionStr), &options)
@@ -198,7 +198,8 @@ func MakeIMVoteMsg(uin int64, qid int, voteToUin int64, optionStr string, groupI
 		}
 
 		//@{收到push人的用户名}，神秘{投票人年级}{投票人性别}对你说了真心话( ⁼̴̀ .̫ ⁼̴́ )✧
-		offlinePush.Desc = fmt.Sprintf("@%s，神秘%s%s对你说了真心话( ⁼̴̀ .̫ ⁼̴́ )✧", voteToNickName, st.GetGradeDescBySchool(ui.SchoolType, ui.Grade), genderStr)
+		//offlinePush.Desc = fmt.Sprintf("@%s，神秘%s%s对你说了真心话( ⁼̴̀ .̫ ⁼̴́ )✧", voteToNickName, st.GetGradeDescBySchool(ui.SchoolType, ui.Grade), genderStr)
+		offlinePush.Desc = fmt.Sprintf("@%s，神秘%s%s评价你：%s", voteToNickName, st.GetGradeDescBySchool(ui.SchoolType, ui.Grade), genderStr, qtext)
 
 	} else {
 		log.Errorf(err1.Error())
@@ -257,7 +258,8 @@ func SendVoteMsg(uin int64, qid int, voteToUin int64, optionStr string, voteReco
 		return
 	}
 
-	msg, err := MakeIMVoteMsg(uin, qid, voteToUin, optionStr, groupId)
+	qtext := groupName
+	msg, err := MakeIMVoteMsg(uin, qid, voteToUin, optionStr, qtext, groupId)
 	if err != nil {
 		log.Errorf(err.Error())
 		return

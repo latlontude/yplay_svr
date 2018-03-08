@@ -525,6 +525,8 @@ func IsValidPhone(phone string) (ok bool) {
 	 * 中国电信：China Telecom
 	 * 133,134,153,1700,177,180,181,189
 	 */
+       
+         reg4_str := "^1(7[3]|6[6]|9[0-9])\\d{8}$"
 
 	ok, _ = regexp.MatchString(reg1_str, phone)
 	if ok {
@@ -537,6 +539,11 @@ func IsValidPhone(phone string) (ok bool) {
 	}
 
 	ok, _ = regexp.MatchString(reg3_str, phone)
+	if ok {
+		return
+	}
+       
+        ok, _ = regexp.MatchString(reg4_str, phone)
 	if ok {
 		return
 	}
