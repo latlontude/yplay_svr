@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"svr/st"
-        "strings"
 )
 
 type GetRecommendsReq struct {
@@ -102,16 +102,18 @@ func GetRecommends(uin int64, typ int, uuid int64, pageNum, pageSize int) (total
 		total, friends, err = GetRecommendsFrom2DegreeFriends(uin, pageNum, pageSize)
 	}
 
-        tmpFriends := make([]*RecommendInfo, 0)
-        for _, info := range friends {
-          if len(info.NickName) > 0{
-            if ! strings.ContainsAny(info.NickName, "%,。，、") {
-               tmpFriends = append(tmpFriends, info)
-            }
-          }
-        }
-      
-         friends = tmpFriends
+	/*
+		tmpFriends := make([]*RecommendInfo, 0)
+		for _, info := range friends {
+			if len(info.NickName) > 0 {
+				if !strings.ContainsAny(info.NickName, "%,。，、") {
+					tmpFriends = append(tmpFriends, info)
+				}
+			}
+		}
+
+		friends = tmpFriends
+	*/
 
 	return
 }
@@ -212,7 +214,7 @@ func GetRecommendsFromSameSchool(uin int64, subType int, pageNum, pageSize int) 
 	}
 
 	//过滤掉昵称为空的
-	conditions += fmt.Sprintf(` and length(nickName) > 0`)
+	conditions += fmt.Sprintf(` and length(nickName) > 0 and !CONTAINS(nickName, "%,。，、") `)
 
 	sql := fmt.Sprintf(`select count(uin) from profiles where %s`, conditions)
 

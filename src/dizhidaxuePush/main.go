@@ -154,10 +154,20 @@ func InsertNewQid(uin int) (err error) {
 
 	qid := 21151
 
-	//先删除原来的
-	app.ZRemRangeByScore(keyStr2, int64(lastCursor+1), int64(lastCursor+1))
+	vals, err := app.ZRangeWithScores(keyStr2, lastCursor+1, lastCursor+1)
+	if len(vals) != 2 || err != nil {
+		return
+	}
 
-	err = app.ZAdd(keyStr2, int64(lastCursor+1), fmt.Sprintf("%d", qid))
+	//先删除原来的
+	app.ZRemRangeByRank(keyStr2, lastCursor+1, lastCursor+1)
+
+	//score
+	orgScore, _ := strconv.Atoi(vals[1])
+
+	log.Debugf("uin %d, lastCursor+1 %d, lastScore %+v", uin, lastCursor+1, orgScore)
+
+	err = app.ZAdd(keyStr2, int64(orgScore), fmt.Sprintf("%d", qid))
 	if err != nil {
 		log.Errorf(err.Error())
 		return
@@ -202,7 +212,7 @@ func MakeIMPushMsg(uin int64) (msg im.IMC2CMsg, err error) {
 
 	se, _ := json.Marshal(extInfo)
 
-	content := fmt.Sprintf("鲁磨路最热路边摊，竟然是它！😱")
+	content := "鲁磨路最热路边摊，竟然是它！😱"
 
 	offlinePush.PushFlag = 0
 	offlinePush.Desc = content
