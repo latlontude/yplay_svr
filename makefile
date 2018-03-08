@@ -15,6 +15,7 @@ yplay_svr:
 	@GOPATH=$(GOPATH) $(GO) install -v preGeneQIds
 	@GOPATH=$(GOPATH) $(GO) install -v geneSnapSession
 	@GOPATH=$(GOPATH) $(GO) install -v wxpublic_svr
+	@GOPATH=$(GOPATH) $(GO) install -v dizhidaxuePush
 	mv bin/main bin/yplay_svr
 	#cp bin/yplay_svr /home/work/yplay_svr/bin/yplay_svr
 
