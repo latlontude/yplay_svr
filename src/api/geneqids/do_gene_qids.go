@@ -538,6 +538,10 @@ func GeneQIds(uin int64) (qids []int, err error) {
 func optimizeByRank(uin int64, rawQids []int) (qids []int, err error) {
 	log.Debugf("start optimizeByRank")
 
+	if len(rawQids) == 0 {
+		return
+	}
+
 	scoreQidsMap := make(map[int][]int)
 	scoreMap := make(map[int]int)
 	scoreSlice := make([]int, 0)
@@ -893,6 +897,8 @@ func PreGeneUserQIds(uin int64) (qidsMap map[int]int, err error) {
 	//通用题库还要筛选学校
 	if len(friendUins) < 4 {
 
+		submitIn7 := 0
+		submitOut7 := 0
 		//特制题库
 		//随机化
 		if len(LESSLT4_QIDS) > 0 {
@@ -935,6 +941,7 @@ func PreGeneUserQIds(uin int64) (qidsMap map[int]int, err error) {
 							//同校同年级的才加入, 过滤掉待审核学校
 							if si.SchoolId < 9999997 && si.SchoolId == ui.SchoolId && si.Grade == ui.Grade { //999999[7~9] 代表用户自己输入学校 初中/高中/大学
 								qidsMap[qinfo.QId] = SUBMITIN7
+								submitIn7++
 							}
 						}
 					}
@@ -977,6 +984,7 @@ func PreGeneUserQIds(uin int64) (qidsMap map[int]int, err error) {
 						//同校同年级的才加入，过滤掉待审核学校
 						if si.SchoolId < 9999997 && si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
 							qidsMap[qinfo.QId] = SUBMITOUT7
+							submitOut7++
 						}
 					}
 				}
@@ -989,11 +997,15 @@ func PreGeneUserQIds(uin int64) (qidsMap map[int]int, err error) {
 			qidsMap[qid] = NORMAL
 		}
 
+		log.Debugf("submitIn7 total:%d, submitOut7 total:%d", submitIn7, submitOut7)
 		return
 	}
 
 	//boyUins >= 4 and girlUins >= 4  通用 + 男性题目 + 女性题目 +  学校筛选
 	if len(boyUins) >= 4 && len(girlUins) >= 4 {
+
+		submitIn7 := 0
+		submitOut7 := 0
 
 		//最近7天的投稿题库 性别 + 学校
 		//随机化
@@ -1021,6 +1033,7 @@ func PreGeneUserQIds(uin int64) (qidsMap map[int]int, err error) {
 						//同校同年级的才加入，过滤掉待审核学校
 						if si.SchoolId < 9999997 && si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
 							qidsMap[qinfo.QId] = SUBMITIN7
+							submitIn7++
 						}
 
 					}
@@ -1102,6 +1115,7 @@ func PreGeneUserQIds(uin int64) (qidsMap map[int]int, err error) {
 					//同校同年级的才加入，过滤掉待审核学校
 					if si.SchoolId < 9999997 && si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
 						qidsMap[qinfo.QId] = SUBMITOUT7
+						submitOut7++
 					}
 				}
 			}
@@ -1114,12 +1128,16 @@ func PreGeneUserQIds(uin int64) (qidsMap map[int]int, err error) {
 			qidsMap[qid] = NORMAL
 		}
 
+		log.Debugf("submitIn7 total:%d, submitOut7 total:%d", submitIn7, submitOut7)
 		return
 	}
 
 	//boyUins >= 4 and girlUins < 4   通用 + 男性题目 + 学校筛选
 	if len(boyUins) >= 4 && len(girlUins) < 4 {
 		//最近7天的投稿题库
+
+		submitIn7 := 0
+		submitOut7 := 0
 
 		if len(SUBMIT_LATEST_WEEK) > 0 {
 
@@ -1149,6 +1167,7 @@ func PreGeneUserQIds(uin int64) (qidsMap map[int]int, err error) {
 							//同校同年级的才加入，过滤掉待审核学校
 							if si.SchoolId < 9999997 && si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
 								qidsMap[qinfo.QId] = SUBMITIN7
+								submitIn7++
 							}
 
 						}
@@ -1218,6 +1237,7 @@ func PreGeneUserQIds(uin int64) (qidsMap map[int]int, err error) {
 						//同校同年级的才加入，过滤掉待审核学校
 						if si.SchoolId < 9999997 && si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
 							qidsMap[qinfo.QId] = SUBMITOUT7
+							submitOut7++
 						}
 
 					}
@@ -1231,11 +1251,15 @@ func PreGeneUserQIds(uin int64) (qidsMap map[int]int, err error) {
 			qidsMap[qid] = NORMAL
 		}
 
+		log.Debugf("submitIn7 total:%d, submitOut7 total:%d", submitIn7, submitOut7)
 		return
 	}
 
 	//boyUins < 4  and girlUins >= 4  通用 + 女性题目 + 学校筛选
 	if len(boyUins) < 4 && len(girlUins) >= 4 {
+
+		submitIn7 := 0
+		submitOut7 := 0
 
 		//7天内的的投稿题库
 		if len(SUBMIT_LATEST_WEEK) > 0 {
@@ -1264,6 +1288,7 @@ func PreGeneUserQIds(uin int64) (qidsMap map[int]int, err error) {
 							//同校同年级的才加入，过滤掉待审核学校
 							if si.SchoolId < 9999997 && si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
 								qidsMap[qinfo.QId] = SUBMITIN7
+								submitIn7++
 							}
 
 						}
@@ -1333,6 +1358,7 @@ func PreGeneUserQIds(uin int64) (qidsMap map[int]int, err error) {
 						//同校同年级的才加入，过滤掉待审核学校
 						if si.SchoolId < 9999997 && si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
 							qidsMap[qinfo.QId] = SUBMITOUT7
+							submitOut7++
 						}
 
 					}
@@ -1346,12 +1372,15 @@ func PreGeneUserQIds(uin int64) (qidsMap map[int]int, err error) {
 			qidsMap[qid] = NORMAL
 		}
 
+		log.Debugf("submitIn7 total:%d, submitOut7 total:%d", submitIn7, submitOut7)
 		return
-
 	}
 
 	//boyUins < 4  and girlUins < 4  通用 + 学校筛选
 	if len(boyUins) < 4 && len(girlUins) < 4 {
+
+		submitIn7 := 0
+		submitOut7 := 0
 
 		//7天内的的投稿题库
 		if len(SUBMIT_LATEST_WEEK) > 0 {
@@ -1378,6 +1407,7 @@ func PreGeneUserQIds(uin int64) (qidsMap map[int]int, err error) {
 							//同校同年级的才加入，过滤掉待审核学校
 							if si.SchoolId < 9999997 && si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
 								qidsMap[qinfo.QId] = SUBMITIN7
+								submitIn7++
 							}
 
 						}
@@ -1432,6 +1462,7 @@ func PreGeneUserQIds(uin int64) (qidsMap map[int]int, err error) {
 						//同校同年级的才加入，过滤掉待审核学校
 						if si.SchoolId < 9999997 && si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
 							qidsMap[qinfo.QId] = SUBMITOUT7
+							submitOut7++
 						}
 					}
 				}
@@ -1444,6 +1475,7 @@ func PreGeneUserQIds(uin int64) (qidsMap map[int]int, err error) {
 			qidsMap[qid] = NORMAL
 		}
 
+		log.Debugf("submitIn7 total:%d, submitOut7 total:%d", submitIn7, submitOut7)
 		return
 	}
 
