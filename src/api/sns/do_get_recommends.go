@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"svr/st"
-        "strings"
 )
 
 type GetRecommendsReq struct {
@@ -102,17 +102,6 @@ func GetRecommends(uin int64, typ int, uuid int64, pageNum, pageSize int) (total
 		total, friends, err = GetRecommendsFrom2DegreeFriends(uin, pageNum, pageSize)
 	}
 
-        tmpFriends := make([]*RecommendInfo, 0)
-        for _, info := range friends {
-          if len(info.NickName) > 0{
-            if ! strings.ContainsAny(info.NickName, "%,。，、") {
-               tmpFriends = append(tmpFriends, info)
-            }
-          }
-        }
-      
-         friends = tmpFriends
-
 	return
 }
 
@@ -136,7 +125,7 @@ func GetRecommendsFromSameSchool(uin int64, subType int, pageNum, pageSize int) 
 	}
 
 	s := (pageNum - 1) * pageSize
-	e := pageSize
+	//	e := pageSize
 
 	ui, err := st.GetUserProfileInfo(uin)
 	if err != nil {
@@ -233,7 +222,7 @@ func GetRecommendsFromSameSchool(uin int64, subType int, pageNum, pageSize int) 
 		return
 	}
 
-	sql = fmt.Sprintf(`select uin, phone, nickName, headImgUrl, gender, grade, schoolId, schoolType, schoolName, deptId, deptName from profiles where %s order by abs(grade - %d) limit %d, %d`, conditions, ui.Grade, s, e)
+	sql = fmt.Sprintf(`select uin, phone, nickName, headImgUrl, gender, grade, schoolId, schoolType, schoolName, deptId, deptName from profiles where %s order by uin desc`, conditions)
 	rows, err = inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -242,10 +231,11 @@ func GetRecommendsFromSameSchool(uin int64, subType int, pageNum, pageSize int) 
 	}
 	defer rows.Close()
 
-	recommUins := make([]int64, 0)
-	recommUinsMap := make(map[int64]*RecommendInfo)
-	recommUinsMaptmp := make(map[int64]int)
-
+	/*	recommUins := make([]int64, 0)
+		recommUinsMap := make(map[int64]*RecommendInfo)
+		recommUinsMaptmp := make(map[int64]int)
+	*/
+	cnt := 0
 	for rows.Next() {
 
 		var fi RecommendInfo
@@ -258,52 +248,68 @@ func GetRecommendsFromSameSchool(uin int64, subType int, pageNum, pageSize int) 
 			fi.HeadImgUrl = fmt.Sprintf("http://yplay-1253229355.image.myqcloud.com/headimgs/%s", fi.HeadImgUrl)
 		}
 
-		//初始为非好友状态
-		fi.Status = constant.ENUM_SNS_STATUS_NOT_FRIEND
-		fi.RecommendType = subType
-		fi.RecommendDesc = fmt.Sprintf("同校%s", st.GetGradeDescBySchool(fi.SchoolType, fi.Grade))
-
-		if subType == constant.ENUM_RECOMMEND_FRIEND_TYPE_SAME_SCHOOL {
-			recommUinsMap[fi.Uin] = &fi
-			recommUinsMaptmp[fi.Uin] = deptId
-			recommUins = append(recommUins, fi.Uin)
-		} else {
-			friends = append(friends, &fi)
+		if strings.ContainsAny(fi.NickName, "%,。，、") {
+			continue // 昵称包含标点符号，过滤
 		}
-	}
 
-	// 同校同学按:同校同学院同年级 >> 同校同学院其他年级 >> 同校其他学院同年级 >>  同校其他学院其他年级
-	if subType == constant.ENUM_RECOMMEND_FRIEND_TYPE_SAME_SCHOOL {
-		sameDeptSameGradeUins := make([]int64, 0)
-		sameDeptOtherGradeUins := make([]int64, 0)
-		otherDeptSameGradeUins := make([]int64, 0)
-		otherDeptOtherGradeUins := make([]int64, 0)
+		cnt++
 
-		for _, uid := range recommUins {
-			if recommUinsMaptmp[uid] == ui.DeptId && recommUinsMap[uid].Grade == ui.Grade {
-				sameDeptSameGradeUins = append(sameDeptSameGradeUins, uid)
-			} else if recommUinsMaptmp[uid] == ui.DeptId {
-				sameDeptOtherGradeUins = append(sameDeptOtherGradeUins, uid)
-			} else if recommUinsMaptmp[uid] != ui.DeptId && recommUinsMap[uid].Grade == ui.Grade {
-				otherDeptSameGradeUins = append(otherDeptSameGradeUins, uid)
+		if cnt > s {
+			//初始为非好友状态
+			fi.Status = constant.ENUM_SNS_STATUS_NOT_FRIEND
+			fi.RecommendType = subType
+			fi.RecommendDesc = fmt.Sprintf("同校%s", st.GetGradeDescBySchool(fi.SchoolType, fi.Grade))
+
+			/*if subType == constant.ENUM_RECOMMEND_FRIEND_TYPE_SAME_SCHOOL {
+				recommUinsMap[fi.Uin] = &fi
+				recommUinsMaptmp[fi.Uin] = deptId
+				recommUins = append(recommUins, fi.Uin)
 			} else {
-				otherDeptOtherGradeUins = append(otherDeptOtherGradeUins, uid)
+				friends = append(friends, &fi)
+			}*/
+
+			friends = append(friends, &fi)
+
+			if len(friends) == pageSize {
+				break
 			}
 		}
 
-		allUids := make([]int64, 0)
-		allUids = append(allUids, sameDeptSameGradeUins...)
-		allUids = append(allUids, sameDeptOtherGradeUins...)
-		allUids = append(allUids, otherDeptSameGradeUins...)
-		allUids = append(allUids, otherDeptOtherGradeUins...)
-
-		for _, uid := range allUids {
-			if info, ok := recommUinsMap[uid]; ok {
-				friends = append(friends, info)
-			}
-		}
 	}
 
+	/*
+		// 同校同学按:同校同学院同年级 >> 同校同学院其他年级 >> 同校其他学院同年级 >>  同校其他学院其他年级
+		if subType == constant.ENUM_RECOMMEND_FRIEND_TYPE_SAME_SCHOOL {
+			sameDeptSameGradeUins := make([]int64, 0)
+			sameDeptOtherGradeUins := make([]int64, 0)
+			otherDeptSameGradeUins := make([]int64, 0)
+			otherDeptOtherGradeUins := make([]int64, 0)
+
+			for _, uid := range recommUins {
+				if recommUinsMaptmp[uid] == ui.DeptId && recommUinsMap[uid].Grade == ui.Grade {
+					sameDeptSameGradeUins = append(sameDeptSameGradeUins, uid)
+				} else if recommUinsMaptmp[uid] == ui.DeptId {
+					sameDeptOtherGradeUins = append(sameDeptOtherGradeUins, uid)
+				} else if recommUinsMaptmp[uid] != ui.DeptId && recommUinsMap[uid].Grade == ui.Grade {
+					otherDeptSameGradeUins = append(otherDeptSameGradeUins, uid)
+				} else {
+					otherDeptOtherGradeUins = append(otherDeptOtherGradeUins, uid)
+				}
+			}
+
+			allUids := make([]int64, 0)
+			allUids = append(allUids, sameDeptSameGradeUins...)
+			allUids = append(allUids, sameDeptOtherGradeUins...)
+			allUids = append(allUids, otherDeptSameGradeUins...)
+			allUids = append(allUids, otherDeptOtherGradeUins...)
+
+			for _, uid := range allUids {
+				if info, ok := recommUinsMap[uid]; ok {
+					friends = append(friends, info)
+				}
+			}
+		}
+	*/
 	//是否已经发送加好友请求
 	/*
 		sts, err := CheckIsMyInvites(uin, recommUins)
