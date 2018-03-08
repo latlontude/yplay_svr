@@ -1010,16 +1010,20 @@ func GetOptionsFromAddrBook(uin, uuid int64, excludeUins []int64, needCnt int, q
 		return
 	}
 
-	/*	ops2, err := GetOptionsFromAddrBookUnRegister(uin, uuid, needCnt-len(options), qgender)
-		if err != nil {
-			log.Error(err.Error())
+	if qgender == 0 { //无性别题目也要补充通讯录非注册好友
+
+		ops2, err1 := GetOptionsFromAddrBookUnRegister(uin, uuid, needCnt-len(options))
+		if err1 != nil {
+			log.Error(err1.Error())
 			return
 		}
 
 		for _, op := range ops2 {
 			options = append(options, op)
 		}
-	*/
+
+	}
+
 	return
 }
 

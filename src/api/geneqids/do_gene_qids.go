@@ -28,6 +28,12 @@ var (
 	ALL_SUBMIT_QIDS_UINS  map[int]int64
 )
 
+const (
+	SUBMITIN7  = 1
+	SUBMITOUT7 = 2
+	NORMAL     = 3
+)
+
 type SchoolGradeInfo struct {
 	SchoolId int `json:"schoolId"`
 	Grade    int `json:"grade"`
@@ -162,6 +168,10 @@ func optimizeQidsByUserAct(uin int64, qids []int) (optimizedQids []int, err erro
 		var qid int
 		rows.Scan(&qid, &act)
 
+		if _, ok := qidsMap[qid]; !ok {
+			continue
+		}
+
 		subTagId1 := qidsMap[qid][0]
 		subTagId2 := qidsMap[qid][1]
 		subTagId3 := qidsMap[qid][2]
@@ -197,6 +207,10 @@ func optimizeQidsByUserAct(uin int64, qids []int) (optimizedQids []int, err erro
 	subTagMap := make(map[int][]int)
 
 	for _, qid := range qids {
+
+		if _, ok := qidsMap[qid]; !ok {
+			continue
+		}
 
 		subTagId1 := qidsMap[qid][0]
 		subTagId2 := qidsMap[qid][1]
@@ -450,27 +464,35 @@ func GeneQIds(uin int64) (qids []int, err error) {
 	log.Errorf("uin %d, AnswneredQIds cnt %d", uin, len(answeredQidsMap))
 
 	//重新生成的列表 已经随机化
-	preQIds, err := PreGeneUserQIds(uin)
+	preQIdsMap, err := PreGeneUserQIds(uin)
 	if err != nil {
 		log.Errorf(err.Error())
 		return
 	}
 
-	log.Errorf("uin %d, PreGeneUserQIds cnt %d", uin, len(preQIds))
+	log.Errorf("uin %d, PreGeneUserQIds cnt %d", uin, len(preQIdsMap))
 
 	qids = make([]int, 0)
-	unAnsweredQidsSlice := make([]int, 0)
+	unAnsweredQidsSlice1 := make([]int, 0) // 7天内
+	unAnsweredQidsSlice2 := make([]int, 0) // 7天外
+	unAnsweredQidsSlice3 := make([]int, 0) // 普通题库
 	answeredQidsSlice := make([]int, 0)
 
-	for _, qid := range preQIds {
+	for qid := range preQIdsMap {
 		if _, ok := answeredQidsMap[qid]; !ok {
-			unAnsweredQidsSlice = append(unAnsweredQidsSlice, qid)
+			if preQIdsMap[qid] == SUBMITIN7 {
+				unAnsweredQidsSlice1 = append(unAnsweredQidsSlice1, qid)
+			} else if preQIdsMap[qid] == SUBMITOUT7 {
+				unAnsweredQidsSlice2 = append(unAnsweredQidsSlice2, qid)
+			} else if preQIdsMap[qid] == NORMAL {
+				unAnsweredQidsSlice3 = append(unAnsweredQidsSlice3, qid)
+			}
 		} else {
 			answeredQidsSlice = append(answeredQidsSlice, qid)
 		}
 	}
 
-	if len(unAnsweredQidsSlice) == 0 {
+	if len(unAnsweredQidsSlice1)+len(unAnsweredQidsSlice2)+len(unAnsweredQidsSlice3) == 0 {
 
 		log.Errorf("user:%d has finished the round, a new round start!", uin)
 
@@ -499,6 +521,27 @@ func GeneQIds(uin int64) (qids []int, err error) {
 
 	}
 
+	tmpQids, _ := optimizeByRank(uin, unAnsweredQidsSlice1)
+	qids = append(qids, tmpQids...)
+	tmpQids, _ = optimizeByRank(uin, unAnsweredQidsSlice2)
+	qids = append(qids, tmpQids...)
+	tmpQids, _ = optimizeByRank(uin, unAnsweredQidsSlice3)
+	qids = append(qids, tmpQids...)
+
+	qids = append(qids, answeredQidsSlice...) // 已回答题目
+
+	log.Debugf("after qids total:%d", len(qids))
+	log.Errorf("end GeneQIds")
+	return
+}
+
+func optimizeByRank(uin int64, rawQids []int) (qids []int, err error) {
+	log.Debugf("start optimizeByRank")
+
+	if len(rawQids) == 0 {
+		return
+	}
+
 	scoreQidsMap := make(map[int][]int)
 	scoreMap := make(map[int]int)
 	scoreSlice := make([]int, 0)
@@ -506,15 +549,14 @@ func GeneQIds(uin int64) (qids []int, err error) {
 	votedCntSlice := make([]int, 0)
 
 	ts1 := time.Now().UnixNano()
-	retMap, err := vote.BatchGetRankingList(uin, unAnsweredQidsSlice)
+	retMap, err := vote.BatchGetRankingList(uin, rawQids)
 	if err != nil {
 		log.Errorf("BatchGetRankingList err")
-		qids = append(qids, unAnsweredQidsSlice...) // 未回答题目
-		qids = append(qids, answeredQidsSlice...)   // 已回答题目
+		qids = rawQids
 		return
 	}
 	ts2 := time.Now().UnixNano()
-	log.Debugf(" before qids total :%d", len(unAnsweredQidsSlice))
+	log.Debugf(" before qids total :%d", len(rawQids))
 	log.Debugf("retMap total :%d", len(retMap))
 	log.Debugf("total duration %dms", (ts2-ts1)/1000000)
 
@@ -582,12 +624,10 @@ func GeneQIds(uin int64) (qids []int, err error) {
 
 	qids = append(qids, sortUnsweredQidsSlice...) // 打败好友最多的未答题目降序
 	qids = append(qids, sortCntQidsSlice...)      // 没有打败任何好友，按好友和同校同年级前三名在该题下被投次数总数降序
-	qids = append(qids, answeredQidsSlice...)     // 已回答题目
 
 	log.Debugf("sortUnsweredQidsSlice total:%d", len(sortUnsweredQidsSlice))
 	log.Debugf("sortCntQidsSlice total:%d", len(sortCntQidsSlice))
-	log.Debugf("after qids total:%d", len(qids))
-	log.Errorf("end GeneQIds")
+	log.Debugf("end optimizeByRank total:%d", len(qids))
 	return
 }
 
@@ -788,16 +828,16 @@ func UpdateQIds(uin int64, qids []int) (err error) {
 	return
 }
 
-func PreGeneUserQIds(uin int64) (qids []int, err error) {
+func PreGeneUserQIds(uin int64) (qidsMap map[int]int, err error) {
 
 	log.Errorf("uin %d, begin PreGeneQIds....", uin)
 
-	qids = make([]int, 0)
+	qidsMap = make(map[int]int)
 
 	defer func() {
 
 		if err == nil {
-			log.Errorf("uin %d, end PreGeneQIds, qids cnt %d", uin, len(qids))
+			log.Errorf("uin %d, end PreGeneQIds, qids cnt %d", uin, len(qidsMap))
 		}
 
 	}()
@@ -857,6 +897,8 @@ func PreGeneUserQIds(uin int64) (qids []int, err error) {
 	//通用题库还要筛选学校
 	if len(friendUins) < 4 {
 
+		submitIn7 := 0
+		submitOut7 := 0
 		//特制题库
 		//随机化
 		if len(LESSLT4_QIDS) > 0 {
@@ -866,7 +908,7 @@ func PreGeneUserQIds(uin int64) (qids []int, err error) {
 				qinfo := LESSLT4_QIDS[idx]
 
 				if qinfo.ReplyGender == 0 || qinfo.ReplyGender == ui.Gender {
-					qids = append(qids, qinfo.QId)
+					qidsMap[qinfo.QId] = NORMAL
 				}
 			}
 		}
@@ -898,7 +940,8 @@ func PreGeneUserQIds(uin int64) (qids []int, err error) {
 
 							//同校同年级的才加入, 过滤掉待审核学校
 							if si.SchoolId < 9999997 && si.SchoolId == ui.SchoolId && si.Grade == ui.Grade { //999999[7~9] 代表用户自己输入学校 初中/高中/大学
-								qids = append(qids, qinfo.QId)
+								qidsMap[qinfo.QId] = SUBMITIN7
+								submitIn7++
 							}
 						}
 					}
@@ -940,7 +983,8 @@ func PreGeneUserQIds(uin int64) (qids []int, err error) {
 
 						//同校同年级的才加入，过滤掉待审核学校
 						if si.SchoolId < 9999997 && si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
-							order_qids = append(order_qids, qinfo.QId)
+							qidsMap[qinfo.QId] = SUBMITOUT7
+							submitOut7++
 						}
 					}
 				}
@@ -950,14 +994,18 @@ func PreGeneUserQIds(uin int64) (qids []int, err error) {
 		//普通题库随机化
 		rand_qids := rand_order_qids(order_qids)
 		for _, qid := range rand_qids {
-			qids = append(qids, qid)
+			qidsMap[qid] = NORMAL
 		}
 
+		log.Debugf("submitIn7 total:%d, submitOut7 total:%d", submitIn7, submitOut7)
 		return
 	}
 
 	//boyUins >= 4 and girlUins >= 4  通用 + 男性题目 + 女性题目 +  学校筛选
 	if len(boyUins) >= 4 && len(girlUins) >= 4 {
+
+		submitIn7 := 0
+		submitOut7 := 0
 
 		//最近7天的投稿题库 性别 + 学校
 		//随机化
@@ -984,7 +1032,8 @@ func PreGeneUserQIds(uin int64) (qids []int, err error) {
 					if qinfo.ReplyGender == 0 || qinfo.ReplyGender == ui.Gender {
 						//同校同年级的才加入，过滤掉待审核学校
 						if si.SchoolId < 9999997 && si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
-							qids = append(qids, qinfo.QId)
+							qidsMap[qinfo.QId] = SUBMITIN7
+							submitIn7++
 						}
 
 					}
@@ -1065,7 +1114,8 @@ func PreGeneUserQIds(uin int64) (qids []int, err error) {
 
 					//同校同年级的才加入，过滤掉待审核学校
 					if si.SchoolId < 9999997 && si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
-						order_qids = append(order_qids, qinfo.QId)
+						qidsMap[qinfo.QId] = SUBMITOUT7
+						submitOut7++
 					}
 				}
 			}
@@ -1075,15 +1125,19 @@ func PreGeneUserQIds(uin int64) (qids []int, err error) {
 		rand_qids := rand_order_qids(order_qids)
 
 		for _, qid := range rand_qids {
-			qids = append(qids, qid)
+			qidsMap[qid] = NORMAL
 		}
 
+		log.Debugf("submitIn7 total:%d, submitOut7 total:%d", submitIn7, submitOut7)
 		return
 	}
 
 	//boyUins >= 4 and girlUins < 4   通用 + 男性题目 + 学校筛选
 	if len(boyUins) >= 4 && len(girlUins) < 4 {
 		//最近7天的投稿题库
+
+		submitIn7 := 0
+		submitOut7 := 0
 
 		if len(SUBMIT_LATEST_WEEK) > 0 {
 
@@ -1112,7 +1166,8 @@ func PreGeneUserQIds(uin int64) (qids []int, err error) {
 
 							//同校同年级的才加入，过滤掉待审核学校
 							if si.SchoolId < 9999997 && si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
-								qids = append(qids, qinfo.QId)
+								qidsMap[qinfo.QId] = SUBMITIN7
+								submitIn7++
 							}
 
 						}
@@ -1181,7 +1236,8 @@ func PreGeneUserQIds(uin int64) (qids []int, err error) {
 
 						//同校同年级的才加入，过滤掉待审核学校
 						if si.SchoolId < 9999997 && si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
-							order_qids = append(order_qids, qinfo.QId)
+							qidsMap[qinfo.QId] = SUBMITOUT7
+							submitOut7++
 						}
 
 					}
@@ -1192,14 +1248,18 @@ func PreGeneUserQIds(uin int64) (qids []int, err error) {
 		//普通题库随机化
 		rand_qids := rand_order_qids(order_qids)
 		for _, qid := range rand_qids {
-			qids = append(qids, qid)
+			qidsMap[qid] = NORMAL
 		}
 
+		log.Debugf("submitIn7 total:%d, submitOut7 total:%d", submitIn7, submitOut7)
 		return
 	}
 
 	//boyUins < 4  and girlUins >= 4  通用 + 女性题目 + 学校筛选
 	if len(boyUins) < 4 && len(girlUins) >= 4 {
+
+		submitIn7 := 0
+		submitOut7 := 0
 
 		//7天内的的投稿题库
 		if len(SUBMIT_LATEST_WEEK) > 0 {
@@ -1227,7 +1287,8 @@ func PreGeneUserQIds(uin int64) (qids []int, err error) {
 
 							//同校同年级的才加入，过滤掉待审核学校
 							if si.SchoolId < 9999997 && si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
-								qids = append(qids, qinfo.QId)
+								qidsMap[qinfo.QId] = SUBMITIN7
+								submitIn7++
 							}
 
 						}
@@ -1296,7 +1357,8 @@ func PreGeneUserQIds(uin int64) (qids []int, err error) {
 
 						//同校同年级的才加入，过滤掉待审核学校
 						if si.SchoolId < 9999997 && si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
-							order_qids = append(order_qids, qinfo.QId)
+							qidsMap[qinfo.QId] = SUBMITOUT7
+							submitOut7++
 						}
 
 					}
@@ -1307,15 +1369,18 @@ func PreGeneUserQIds(uin int64) (qids []int, err error) {
 		//普通题库随机化
 		rand_qids := rand_order_qids(order_qids)
 		for _, qid := range rand_qids {
-			qids = append(qids, qid)
+			qidsMap[qid] = NORMAL
 		}
 
+		log.Debugf("submitIn7 total:%d, submitOut7 total:%d", submitIn7, submitOut7)
 		return
-
 	}
 
 	//boyUins < 4  and girlUins < 4  通用 + 学校筛选
 	if len(boyUins) < 4 && len(girlUins) < 4 {
+
+		submitIn7 := 0
+		submitOut7 := 0
 
 		//7天内的的投稿题库
 		if len(SUBMIT_LATEST_WEEK) > 0 {
@@ -1341,7 +1406,8 @@ func PreGeneUserQIds(uin int64) (qids []int, err error) {
 
 							//同校同年级的才加入，过滤掉待审核学校
 							if si.SchoolId < 9999997 && si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
-								qids = append(qids, qinfo.QId)
+								qidsMap[qinfo.QId] = SUBMITIN7
+								submitIn7++
 							}
 
 						}
@@ -1395,7 +1461,8 @@ func PreGeneUserQIds(uin int64) (qids []int, err error) {
 
 						//同校同年级的才加入，过滤掉待审核学校
 						if si.SchoolId < 9999997 && si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
-							order_qids = append(order_qids, qinfo.QId)
+							qidsMap[qinfo.QId] = SUBMITOUT7
+							submitOut7++
 						}
 					}
 				}
@@ -1405,9 +1472,10 @@ func PreGeneUserQIds(uin int64) (qids []int, err error) {
 		//普通题库随机化
 		rand_qids := rand_order_qids(order_qids)
 		for _, qid := range rand_qids {
-			qids = append(qids, qid)
+			qidsMap[qid] = NORMAL
 		}
 
+		log.Debugf("submitIn7 total:%d, submitOut7 total:%d", submitIn7, submitOut7)
 		return
 	}
 
