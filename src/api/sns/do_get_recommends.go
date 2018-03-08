@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
+	//"strings"
 	"svr/st"
 )
 
@@ -214,9 +214,11 @@ func GetRecommendsFromSameSchool(uin int64, subType int, pageNum, pageSize int) 
 	}
 
 	//过滤掉昵称为空的
-	conditions += fmt.Sprintf(` and length(nickName) > 0 and !CONTAINS(nickName, "%,。，、") `)
+	conditions += fmt.Sprintf(` and length(nickName) > 0 and !find_in_set(nickName, " ,") and !find_in_set(nickName, "%%") and !find_in_set(nickName, "。") and !find_in_set(nickName, "、") `)
 
 	sql := fmt.Sprintf(`select count(uin) from profiles where %s`, conditions)
+
+	log.Error(sql)
 
 	rows, err := inst.Query(sql)
 	if err != nil {
@@ -235,7 +237,7 @@ func GetRecommendsFromSameSchool(uin int64, subType int, pageNum, pageSize int) 
 		return
 	}
 
-	sql = fmt.Sprintf(`select uin, phone, nickName, headImgUrl, gender, grade, schoolId, schoolType, schoolName, deptId, deptName from profiles where %s order by abs(grade - %d) limit %d, %d`, conditions, ui.Grade, s, e)
+	sql = fmt.Sprintf(`select uin, phone, nickName, headImgUrl, gender, grade, schoolId, schoolType, schoolName, deptId, deptName from profiles where %s order by uin desc limit %d, %d`, conditions, s, e)
 	rows, err = inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
