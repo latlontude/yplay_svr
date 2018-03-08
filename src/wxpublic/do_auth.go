@@ -156,52 +156,62 @@ func doAuth(req *AuthReq, r *http.Request) (replyStr *string, err error) {
 		}
 	} else {
 		if code == SENDPHONECODE {
-			yes := checkRegister(phoneNum)
-			if !yes {
-				content := getContent(8) // 未注册
-				replyMsg.Content = content
-			} else {
-				yes := checkUserInfo(phoneNum)
-				if yes {
 
-					hasGet, err1 := HasGetRandomRedPacket(phoneNum)
-					if err1 == nil {
+			content := getContent(9)
+			replyMsg.Content = content
 
-						//已经领过红包
-						if hasGet > 0 {
-							replyMsg.Content = getContent(3)
-						} else {
-							//没有领取，发送验证码
-							phoneCode := genePhoneCode(phoneNum)
-							sendPhoneCode(phoneNum, phoneCode)
-							saveCode(recvMsg.FromUserName, phoneCode, phoneNum)
-							replyMsg.Content = "请输入您接收到的地大女生节活动专属验证码"
-						}
-					} else {
-						//服务器出错
-						replyMsg.Content = getContent(-1)
-					}
-
-					//go SaveUserPhone2OpenId(phoneNum, replyMsg.ToUserName)
-
-				} else { // 非地大女生
-					content := getContent(7) // 此活动只针对地大女生
+			/*
+				yes := checkRegister(phoneNum)
+				if !yes {
+					content := getContent(8) // 未注册
 					replyMsg.Content = content
-				}
+				} else {
+					yes := checkUserInfo(phoneNum)
+					if yes {
 
-			}
+						hasGet, err1 := HasGetRandomRedPacket(phoneNum)
+						if err1 == nil {
+
+							//已经领过红包
+							if hasGet > 0 {
+								replyMsg.Content = getContent(3)
+							} else {
+								//没有领取，发送验证码
+								phoneCode := genePhoneCode(phoneNum)
+								sendPhoneCode(phoneNum, phoneCode)
+								saveCode(recvMsg.FromUserName, phoneCode, phoneNum)
+								replyMsg.Content = "请输入您接收到的地大女生节活动专属验证码"
+							}
+						} else {
+							//服务器出错
+							replyMsg.Content = getContent(-1)
+						}
+
+						//go SaveUserPhone2OpenId(phoneNum, replyMsg.ToUserName)
+
+					} else { // 非地大女生
+						content := getContent(7) // 此活动只针对地大女生
+						replyMsg.Content = content
+					}
+				}
+			*/
 		} else if code == SENDREDPACKET {
 
-			log.Errorf("doSendRedPacket phoneNum %s", phoneNum)
+			content := getContent(9)
+			replyMsg.Content = content
 
-			ret := doSendRedPacket(recvMsg.FromUserName, phoneNum)
-			if ret != 0 {
-				content := getContent(ret)
-				replyMsg.Content = content
-			} else {
-				content := "已经发送红包给您，请您查收"
-				replyMsg.Content = content
-			}
+			/*
+				log.Errorf("doSendRedPacket phoneNum %s", phoneNum)
+
+				ret := doSendRedPacket(recvMsg.FromUserName, phoneNum)
+				if ret != 0 {
+					content := getContent(ret)
+					replyMsg.Content = content
+				} else {
+					content := "已经发送红包给您，请您查收"
+					replyMsg.Content = content
+				}
+			*/
 		}
 	}
 
@@ -388,62 +398,67 @@ func checkUserInput(openId, content string) (ok bool, code int, phoneNum string)
 			return false, 1, ""
 		} else {
 
-			inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
-			if inst == nil {
-				err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
-				log.Errorf(err.Error())
-				return false, 1, ""
-			}
+			//活动已经结束
+			return false, 9, ""
 
-			maxTs := time.Now().Unix()
-			minTs := maxTs - 3*60                                                                                                                                // 3分钟内有效
-			sql := fmt.Sprintf(`select code, phone from phoneCode where openId = "%s" and ts >= %d and ts <= %d order by ts desc limit 1`, openId, minTs, maxTs) // 3分钟内code
-
-			rows, err := inst.Query(sql)
-			if err != nil {
-				err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
-				log.Error(err.Error())
-				return false, 0, ""
-			}
-			defer rows.Close()
-
-			codeIn3 := 0
-			var phoneNumT string
-			for rows.Next() {
-				rows.Scan(&codeIn3, &phoneNumT)
-			}
-
-			log.Errorf("checkUserInput content:%s, get phone by openId %s, code %d, phone %s", content, openId, codeIn3, phoneNumT)
-			phoneNum = phoneNumT
-
-			sql = fmt.Sprintf(`select code from phoneCode where openId = "%s" order by ts desc limit 1`, openId) // 3分钟外code
-
-			rows, err = inst.Query(sql)
-			if err != nil {
-				err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
-				log.Error(err.Error())
-				return false, 0, phoneNum
-			}
-			defer rows.Close()
-
-			codeOut3 := 0
-			for rows.Next() {
-				rows.Scan(&codeOut3)
-			}
-
-			log.Debugf("codeIn3:%d codeOut3:%d", codeIn3, codeOut3)
-			if codeIn3 == 0 && codeOut3 == 0 {
-				return false, 1, phoneNum // 没有给该用户发送验证码，该用户输入了一个手机验证码
-			} else if codeIn3 == 0 && codeOut3 != 0 {
-				return false, 6, phoneNum //验证码失效
-			} else if codeIn3 != 0 {
-				codeStr := fmt.Sprintf("%d", codeIn3)
-				if codeStr == content { // 验证码校验成功
-					return true, SENDREDPACKET, phoneNum
-				} else { //验证码校验失败
-					return false, 5, phoneNum // 重新输入验证码
+			/*
+				inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+				if inst == nil {
+					err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+					log.Errorf(err.Error())
+					return false, 1, ""
 				}
-			}
+
+				maxTs := time.Now().Unix()
+				minTs := maxTs - 3*60                                                                                                                                // 3分钟内有效
+				sql := fmt.Sprintf(`select code, phone from phoneCode where openId = "%s" and ts >= %d and ts <= %d order by ts desc limit 1`, openId, minTs, maxTs) // 3分钟内code
+
+				rows, err := inst.Query(sql)
+				if err != nil {
+					err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+					log.Error(err.Error())
+					return false, 0, ""
+				}
+				defer rows.Close()
+
+				codeIn3 := 0
+				var phoneNumT string
+				for rows.Next() {
+					rows.Scan(&codeIn3, &phoneNumT)
+				}
+
+				log.Errorf("checkUserInput content:%s, get phone by openId %s, code %d, phone %s", content, openId, codeIn3, phoneNumT)
+				phoneNum = phoneNumT
+
+				sql = fmt.Sprintf(`select code from phoneCode where openId = "%s" order by ts desc limit 1`, openId) // 3分钟外code
+
+				rows, err = inst.Query(sql)
+				if err != nil {
+					err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+					log.Error(err.Error())
+					return false, 0, phoneNum
+				}
+				defer rows.Close()
+
+				codeOut3 := 0
+				for rows.Next() {
+					rows.Scan(&codeOut3)
+				}
+
+				log.Debugf("codeIn3:%d codeOut3:%d", codeIn3, codeOut3)
+				if codeIn3 == 0 && codeOut3 == 0 {
+					return false, 1, phoneNum // 没有给该用户发送验证码，该用户输入了一个手机验证码
+				} else if codeIn3 == 0 && codeOut3 != 0 {
+					return false, 6, phoneNum //验证码失效
+				} else if codeIn3 != 0 {
+					codeStr := fmt.Sprintf("%d", codeIn3)
+					if codeStr == content { // 验证码校验成功
+						return true, SENDREDPACKET, phoneNum
+					} else { //验证码校验失败
+						return false, 5, phoneNum // 重新输入验证码
+					}
+				}
+			*/
 		}
 	} else {
 
@@ -499,6 +514,8 @@ func getContent(code int) (content string) {
 		content = "此活动只针对地大女生"
 	case 8:
 		content = "该手机号还没有注册【噗噗】，请先在应用商店下载并注册【噗噗】后，来找我领红包～（注意：注册要填写真实姓名）"
+	case 9:
+		content = "活动已结束，感谢您的支持！有任何想法建议，欢迎发给我们！么么哒！"
 	default:
 		content = "活动太热烈！请稍后再试"
 	}
@@ -525,8 +542,8 @@ func IsValidPhone(phone string) (ok bool) {
 	 * 中国电信：China Telecom
 	 * 133,134,153,1700,177,180,181,189
 	 */
-       
-         reg4_str := "^1(7[3]|6[6]|9[0-9])\\d{8}$"
+
+	reg4_str := "^1(7[3]|6[6]|9[0-9])\\d{8}$"
 
 	ok, _ = regexp.MatchString(reg1_str, phone)
 	if ok {
@@ -542,8 +559,8 @@ func IsValidPhone(phone string) (ok bool) {
 	if ok {
 		return
 	}
-       
-        ok, _ = regexp.MatchString(reg4_str, phone)
+
+	ok, _ = regexp.MatchString(reg4_str, phone)
 	if ok {
 		return
 	}
