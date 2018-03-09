@@ -57,6 +57,7 @@ func GetOptionsByPreGene(uin int64, qid int, index int, uuid int64) (options []*
 	}
 
 	if qid != lastQId || index != lastQIndex {
+		log.Errorf("qid:%d lastQid :%d index:%d lastQIndex:%d", qid, lastQId, index, lastQIndex)
 		err = rest.NewAPIError(constant.E_INVALID_PARAM, "qid or qindex not match")
 		log.Errorf(err.Error())
 		return
@@ -79,6 +80,13 @@ func GetOptionsByPreGene(uin int64, qid int, index int, uuid int64) (options []*
 		log.Errorf(err.Error())
 		return
 	}
+
+	tmpUids := make([]int64, 0)
+	for uid := range friendInfos {
+		tmpUids = append(tmpUids, uid)
+	}
+
+	uids = tmpUids // 重新更新候选人列表，因为有可能有用户注销
 
 	uinsVoteCntMap, err := st.GetUinsVotedCnt(qid, uids)
 	if err != nil {

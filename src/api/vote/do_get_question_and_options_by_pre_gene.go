@@ -325,6 +325,7 @@ func GetNextQuestionAndOptionsByPreGene(uin int64, uuid int64) (qinfo *st.Questi
 
 			option := &st.OptionInfo2{uid, friendInfos[uid].NickName, uinsVoteCntMap[int(uid)]}
 			options = append(options, option)
+			prepared += fmt.Sprintf("%d:", uid)
 		}
 
 		uids := make([]int64, 0)
@@ -334,8 +335,12 @@ func GetNextQuestionAndOptionsByPreGene(uin int64, uuid int64) (qinfo *st.Questi
 
 			if option.Uin != 0 {
 				uids = append(uids, option.Uin)
+				prepared += fmt.Sprintf("%d:", option.Uin)
 			}
 		}
+		prepared = prepared[:len(prepared)-1]
+
+		log.Debugf("prepared:%+v", prepared)
 
 		if len(uids) == 0 {
 			return
