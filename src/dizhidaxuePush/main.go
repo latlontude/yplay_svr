@@ -104,13 +104,15 @@ func main() {
 			continue
 		}
 
-		err = InsertNewQid(uid)
-		if err != nil {
-			log.Errorf("%d, InsertNewQid error, [%s]", uid, err.Error())
-			continue
-		}
+		/*
+			err = InsertNewQid(uid)
+			if err != nil {
+				log.Errorf("%d, InsertNewQid error, [%s]", uid, err.Error())
+				continue
+			}
 
-		log.Errorf("%d, allaction succ", uid)
+			log.Errorf("%d, allaction succ", uid)
+		*/
 	}
 
 	time.Sleep(3 * time.Second)

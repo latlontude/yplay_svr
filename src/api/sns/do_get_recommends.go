@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
+	//"strings"
 	"svr/st"
 )
 
@@ -248,9 +248,11 @@ func GetRecommendsFromSameSchool(uin int64, subType int, pageNum, pageSize int) 
 			fi.HeadImgUrl = fmt.Sprintf("http://yplay-1253229355.image.myqcloud.com/headimgs/%s", fi.HeadImgUrl)
 		}
 
-		if strings.ContainsAny(fi.NickName, "%,。，、") {
-			continue // 昵称包含标点符号，过滤
-		}
+		/*
+			if strings.ContainsAny(fi.NickName, "%,。，、") {
+				continue // 昵称包含标点符号，过滤
+			}
+		*/
 
 		cnt++
 
