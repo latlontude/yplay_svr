@@ -23,6 +23,7 @@ var (
 		"/createsnapchatsession":             auth.Apify2(doCreateSnapChatSession),
 		"/sendvotereplyreplymsg":             auth.Apify2(doSendVoteReplyReplyMsg),             //回复的回复
 		"/batchgetsnapsessionsfroupgradeapp": auth.Apify2(doBatchGetSnapSessionsForUpgradeApp), //APP升级 批量拉取snapsessions
+	       //	"/batchbackupsessionid":              auth.Apify2(doBatchBackupSessionId),              //批量备份sessionId
 	}
 
 	IM_SIG_ADMIN         string

@@ -436,6 +436,23 @@ func (this *RedisApp) Decr(key string) (val int, err error) {
 	return
 }
 
+func (this *RedisApp) GetKeys(pattern string) (vals []string, err error) {
+	conn, err := this.GetConn()
+	if err != nil {
+		log.Error(err.Error())
+		return
+	}
+	defer conn.Close()
+	vals, err = redis.Strings(conn.Do("KEYS", pattern))
+	if err != nil {
+		err = rest.NewAPIError(constant.E_REDIS_GETKEYS, "  get keys error, "+err.Error())
+		log.Errorf(err.Error())
+		return
+	}
+
+	return
+}
+
 func (this *RedisApp) ZRange(key string, start, stop int) (vals []string, err error) {
 
 	vals = make([]string, 0)

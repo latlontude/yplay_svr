@@ -3,12 +3,14 @@ package im
 import (
 	"bytes"
 	"common/constant"
+	"common/mydb"
 	"common/myredis"
 	"common/rest"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -25,6 +27,11 @@ type CreateSnapChatSessonReq struct {
 //yplay创建群组相应
 type CreateSnapChatSessonRsp struct {
 	SessionId string `json:"sessionId"`
+}
+
+type BatchBackupSessionIdReq struct {
+}
+type BatchBackupSessionIdRsp struct {
 }
 
 func doCreateSnapChatSession(req *CreateSnapChatSessonReq, r *http.Request) (rsp *CreateSnapChatSessonRsp, err error) {
@@ -166,5 +173,109 @@ func CreateSnapChatSesson(uin int64, user int64) (sessionId string, err error) {
 		return
 	}
 
+	if uin > user {
+		go storeSessionId(user, uin, sessionId)
+	} else {
+		go storeSessionId(uin, user, sessionId)
+	}
+
+	return
+}
+
+func doBatchBackupSessionId(req *BatchBackupSessionIdReq, r *http.Request) (rsp *BatchBackupSessionIdRsp, err error) {
+
+	log.Debugf("start doBatchBackupSessionId")
+
+	app, err := myredis.GetApp(constant.ENUM_REDIS_APP_SNAPCHAT_SESSION)
+	if err != nil {
+		log.Error(err.Error())
+		return
+	}
+
+	pattern := "26*" // snapSession
+
+	vals, err := app.GetKeys(pattern)
+	log.Debugf("vals :%+v", vals)
+
+	if err != nil {
+		log.Errorf(err.Error())
+	}
+
+	keys := make([]string, 0)
+
+	for _, val := range vals {
+		ret := strings.Split(val, "_")
+		if len(ret) != 3 {
+			log.Errorf("strings.Split err , not equel 3 val:%+v", val)
+		} else {
+			if ret[0] != "26" {
+				log.Errorf("ret[0] is not equel 26")
+			} else {
+
+				key := fmt.Sprintf("%s_%s", ret[1], ret[2])
+				keys = append(keys, key)
+			}
+		}
+
+	}
+
+	log.Debugf("keys:%+v", keys)
+
+	ret, err := app.MGet(keys)
+	if err != nil {
+		log.Errorf(err.Error())
+	}
+
+	log.Debugf("ret:%+v", ret)
+
+	for k := range ret {
+		vals := strings.Split(k, "_")
+		uin, err1 := strconv.ParseInt(vals[0], 10, 64)
+		uid, err2 := strconv.ParseInt(vals[1], 10, 64)
+
+		if err1 != nil || err2 != nil {
+			log.Errorf("strconv.ParseInt err vals:%+v", vals)
+		}
+
+		storeSessionId(uin, uid, ret[k])
+
+	}
+
+	log.Debugf("end doBatchBackupSessionId")
+	return
+}
+
+func storeSessionId(uin, uid int64, sessionId string) (err error) {
+	log.Debugf("start storeSessionId uin:%d uid:%d sessionId:%s", uin, uid, sessionId)
+
+	if uin == uid {
+		log.Errorf("err uin equel uid")
+		return
+	}
+
+	ts := time.Now().Unix()
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		log.Error(err)
+		return
+	}
+
+	stmt, err := inst.Prepare(`insert into snapSession values(?, ?, ?, ?, ?)`)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_PREPARE, err.Error())
+		log.Error(err)
+		return
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(0, uin, uid, sessionId, ts)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
+		log.Error(err.Error())
+		return
+	}
+
+	log.Debugf("end storeSessionId uin:%d uid:%d sessionId:%s", uin, uid, sessionId)
 	return
 }
