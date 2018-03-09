@@ -177,9 +177,10 @@ func CheckNeedInviteCode(device, os, appVer string) (needInviteCode int) {
 
 	//os版本小写
 	nos := strings.ToLower(os)
+	ndevice := strings.ToLower(device)
 
 	//如果是IOS
-	if strings.Contains(nos, "ios") {
+	if strings.Contains(nos, "ios") || strings.Contains(ndevice, "iphone") {
 
 		//版本号1.0.159
 		a := strings.Split(appVer, ".")
