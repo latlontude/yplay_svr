@@ -185,12 +185,17 @@ func GetStarOfWeek(uin int64, last int) (ret GetStarRspTmp, err error) {
 	friendsWeekStarFlag := false
 
 	for _, uid := range uidsSlice {
+
+		if uid == 101038 || uid == 100929 || uid == 100776 || uid == 100446 || uid == 100784 || uid == 100771 {
+			continue
+		}
+
 		if _, ok := res[uid]; ok {
 			if res[uin].SchoolId == res[uid].SchoolId && res[uin].Grade == res[uid].Grade && !sameSchoolAndSameGradeWeekStarFlag {
 
-	/*			if res[uin].SchoolType == 3 && res[uin].DeptId != res[uid].DeptId {
-					continue // 用户学校为大学时，查找同校同学院同年级的用户
-				} */
+				/*			if res[uin].SchoolType == 3 && res[uin].DeptId != res[uid].DeptId {
+							continue // 用户学校为大学时，查找同校同学院同年级的用户
+						} */
 
 				if uid != uin || (uid == uin && in) {
 					tmpRet.SameSchoolAndSameGradeWeekStar.Uin = uid

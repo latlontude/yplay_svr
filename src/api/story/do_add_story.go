@@ -205,7 +205,7 @@ func RemoveStory(uin, uid int64) (err error) {
 
 	log.Debugf("vals:%+v", vals)
 
-	removeStoryIds := make([]int64, 0)
+	removeStoryIds := make([]string, 0)
 
 	for _, val := range vals {
 		ret := strings.Split(val, "_")
