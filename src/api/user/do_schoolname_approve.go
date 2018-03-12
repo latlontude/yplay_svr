@@ -11,9 +11,11 @@ import (
 )
 
 type SchoolNameApproveReq struct {
-	Uin   int64  `schema:"uin"`
-	Token string `schema:"token"`
-	Ver   int    `schema:"ver"`
+	Uin      int64  `schema:"uin"`
+	Token    string `schema:"token"`
+	Ver      int    `schema:"ver"`
+	User     int64  `schema:"user"`
+	SchoolId int    `schema:"schoolId"`
 }
 
 type SchoolNameApproveRsp struct {
@@ -21,22 +23,28 @@ type SchoolNameApproveRsp struct {
 
 func doApproveSchoolName(req *SchoolNameApproveReq, r *http.Request) (rsp *SchoolNameApproveRsp, err error) {
 
-	log.Errorf("start doApproveSchoolName uin:%d", req.Uin)
+	log.Errorf("uin %d, doApproveSchoolName req %+v", req.Uin, req)
 
-	info, err := ApproveSchoolName(req.Uin)
+	err = ApproveSchoolName(req.User, req.SchoolId)
 	if err != nil {
-		log.Errorf("uin %d, SubmitApproveRsp error, %s", req.Uin, err.Error())
+		log.Errorf("uin %d, SubmitApproveSchoolRsp error %s", req.Uin, err.Error())
 		return
 	}
-	rsp = &info
-	log.Errorf("start doApproveSchoolName")
+
+	rsp = &SchoolNameApproveRsp{}
+
+	log.Errorf("uin %d, SubmitApproveSchoolRsp succ", req.Uin)
 	return
 
 }
 
-func ApproveSchoolName(uin int64) (ret SchoolNameApproveRsp, err error) {
+func ApproveSchoolName(user int64, schoolId int) (err error) {
 
-	log.Errorf("start ApproveSchoolName")
+	if user == 0 || schoolId == 0 {
+		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid user or schoolId")
+		log.Errorf(err.Error())
+		return
+	}
 
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
 	if inst == nil {
@@ -45,7 +53,21 @@ func ApproveSchoolName(uin int64) (ret SchoolNameApproveRsp, err error) {
 		return
 	}
 
-	sql := fmt.Sprintf(`select schoolId from pendingSchool where uin = %d and status = 1`, uin)
+	info, err := st.GetSchoolInfo(schoolId)
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+
+	//学校不存在
+	if info.SchoolId == 0 {
+		err = rest.NewAPIError(constant.E_RES_NOT_FOUND, "schoolId zero!")
+		log.Errorf(err.Error())
+		return
+	}
+
+	sql := fmt.Sprintf(`select id from pendingSchool where uin = %d and status = 0 and schoolId >= 9999997 and schoolId <= 9999999`, user)
+
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -54,30 +76,61 @@ func ApproveSchoolName(uin int64) (ret SchoolNameApproveRsp, err error) {
 	}
 	defer rows.Close()
 
-	var schoolId int
+	find := false
 	for rows.Next() {
-		rows.Scan(&schoolId)
+		var t int
+		rows.Scan(&t)
+		find = true
 	}
 
-	if schoolId != 0 {
+	if !find {
+		err = rest.NewAPIError(constant.E_RES_NOT_FOUND, "record not found in pendingschool")
+		log.Errorf(err.Error())
+		return
+	}
 
-		sql := fmt.Sprintf(`select schoolId, schoolType, schoolName, country, province, city, latitude, longitude, status, ts from schools where schoolId = %d`, schoolId)
-		rows, err1 := inst.Query(sql)
-		if err1 != nil {
-			err = rest.NewAPIError(constant.E_DB_QUERY, err1.Error())
+	//查询用户的资料是否已经设置了学校
+	ui, err := st.GetUserProfileInfo(user)
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+
+	sqls := make([]string, 0)
+
+	if ui.SchoolId >= 9999997 && ui.SchoolId <= 9999999 {
+		//学校处于审核中
+
+		sql1 := fmt.Sprintf(`update profiles set schoolId = %d, schoolType = %d, schoolName = "%s", country = "%s", province = "%s", city = "%s", deptId = 0, deptName = "" where uin = %d`,
+			info.SchoolId, info.SchoolType, info.SchoolName, info.Country, info.Province, info.City, user)
+
+		sql2 := fmt.Sprintf(`update pendingSchool set status = 1 where uin = %d`, user)
+
+		sqls = append(sqls, sql1)
+		sqls = append(sqls, sql2)
+
+	} else if ui.SchoolId > 0 {
+		//学校已经修改过了
+
+		sql2 := fmt.Sprintf(`update pendingSchool set status = 2 where uin = %d`, user)
+
+		sqls = append(sqls, sql2)
+
+	} else {
+		// schoolId == 0
+	}
+
+	if len(sqls) > 0 {
+		err = mydb.Exec(inst, sqls)
+		if err != nil {
 			log.Errorf(err.Error())
 			return
 		}
-		defer rows.Close()
-
-		var schoolInfo st.SchoolInfo
-		for rows.Next() {
-			rows.Scan(&schoolInfo.SchoolId, &schoolInfo.SchoolType, &schoolInfo.SchoolName, &schoolInfo.Country, &schoolInfo.Province, &schoolInfo.City,
-				&schoolInfo.Latitude, &schoolInfo.Longitude, &schoolInfo.Status, &schoolInfo.Ts)
-		}
-		cache.AddCacheSchool(schoolInfo)
 	}
 
-	log.Errorf("end ApproveSchoolName")
+	if _, ok := cache.SCHOOLS[schoolId]; !ok {
+		cache.AddCacheSchool(*info)
+	}
+
 	return
 }

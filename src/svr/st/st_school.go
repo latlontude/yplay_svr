@@ -125,3 +125,40 @@ func GetDeptsBySchool(schoolId int) (infos []*DeptInfo, err error) {
 	infos = append(infos, &otherDeptInfo)
 	return
 }
+
+func GetSchoolInfo(schoolId int) (info *SchoolInfo, err error) {
+
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		log.Errorf(err.Error())
+		return
+	}
+
+	sql := fmt.Sprintf(`select schoolId, schoolType, schoolName, country, province, city, latitude, longitude, status, ts from schools where schoolId = %d`, schoolId)
+
+	rows, err := inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Errorf(err.Error())
+		return
+	}
+	defer rows.Close()
+
+	info = &SchoolInfo{}
+
+	find := false
+	for rows.Next() {
+		rows.Scan(&info.SchoolId, &info.SchoolType, &info.SchoolName, &info.Country, &info.Province, &info.City, &info.Latitude, &info.Longitude, &info.Status, &info.Ts)
+		find = true
+		break
+	}
+
+	if !find {
+		err = rest.NewAPIError(constant.E_RES_NOT_FOUND, fmt.Sprintf("schoolId %d not found", schoolId))
+		log.Errorf(err.Error())
+		return
+	}
+
+	return
+}
