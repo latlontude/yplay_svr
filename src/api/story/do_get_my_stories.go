@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"svr/st"
 	"time"
 )
@@ -46,7 +47,7 @@ func GetMyStories(uin int64, ts int64, cnt int) (stories []*st.StoryInfo, err er
 
 	stories = make([]*st.StoryInfo, 0)
 
-	if uin <= 0 || cnt <= 0 || ts <= 1000 {
+	if uin <= 0 || cnt <= 0 {
 		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid params")
 		log.Errorf(err.Error())
 		return
@@ -96,6 +97,9 @@ func GetMyStories(uin int64, ts int64, cnt int) (stories []*st.StoryInfo, err er
 		log.Errorf(err.Error())
 	}
 
+	if ts == 0 { // ts 为0 代表获取最新的
+		ts = time.Now().UnixNano()
+	}
 	//获取新的STORY ID
 	valsStr, err := app.ZRevRangeByScoreWithScores(keyStr, ts-1, -1, 0, cnt)
 	if err != nil {
@@ -134,11 +138,18 @@ func GetMyStories(uin int64, ts int64, cnt int) (stories []*st.StoryInfo, err er
 	for i, valStr := range valsStr {
 
 		if i%2 == 0 {
-			lastVid, err = strconv.ParseInt(valStr, 10, 64)
-			if err != nil {
-				err = rest.NewAPIError(constant.E_REDIS_ZSET, "ZRevRangeWithScore value not interge")
-				log.Error(err.Error())
-				return
+
+			ret := strings.Split(valStr, "_")
+			if len(ret) != 2 {
+				log.Debugf("valStr:%s does not fit uid_storyId", valStr)
+				lastVid = 0
+			} else {
+				lastVid, err = strconv.ParseInt(ret[1], 10, 64)
+				if err != nil {
+					err = rest.NewAPIError(constant.E_REDIS_ZSET, "ZRevRangeWithScore value not interge")
+					log.Error(err.Error())
+					return
+				}
 			}
 
 		} else {
@@ -150,7 +161,7 @@ func GetMyStories(uin int64, ts int64, cnt int) (stories []*st.StoryInfo, err er
 				return
 			}
 
-			if lastMs > 0 && lastVid > 0 {
+			if lastMs > 0 && lastVid > 0 && lastMs == lastVid {
 				orderVids = append(orderVids, lastVid)
 			}
 		}
@@ -393,11 +404,18 @@ func GetUserStories(uin, uid, ts int64, cnt int) (stories []*st.StoryInfo, err e
 	for i, valStr := range valsStr {
 
 		if i%2 == 0 {
-			lastVid, err = strconv.ParseInt(valStr, 10, 64)
-			if err != nil {
-				err = rest.NewAPIError(constant.E_REDIS_ZSET, "ZRevRangeWithScore value not interge")
-				log.Error(err.Error())
-				return
+
+			ret := strings.Split(valStr, "_")
+			if len(ret) != 2 {
+				log.Debugf("valStr:%s does not fit uid_storyId", valStr)
+				lastVid = 0
+			} else {
+				lastVid, err = strconv.ParseInt(ret[1], 10, 64)
+				if err != nil {
+					err = rest.NewAPIError(constant.E_REDIS_ZSET, "ZRevRangeWithScore value not interge")
+					log.Error(err.Error())
+					return
+				}
 			}
 
 		} else {
@@ -409,7 +427,7 @@ func GetUserStories(uin, uid, ts int64, cnt int) (stories []*st.StoryInfo, err e
 				return
 			}
 
-			if lastMs > 0 && lastVid > 0 {
+			if lastMs > 0 && lastVid > 0 && lastMs == lastVid {
 				orderVids = append(orderVids, lastVid)
 			}
 		}

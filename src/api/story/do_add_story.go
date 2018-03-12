@@ -7,7 +7,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	//"strconv"
+	"strconv"
+	"strings"
 	"svr/st"
 	"time"
 )
@@ -131,9 +132,9 @@ func AddStory(uin int64, typ int, data, text, thumbnailImgUrl string) (sid int64
 		log.Errorf(err.Error())
 	}
 
-	sidStr := fmt.Sprintf("%d", sid)
+	sidStr := fmt.Sprintf("%d_%d", sid) // member:uid_storyId
 
-	err = app.ZAdd(keyStr, sid, sidStr)
+	err = app.ZAdd(keyStr, sid, sidStr) // score member
 	if err != nil {
 		log.Errorf(err.Error())
 		return
@@ -170,7 +171,7 @@ func GeneNewStory(uin int64, storyId int64) (err error) {
 
 		//friendUin的story里面有一条story表示 好友uin有新的story了
 		keyStr := fmt.Sprintf("%d", friendUin)
-		err1 := app.ZAdd(keyStr, storyId, fmt.Sprintf("%d", storyId))
+		err1 := app.ZAdd(keyStr, storyId, fmt.Sprintf("%d_%d", uin, storyId))
 		if err1 != nil {
 			log.Error(err1.Error())
 			continue
@@ -182,5 +183,53 @@ func GeneNewStory(uin int64, storyId int64) (err error) {
 	//我的好友都会有新story
 	//GeneNewFeedPush(users)
 
+	return
+}
+
+func RemoveStory(uin, uid int64) (err error) {
+
+	log.Debugf("start RemoveStory uin:%d, uid:%d", uin, uid)
+
+	app, err := myredis.GetApp(constant.ENUM_REDIS_APP_FRIEND_STORY_LIST)
+	if err != nil {
+		log.Error(err.Error())
+		return
+	}
+
+	keyStr := fmt.Sprintf("%d", uin)
+	vals, err := app.ZRangeByScoreWithoutLimit(keyStr, -1, -1)
+	if err != nil {
+		log.Error(err.Error())
+		return
+	}
+
+	log.Debugf("vals:%+v", vals)
+
+	removeStoryIds := make([]int64, 0)
+
+	for _, val := range vals {
+		ret := strings.Split(val, "_")
+		if len(ret) != 2 {
+			log.Errorf("format err! val:%s", val)
+			continue
+		}
+
+		storyUin, err1 := strconv.ParseInt(ret[0], 10, 64)
+		if err1 != nil {
+			log.Errorf("strconv.ParseInt err ret[0]:%s", ret[0])
+		}
+
+		if storyUin == uid {
+			removeStoryIds = append(removeStoryIds, val)
+		}
+	}
+
+	_, err = app.ZMRem(keyStr, removeStoryIds)
+	if err != nil {
+		log.Error(err.Error())
+		return
+	}
+
+	log.Debugf("end RemoveStory uin:%d, uid:%d", uin, uid)
 	return
 }

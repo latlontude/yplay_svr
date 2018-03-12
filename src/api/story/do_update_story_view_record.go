@@ -111,3 +111,9 @@ func UpdateStoryViewRecord(uin, storyId, ts int64) (err error) {
 	log.Debugf("end UpdateStoryViewRecord")
 	return
 }
+
+func RemoveUserViewRecord(uin, uid int64) (err error) {
+	log.Debugf("start RemoveUserViewRecord uin:%d, uid:%d", uin, uid)
+
+	log.Debugf("end RemoveUserViewRecord uin:%d, uid:%d", uin, uid)
+}

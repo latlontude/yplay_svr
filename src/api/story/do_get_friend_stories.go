@@ -45,7 +45,7 @@ func GetFriendStories(uin int64, ts int64, cnt int) (stories []*st.StoryInfo, er
 
 	stories = make([]*st.StoryInfo, 0)
 
-	if uin <= 0 || cnt <= 0 || ts <= 1000 {
+	if uin <= 0 || cnt <= 0 {
 		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid params")
 		log.Errorf(err.Error())
 		return
@@ -98,6 +98,10 @@ func GetFriendStories(uin int64, ts int64, cnt int) (stories []*st.StoryInfo, er
 		log.Errorf(err.Error())
 	}
 
+	if ts == 0 {
+		ts = time.Now().UnixNano()
+	}
+
 	//获取新的STORY ID
 	valsStr, err := app.ZRevRangeByScoreWithScores(keyStr, ts-1, -1, 0, cnt)
 	if err != nil {
@@ -131,13 +135,19 @@ func GetFriendStories(uin int64, ts int64, cnt int) (stories []*st.StoryInfo, er
 	orderVids := make([]int64, 0)
 
 	for i, valStr := range valsStr {
-
 		if i%2 == 0 {
-			lastVid, err = strconv.ParseInt(valStr, 10, 64)
-			if err != nil {
-				err = rest.NewAPIError(constant.E_REDIS_ZSET, "ZRevRangeWithScore value not interge")
-				log.Error(err.Error())
-				return
+
+			ret := strings.Split(valStr, "_")
+			if len(ret) != 2 {
+				log.Debugf("valStr:%s does not fit uid_storyId", valStr)
+				lastVid = 0
+			} else {
+				lastVid, err = strconv.ParseInt(ret[1], 10, 64)
+				if err != nil {
+					err = rest.NewAPIError(constant.E_REDIS_ZSET, "ZRevRangeWithScore value not interge")
+					log.Error(err.Error())
+					return
+				}
 			}
 
 		} else {
@@ -149,7 +159,7 @@ func GetFriendStories(uin int64, ts int64, cnt int) (stories []*st.StoryInfo, er
 				return
 			}
 
-			if lastMs > 0 && lastVid > 0 {
+			if lastMs > 0 && lastVid > 0 && lastMs == lastVid {
 				orderVids = append(orderVids, lastVid)
 			}
 		}
