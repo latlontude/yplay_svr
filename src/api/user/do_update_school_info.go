@@ -79,7 +79,7 @@ func UpdateUserSchoolInfo(uin int64, schoolId int, schoolName string, grade int,
 	if schoolId <= 9999999 && schoolId >= 9999997 { //999999[7~9] 代表用户自己输入学校 初中/高中/大学
 
 		log.Errorf("uin:%d, pending schoolName:%s ", uin, schoolName)
-		stmt, err1 := inst.Prepare(`insert into pendingSchool values(?, ?, ?, ?, ?, ?)`)
+		stmt, err1 := inst.Prepare(`insert into pendingSchool values(?, ?, ?, ?, ?, ?) on duplicate key update schoolId = ?, schoolName = ?, status = ?, ts = ?`)
 		if err1 != nil {
 			err = rest.NewAPIError(constant.E_DB_PREPARE, err1.Error())
 			log.Error(err)
@@ -88,7 +88,7 @@ func UpdateUserSchoolInfo(uin int64, schoolId int, schoolName string, grade int,
 		defer stmt.Close()
 
 		ts := time.Now().Unix()
-		_, err1 = stmt.Exec(0, uin, schoolId, schoolName, 0, ts)
+		_, err1 = stmt.Exec(0, uin, schoolId, schoolName, 0, ts, schoolId, schoolName, 0, ts)
 		if err1 != nil {
 			err = rest.NewAPIError(constant.E_DB_EXEC, err1.Error())
 			log.Error(err.Error())

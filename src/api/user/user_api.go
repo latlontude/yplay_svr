@@ -14,7 +14,7 @@ var (
 		"/getmyfriends":       auth.Apify2(doGetMyFriends),       //获取我的好友列表
 		"/updateuserprofile":  auth.Apify2(doUpdateUserProfile),  //更新用户基础信息 头像/昵称/用户名称/性别
 		"/updateschoolinfo":   auth.Apify2(doUpdateSchoolInfo),   //更新用户的学校信息
-		"/schoolnameapprove":  auth.Apify2(doApproveSchoolName),  //用户输入的学校名审核通过
+		"/schoolnameapprove":  auth.Apify(doApproveSchoolName),   //用户输入的学校名审核通过 方便运维处理 不加权限校验
 
 		"/getusersbyphone": auth.Apify2(doGetUsersbyPhone), //由手机号获取用户基本信息
 
