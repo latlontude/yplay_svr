@@ -54,6 +54,7 @@ func main() {
 			calc2DegreeFriend()
 		}
 	}
+	log.Debugf("end server...")
 }
 
 func DelAllResult() (err error) {
@@ -66,8 +67,8 @@ func DelAllResult() (err error) {
 
 	log.Errorf("begin scan keys")
 
-	keys, err := app.GetAllKeys()
-
+	pattern := "18_*"
+	keys, err := app.GetKeys(pattern)
 	if err != nil {
 		log.Errorf(err.Error())
 		return
@@ -75,9 +76,15 @@ func DelAllResult() (err error) {
 
 	log.Errorf("begin DelAllResult, keys cnt %d", len(keys))
 
-	for key, _ := range keys {
-		app.Del(key)
+	s := time.Now().UnixNano()
+	err = app.DelKeys(keys)
+	if err != nil {
+		log.Errorf(err.Error())
+		return
 	}
+
+	e := time.Now().UnixNano()
+	log.Debugf("del duration:%dms", (e-s)/1000000)
 
 	return
 }
@@ -85,6 +92,7 @@ func DelAllResult() (err error) {
 func calc2DegreeFriend() (err error) {
 
 	log.Errorf("begin calc2DegreeFriend....")
+	start := time.Now().UnixNano()
 
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
 	if inst == nil {
@@ -124,6 +132,7 @@ func calc2DegreeFriend() (err error) {
 
 	log.Errorf("friends pair cnt %d", total)
 
+	start1 := time.Now().UnixNano()
 	for {
 
 		sql = fmt.Sprintf(`select uin, friendUin from friends limit %d, %d`, s, e)
@@ -160,6 +169,8 @@ func calc2DegreeFriend() (err error) {
 			break
 		}
 	}
+	end1 := time.Now().UnixNano()
+	log.Debugf("query database duration: %dms", (end1-start1)/1000000)
 
 	log.Errorf("uniq uin cnt %d", len(uniqUins))
 
@@ -213,7 +224,7 @@ func calc2DegreeFriend() (err error) {
 			}
 
 			if cnt > 0 {
-				log.Errorf("uin1 %d, uin2 %d, sharefriendCnt %d, sharedUins %+v", uin1, uin2, cnt, sharedUins)
+				//log.Errorf("uin1 %d, uin2 %d, sharefriendCnt %d, sharedUins %+v", uin1, uin2, cnt, sharedUins)
 				res[keyStr] = cnt
 			}
 		}
@@ -226,34 +237,46 @@ func calc2DegreeFriend() (err error) {
 		return
 	}
 
-	for k, v := range res {
+	log.Debugf("len(res):%d", len(res))
 
-		if v == 0 {
-			continue
-		}
+	keysScoreMemMap := make(map[string][]interface{})
 
-		//log.Debugf("result %s %d", k, v)
-
-		a := strings.Split(k, "_")
+	for str, score := range res {
+		a := strings.Split(str, "_")
 		if len(a) != 2 {
-			log.Errorf("invalid pairs %s", k)
+			log.Errorf("invalid pairs %s", str)
 			continue
 		}
 
-		key := strings.TrimSpace(a[0])
-		member := strings.TrimSpace(a[1])
+		key1 := strings.TrimSpace(a[0])
+		key2 := strings.TrimSpace(a[1])
 
-		err1 := app.ZAdd(key, int64(v), member)
-		if err1 != nil {
-			log.Errorf(err1.Error())
+		if _, ok := keysScoreMemMap[key1]; !ok {
+			keysScoreMemMap[key1] = make([]interface{}, 0)
 		}
 
-		err1 = app.ZAdd(member, int64(v), key)
+		keysScoreMemMap[key1] = append(keysScoreMemMap[key1], score, key2)
+
+		if _, ok := keysScoreMemMap[key2]; !ok {
+			keysScoreMemMap[key2] = make([]interface{}, 0)
+		}
+
+		keysScoreMemMap[key2] = append(keysScoreMemMap[key2], score, key1)
+
+	}
+
+	start2 := time.Now().UnixNano()
+
+	for key := range keysScoreMemMap {
+		err1 := app.ZMAdd(key, keysScoreMemMap[key])
 		if err1 != nil {
 			log.Errorf(err1.Error())
 		}
 	}
 
+	end := time.Now().UnixNano()
+	log.Debugf("write redis duration : %dms", (end-start2)/1000000)
+	log.Debugf("calc2Dgree duration : %dms", (end-start)/1000000)
 	log.Errorf("finished calc2DegreeFriend....")
 
 	return

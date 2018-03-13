@@ -294,6 +294,37 @@ func (this *RedisApp) Set(key, val string) (err error) {
 	return
 }
 
+func (this *RedisApp) MSet(keyValues map[string]int) (err error) {
+
+	conn, err := this.GetConn()
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+	defer conn.Close()
+
+	params := make([]interface{}, 0)
+
+	for k, v := range keyValues {
+		rkey := fmt.Sprintf("%s_%s", this.AppId, k)
+		params = append(params, rkey)
+		params = append(params, v)
+	}
+
+	reply, err := redis.String(conn.Do("mset", params...))
+	if err != nil {
+		err = rest.NewAPIError(constant.E_REDIS_SET, "mset error "+err.Error())
+		return
+	}
+
+	if reply != "OK" {
+		err = rest.NewAPIError(constant.E_REDIS_SET, "mset error "+reply)
+		return
+	}
+
+	return
+}
+
 func (this *RedisApp) SetEx(key string, val string, ttl uint32) (err error) {
 
 	conn, err := this.GetConn()
@@ -392,6 +423,28 @@ func (this *RedisApp) Del(key string) (err error) {
 	return
 }
 
+func (this *RedisApp) DelKeys(keys []string) (err error) {
+
+	conn, err := this.GetConn()
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+	defer conn.Close()
+
+	params := make([]interface{}, 0)
+	for _, key := range keys {
+		params = append(params, key)
+	}
+	_, err = redis.Int(conn.Do("del", params...))
+	if err != nil {
+		err = rest.NewAPIError(constant.E_REDIS_DEL, "delkeys error"+err.Error())
+		return
+	}
+
+	return
+}
+
 func (this *RedisApp) Incr(key string) (val int, err error) {
 
 	conn, err := this.GetConn()
@@ -442,6 +495,7 @@ func (this *RedisApp) GetKeys(pattern string) (vals []string, err error) {
 		log.Error(err.Error())
 		return
 	}
+
 	defer conn.Close()
 	vals, err = redis.Strings(conn.Do("KEYS", pattern))
 	if err != nil {
@@ -762,7 +816,7 @@ func (this *RedisApp) ZAdd(key string, score int64, member string) (err error) {
 	return
 }
 
-func (this *RedisApp) ZMulAdd(key string, mem2score map[int64]string) (err error) {
+func (this *RedisApp) ZMulAdd(key string, score2mem map[int64]string) (err error) {
 
 	conn, err := this.GetConn()
 	if err != nil {
@@ -775,14 +829,38 @@ func (this *RedisApp) ZMulAdd(key string, mem2score map[int64]string) (err error
 
 	params := make([]interface{}, 0)
 	params = append(params, rkey)
-	for k, v := range mem2score {
-		params = append(params, fmt.Sprintf("%d", k))
-		params = append(params, fmt.Sprintf("%s", v))
+	for score, mem := range score2mem {
+		params = append(params, fmt.Sprintf("%d", score))
+		params = append(params, fmt.Sprintf("%s", mem))
 	}
 
 	_, err = redis.Int(conn.Do("ZADD", params...))
 	if err != nil {
 		err = rest.NewAPIError(constant.E_REDIS_ZMSET, "zmuladd error,"+err.Error())
+		log.Errorf(err.Error())
+		return
+	}
+
+	return
+}
+
+func (this *RedisApp) ZMAdd(key string, score2mem []interface{}) (err error) {
+
+	conn, err := this.GetConn()
+	if err != nil {
+		log.Error(err.Error())
+		return
+	}
+	defer conn.Close()
+
+	rkey := fmt.Sprintf("%s_%s", this.AppId, key)
+	params := make([]interface{}, 0)
+	params = append(params, rkey)
+	params = append(params, score2mem...)
+
+	_, err = redis.Int(conn.Do("ZADD", params...))
+	if err != nil {
+		err = rest.NewAPIError(constant.E_REDIS_ZMSET, "zmadd error,"+err.Error())
 		log.Errorf(err.Error())
 		return
 	}
