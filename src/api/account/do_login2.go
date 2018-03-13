@@ -26,13 +26,13 @@ type Login2Req struct {
 }
 
 type Login2Rsp struct {
-	HasCheckInviteCode int    `json:"hasCheckInviteCode"` //是否校验过邀请码
-	Uin                int64  `json:"uin"`
-	Token              string `json:"token"`
-	Ver                int    `json:"ver"`
-	IsNewUser          int    `json:"isNewUser"`
-
-	Info *st.UserProfileInfo `json:"info"`
+	HasCheckInviteCode int                 `json:"hasCheckInviteCode"` //是否校验过邀请码
+	Uin                int64               `json:"uin"`
+	Token              string              `json:"token"`
+	Ver                int                 `json:"ver"`
+	IsNewUser          int                 `json:"isNewUser"`
+	Info               *st.UserProfileInfo `json:"info"`
+	FriendListVer      int64               `json:"friendListVer"` //好友列表的版本号
 }
 
 func doLogin2(req *Login2Req, r *http.Request) (rsp *Login2Rsp, err error) {
@@ -143,6 +143,8 @@ func Login2(phone string, code string, uuid int64, device, os, appVer string) (r
 		return
 	}
 
+	friendListVer, _ := st.GetFriendListVer(uin)
+
 	//是否校验过邀请码
 	hasCheckInviteCode, err := PhoneInviteCodeHasCheck(phone)
 
@@ -159,7 +161,7 @@ func Login2(phone string, code string, uuid int64, device, os, appVer string) (r
 		hasCheckInviteCode = 1
 	}
 
-	rsp = &Login2Rsp{hasCheckInviteCode, uin, token, env.Config.Token.VER, isNewUser, info}
+	rsp = &Login2Rsp{hasCheckInviteCode, uin, token, env.Config.Token.VER, isNewUser, info, friendListVer}
 
 	return
 }
