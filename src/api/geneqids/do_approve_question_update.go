@@ -169,27 +169,7 @@ func InsertApprovedQId(uin int64, qid int) (pos int, err error) {
 		orgPos, _ = strconv.Atoi(valsStr["cursor"])
 	}
 
-	insertcursor := -1
-	if len(valsStr["insertcursor"]) > 0 {
-		insertcursor, _ = strconv.Atoi(valsStr["insertcursor"])
-	}
-
-	if insertcursor <= 0 {
-		//insertcursor从来没有设置过
-		pos = orgPos + 1 + rand.Intn(3)
-
-	} else {
-
-		if insertcursor > orgPos {
-			//插入位置始终比当前答题的进度要快一些
-			pos = insertcursor + 1 + rand.Intn(3)
-		} else {
-			//可能出现答题快，插入慢
-			//可能插入已经绕回来从头开始了，而答题在列表末尾阶段了
-			pos = orgPos + 1 + rand.Intn(3)
-		}
-	}
-
+	pos = orgPos + 1
 	total, err := app.ZCard(keyStr2)
 	if err != nil {
 		log.Errorf(err.Error())
@@ -205,8 +185,48 @@ func InsertApprovedQId(uin int64, qid int) (pos int, err error) {
 		pos = pos % total
 	}
 
-	log.Debugf("uin %d, InsertApprovedQId qid %d, total %d, orgcursor %d, insertcursor %d, newPos %d", uin, qid, total, orgPos, insertcursor, pos)
+	/*	insertcursor := -1
+		if len(valsStr["insertcursor"]) > 0 {
+			insertcursor, _ = strconv.Atoi(valsStr["insertcursor"])
+		}
 
+
+
+				if insertcursor <= 0 {
+					//insertcursor从来没有设置过
+					pos = orgPos + 1 + rand.Intn(3)
+
+				} else {
+
+					if insertcursor > orgPos {
+						//插入位置始终比当前答题的进度要快一些
+						pos = insertcursor + 1 + rand.Intn(3)
+					} else {
+						//可能出现答题快，插入慢
+						//可能插入已经绕回来从头开始了，而答题在列表末尾阶段了
+						pos = orgPos + 1 + rand.Intn(3)
+					}
+				}
+
+				total, err := app.ZCard(keyStr2)
+				if err != nil {
+					log.Errorf(err.Error())
+					return
+				}
+
+				if total == 0 {
+					log.Errorf("uin %d, qid %d, InsertApprovedQId totalCnt 0", uin, qid)
+					return
+				}
+
+				if pos >= total {
+					pos = pos % total
+				}
+
+
+			log.Debugf("uin %d, InsertApprovedQId qid %d, total %d, orgcursor %d, insertcursor %d, newPos %d", uin, qid, total, orgPos, insertcursor, pos)
+	*/
+	log.Debugf("uin %d, InsertApprovedQId qid %d, total:%d orgcursor %d, insertcursor %d", uin, qid, total, orgPos, pos)
 	err = app.ZAdd(keyStr2, int64(pos), fmt.Sprintf("%d", qid))
 	if err != nil {
 		log.Errorf(err.Error())
