@@ -51,16 +51,30 @@ func doApproveQuestionUpdate(req *ApproveQuestionUpdateReq, r *http.Request) (rs
 	return
 }
 
-func ApproveQuestionUpdate(uin int64, qid int) (err error) {
+func ApproveQuestionUpdate(uin int64, qid, typ int) (err error) {
 
 	if uin == 0 || qid == 0 {
 		return
 	}
 
-	uins, err := GetSameSchoolGradeUins(uin)
-	if err != nil {
-		log.Errorf(err.Error())
-		return
+	uins := make([]int64, 0)
+	if typ == 1 {
+		uids, err1 := GetSameSchoolGradeUins(uin)
+		if err1 != nil {
+			log.Errorf(err1.Error())
+			return
+		}
+		uins = uids
+
+	} else if typ == 0 {
+		uids, err1 := GetSameSchoolUins(uin)
+		if err1 != nil {
+			log.Errorf(err1.Error())
+			return
+		}
+		uins = uids
+	} else {
+		log.Errorf("wrong typ:%d in ApproveQuestionUpdate", typ)
 	}
 
 	rand.Seed(time.Now().Unix())
@@ -70,6 +84,59 @@ func ApproveQuestionUpdate(uin int64, qid int) (err error) {
 		if err != nil {
 			log.Errorf(err.Error())
 			return
+		}
+	}
+
+	return
+}
+
+func GetSameSchoolUins(uin int64) (uins []int64, err error) {
+
+	uins = make([]int64, 0)
+
+	if uin == 0 {
+		return
+	}
+
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		log.Errorf(err.Error())
+		return
+	}
+
+	sql := fmt.Sprintf(`select uin, gender, grade, schoolId, schoolType from profiles`)
+
+	rows, err := inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Error(err.Error())
+		return
+	}
+	defer rows.Close()
+
+	ums := make(map[int64]*UserSimpleInfo)
+
+	for rows.Next() {
+
+		var usi UserSimpleInfo
+		rows.Scan(&usi.Uin, &usi.Gender, &usi.Grade, &usi.SchoolId, &usi.SchoolType)
+
+		ums[usi.Uin] = &usi
+	}
+
+	var ui *UserSimpleInfo
+	if _, ok := ums[uin]; !ok {
+		log.Errorf("GetSameSchoolUins uin %d, not exist!", uin)
+		return
+	}
+
+	ui = ums[uin]
+
+	for uid, usi := range ums {
+		//同校的
+		if usi.SchoolId == ui.SchoolId {
+			uins = append(uins, uid)
 		}
 	}
 
@@ -158,8 +225,9 @@ func InsertApprovedQId(uin int64, qid int) (pos int, err error) {
 	log.Debugf("uin %d, InsertApprovedQId HMGet rsp %+v", uin, valsStr)
 
 	if _, ok := valsStr["cursor"]; !ok {
-		err = rest.NewAPIError(constant.E_PRE_GENE_QIDS_PROGRESS_ERR, "pre gene qids progress info error")
-		log.Errorf(err.Error())
+
+		//err = rest.NewAPIError(constant.E_PRE_GENE_QIDS_PROGRESS_ERR, "pre gene qids progress info error")
+		log.Errorf("pre gene qids progress info error")
 		return
 	}
 
@@ -169,7 +237,6 @@ func InsertApprovedQId(uin int64, qid int) (pos int, err error) {
 		orgPos, _ = strconv.Atoi(valsStr["cursor"])
 	}
 
-	pos = orgPos + 1
 	total, err := app.ZCard(keyStr2)
 	if err != nil {
 		log.Errorf(err.Error())
@@ -181,8 +248,33 @@ func InsertApprovedQId(uin int64, qid int) (pos int, err error) {
 		return
 	}
 
+	pos = orgPos + 1
 	if pos >= total {
 		pos = pos % total
+	}
+
+	vals, err := app.ZRangeByScoreWithoutLimit(keyStr2, int64(pos), int64(pos))
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+
+	score2mem := make([]interface{}, 0)
+	score2mem = append(score2mem, pos, qid)
+	for _, val := range vals {
+		score2mem = append(score2mem, pos, val)
+	}
+
+	_, err = app.ZMRem(keyStr2, vals)
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+
+	err = app.ZMAdd(keyStr2, score2mem)
+	if err != nil {
+		log.Errorf(err.Error())
+		return
 	}
 
 	/*	insertcursor := -1
@@ -226,21 +318,17 @@ func InsertApprovedQId(uin int64, qid int) (pos int, err error) {
 
 			log.Debugf("uin %d, InsertApprovedQId qid %d, total %d, orgcursor %d, insertcursor %d, newPos %d", uin, qid, total, orgPos, insertcursor, pos)
 	*/
+
 	log.Debugf("uin %d, InsertApprovedQId qid %d, total:%d orgcursor %d, insertcursor %d", uin, qid, total, orgPos, pos)
-	err = app.ZAdd(keyStr2, int64(pos), fmt.Sprintf("%d", qid))
-	if err != nil {
-		log.Errorf(err.Error())
-		return
-	}
 
-	//更新上次的插入进度
-	res := make(map[string]string)
-	res["insertcursor"] = fmt.Sprintf("%d", pos)
+	/*	//更新上次的插入进度
+		res := make(map[string]string)
+		res["insertcursor"] = fmt.Sprintf("%d", pos)
 
-	err1 := app.HMSet(keyStr, res)
-	if err1 != nil {
-		log.Errorf(err1.Error())
-	}
-
+		err1 := app.HMSet(keyStr, res)
+		if err1 != nil {
+			log.Errorf(err1.Error())
+		}
+	*/
 	return
 }

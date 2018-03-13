@@ -82,8 +82,10 @@ func GetOptionsByPreGene(uin int64, qid int, index int, uuid int64) (options []*
 	}
 
 	tmpUids := make([]int64, 0)
-	for uid := range friendInfos {
-		tmpUids = append(tmpUids, uid)
+	for uid := range uids {
+		if _, ok := friendInfos[int64(uid)]; ok {
+			tmpUids = append(tmpUids, int64(uid))
+		}
 	}
 
 	uids = tmpUids // 重新更新候选人列表，因为有可能有用户注销

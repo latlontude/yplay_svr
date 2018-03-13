@@ -932,7 +932,7 @@ func (this *RedisApp) ZIncrBy(key string, member string, incr int64) (score int6
 	return
 }
 
-func (this *RedisApp) ZAddMul(key string, members map[string]int64) (err error) {
+func (this *RedisApp) ZAddMul(key string, mem2score map[string]int64) (err error) {
 
 	conn, err := this.GetConn()
 	if err != nil {
@@ -946,7 +946,7 @@ func (this *RedisApp) ZAddMul(key string, members map[string]int64) (err error) 
 	params := make([]interface{}, 0)
 	params = append(params, rkey)
 
-	for member, score := range members {
+	for member, score := range mem2score {
 		params = append(params, fmt.Sprintf("%d", score))
 		params = append(params, member)
 	}

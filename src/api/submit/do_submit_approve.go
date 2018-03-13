@@ -15,6 +15,7 @@ import (
 type BatchSubmitApproveReq struct {
 	MinId int `schema:"minId"`
 	MaxId int `schema:"maxId"`
+	typ   int `schema:"type"`
 }
 
 type BatchSubmitApproveRsp struct {
@@ -28,6 +29,7 @@ type SubmitApproveReq struct {
 
 	SubmitId int   `schema:"submitId"`
 	User     int64 `schema:"user"`
+	typ      int   `schema:"type"` //type : 0, 投给同校，1 投给同校同年级
 }
 
 type SubmitApproveRsp struct {
@@ -36,9 +38,9 @@ type SubmitApproveRsp struct {
 
 func doBatchSubmitApprove(req *BatchSubmitApproveReq, r *http.Request) (rsp *BatchSubmitApproveRsp, err error) {
 
-	log.Errorf("doBatchSubmitApproveReq minId:%d, maxId:%d", req.MinId, req.MaxId)
+	log.Errorf("doBatchSubmitApproveReq minId:%d, maxId:%d,typ:%d", req.MinId, req.MaxId, req.typ)
 
-	qids, err := BatchSubmit(req.MinId, req.MaxId)
+	qids, err := BatchSubmit(req.MinId, req.MaxId, req.typ)
 	if err != nil {
 		log.Errorf("BatchSubmitApproveRsp error, %s", err.Error())
 		return
@@ -55,7 +57,7 @@ func doSubmitApprove(req *SubmitApproveReq, r *http.Request) (rsp *SubmitApprove
 
 	log.Errorf("uin %d, SubmitApproveReq %+v", req.Uin, req)
 
-	qid, err := SubmitApprove(req.Uin, req.SubmitId, req.User)
+	qid, err := SubmitApprove(req.Uin, req.User, req.SubmitId, req.typ)
 	if err != nil {
 		log.Errorf("uin %d, SubmitApproveRsp error, %s", req.Uin, err.Error())
 		return
@@ -68,7 +70,8 @@ func doSubmitApprove(req *SubmitApproveReq, r *http.Request) (rsp *SubmitApprove
 	return
 }
 
-func SubmitApprove(uin int64, submitId int, user int64) (qid int64, err error) {
+func SubmitApprove(uin, user int64, submitId, typ int) (qid int64, err error) {
+	log.Debugf("start SubmitApprove uin:%d, user:%d, submitId:%d, typ:%d", uin, user, submitId, typ)
 
 	if submitId == 0 || user == 0 {
 		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid param")
@@ -165,12 +168,13 @@ func SubmitApprove(uin int64, submitId int, user int64) (qid int64, err error) {
 	go im.SendSubmitQustionApprovedMsg(user)
 
 	//审核通过的题目立即插入到用户的未答题的列表里面
-	go geneqids.ApproveQuestionUpdate(user, int(qid))
+	go geneqids.ApproveQuestionUpdate(user, int(qid), typ)
 
+	log.Debugf("end SubmitApprove uin:%d, user:%d, submitId:%d, typ:%d", uin, user, submitId, typ)
 	return
 }
 
-func BatchSubmit(minId, maxId int) (qids []int64, err error) {
+func BatchSubmit(minId, maxId, typ int) (qids []int64, err error) {
 
 	if minId == 0 || maxId == 0 {
 		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid param")
@@ -183,7 +187,7 @@ func BatchSubmit(minId, maxId int) (qids []int64, err error) {
 			break
 		}
 
-		qid, err := BatchSubmitApprove(id)
+		qid, err := BatchSubmitApprove(id, typ)
 		if err != nil {
 			log.Errorf(err.Error())
 			continue
@@ -196,7 +200,7 @@ func BatchSubmit(minId, maxId int) (qids []int64, err error) {
 	return
 }
 
-func BatchSubmitApprove(submitId int) (qid int64, err error) {
+func BatchSubmitApprove(submitId, typ int) (qid int64, err error) {
 
 	log.Debugf("start BatchSubmitApprove submitId:%d", submitId)
 
@@ -298,7 +302,7 @@ func BatchSubmitApprove(submitId int) (qid int64, err error) {
 	go im.SendSubmitQustionApprovedMsg(user)
 
 	//审核通过的题目立即插入到用户的未答题的列表里面
-	go geneqids.ApproveQuestionUpdate(user, int(qid))
+	go geneqids.ApproveQuestionUpdate(user, int(qid), typ)
 
 	log.Debugf("end BatchSubmitApprove submitId:%d", submitId)
 	return
