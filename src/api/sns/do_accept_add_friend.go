@@ -172,7 +172,8 @@ func AcceptAddFriend(uin int64, msgId int64, act int) (err error) {
 	//更新好友的好友关系
 	go im.SendAcceptAddFriendMsg(fromUin, toUin)
 
-	go CreateNewSnapSession(fromUin, toUin)
+	//go CreateNewSnapSession(fromUin, toUin)
+	go CreateSnapSessionAndSendFirstMsg(fromUin, toUin)
 
 	go JudgeNeedGeneQids(fromUin, toUin)
 
@@ -266,7 +267,56 @@ func IncrFriendCnt(uin, friendUin int64) (err error) {
 	return
 }
 
-func CreateNewSnapSession(uin, uid int64) (err error) {
+//fromUin -> toUin
+func CreateSnapSessionAndSendFirstMsg(uin, uid int64) (err error) {
+
+	//创建固定会话
+	gid, err := CreateNewSnapSession(uin, uid)
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		log.Error(err.Error())
+		return
+	}
+
+	//查找对方的昵称
+	sql := fmt.Sprintf(`select nickName from profiles where uin =  %d`, uin)
+	rows, err := inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Error(err)
+		return
+	}
+	defer rows.Close()
+
+	nickName := ""
+	for rows.Next() {
+		rows.Scan(&nickName)
+		break
+	}
+
+	//发送push
+	//主动发起的一方将受到push
+	content := fmt.Sprintf("%s: 我们已成为好友，可以互相评价了！ᕕ( ᐛ )ᕗ", nickName)
+	im.SendLeaveFrozenMsg(uin, content)
+
+	// if err != nil {
+	// 	log.Errorf(err.Error())
+	// 	return
+	// }
+
+	//模拟发送一条消息 从uid->uin
+	im.SendTextMsg(gid, "我们已成为好友啦，开始聊天吧ᕕ( ᐛ )ᕗ", uid, uin)
+
+	return
+}
+
+func CreateNewSnapSession(uin, uid int64) (groupId string, err error) {
 
 	log.Errorf("begin uin %d, uid %d, CreateNewSnapSession ", uin, uid)
 
@@ -275,7 +325,7 @@ func CreateNewSnapSession(uin, uid int64) (err error) {
 		return
 	}
 
-	groupId, err := im.CreateSnapChatSesson(uin, uid)
+	groupId, err = im.CreateSnapChatSesson(uin, uid)
 	if err != nil {
 		log.Errorf("uin %d, uid %d, create snap chat session error %s", uin, uid, err.Error())
 		return
@@ -283,6 +333,5 @@ func CreateNewSnapSession(uin, uid int64) (err error) {
 
 	log.Errorf("uin1 %d, uin2 %d, create snap chat session success, groupId %s", uin, uid, groupId)
 
-	log.Errorf("end CreateNewSnapSession")
 	return
 }
