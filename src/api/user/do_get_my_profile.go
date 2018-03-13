@@ -12,8 +12,9 @@ type GetMyProfileReq struct {
 }
 
 type GetMyProfileRsp struct {
-	Info     *st.UserProfileInfo2      `json:"info"`
-	ModInfos []*st.ProfileModQuotaInfo `json:"modInfos"`
+	Info          *st.UserProfileInfo2      `json:"info"`
+	ModInfos      []*st.ProfileModQuotaInfo `json:"modInfos"`
+	FriendListVer int64                     `json:"friendListVer"` //好友列表的版本号
 }
 
 func doGetMyProfile(req *GetMyProfileReq, r *http.Request) (rsp *GetMyProfileRsp, err error) {
@@ -36,7 +37,9 @@ func doGetMyProfile(req *GetMyProfileReq, r *http.Request) (rsp *GetMyProfileRsp
 		return
 	}
 
-	rsp = &GetMyProfileRsp{info, modInfos}
+	ver, _ := st.GetFriendListVer(req.Uin)
+
+	rsp = &GetMyProfileRsp{info, modInfos, ver}
 
 	log.Debugf("uin %d, GetMyProfileRsp succ, %+v", req.Uin, rsp)
 

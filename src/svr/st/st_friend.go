@@ -267,3 +267,35 @@ func IsFriend(uin int64, friendUin int64) (isFriend int, err error) {
 
 	return
 }
+
+func GetFriendListVer(uin int64) (ver int64, err error) {
+
+	//默认版本号1，不要从0开始
+	ver = 1
+
+	if uin == 0 {
+		return
+	}
+
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		log.Errorf(err.Error())
+		return
+	}
+
+	sql := fmt.Sprintf(`select ver from friendListVer where uin = %d `, uin)
+	rows, err := inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Errorf(err.Error())
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		rows.Scan(&ver)
+	}
+
+	return
+}

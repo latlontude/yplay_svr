@@ -15,8 +15,9 @@ type GetMyFriendsReq struct {
 }
 
 type GetMyFriendsRsp struct {
-	Total   int              `json:"total"`
-	Friends []*st.FriendInfo `json:"friends"`
+	Total         int              `json:"total"`
+	Friends       []*st.FriendInfo `json:"friends"`
+	FriendListVer int64            `json:"friendListVer"`
 }
 
 func doGetMyFriends(req *GetMyFriendsReq, r *http.Request) (rsp *GetMyFriendsRsp, err error) {
@@ -29,7 +30,9 @@ func doGetMyFriends(req *GetMyFriendsReq, r *http.Request) (rsp *GetMyFriendsRsp
 		return
 	}
 
-	rsp = &GetMyFriendsRsp{total, friends}
+	ver, _ := st.GetFriendListVer(req.Uin)
+
+	rsp = &GetMyFriendsRsp{total, friends, ver}
 
 	log.Debugf("uin %d, GetMyFriendsRsp succ, %+v", req.Uin, rsp)
 

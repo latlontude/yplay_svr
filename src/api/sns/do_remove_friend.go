@@ -9,6 +9,7 @@ import (
 	"api/im"
 	"fmt"
 	"net/http"
+	"time"
 )
 
 type RemoveFriendReq struct {
@@ -76,10 +77,16 @@ func RemoveFriend(uin, friendUin int64) (err error) {
 		return
 	}
 
+	ts := time.Now().Unix()
+	ms := time.Now().UnixNano() / 1000000
+
 	//添加到我的好友列表中
 	sqls := make([]string, 0)
 	sqls = append(sqls, fmt.Sprintf(`delete from friends where uin = %d and friendUin = %d`, uin, friendUin))
 	sqls = append(sqls, fmt.Sprintf(`delete from friends where uin = %d and friendUin = %d`, friendUin, uin))
+	//更新我的好友列表的版本号
+	sqls = append(sqls, fmt.Sprintf(`insert into friendListVer values(%d, %d, %d) on duplicate key update ver = %d, ts = %d`, friendUin, ms, ts, ms, ts))
+	sqls = append(sqls, fmt.Sprintf(`insert into friendListVer values(%d, %d, %d) on duplicate key update ver = %d, ts = %d`, uin, ms, ts, ms, ts))
 
 	//解除好友之后把之前的添加好友消息都清理掉
 	sqls = append(sqls, fmt.Sprintf(`delete from addFriendMsg where fromUin = %d and toUin = %d`, uin, friendUin))

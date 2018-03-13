@@ -99,6 +99,7 @@ func AcceptAddFriend(uin int64, msgId int64, act int) (err error) {
 
 	//更新状态
 	ts := time.Now().Unix()
+	ms := time.Now().UnixNano() / 1000000 //毫秒
 
 	status := constant.ENUM_ADD_FRIEND_STATUS_ACCEPT
 	//接受加好友请求 删掉原有消息
@@ -152,6 +153,9 @@ func AcceptAddFriend(uin int64, msgId int64, act int) (err error) {
 	sqls := make([]string, 0)
 	sqls = append(sqls, fmt.Sprintf(`insert ignore into friends values(%d, %d, %d, %d)`, toUin, fromUin, 0, ts))
 	sqls = append(sqls, fmt.Sprintf(`insert ignore into friends values(%d, %d, %d, %d)`, fromUin, toUin, 0, ts))
+	//更新我的好友列表的版本号
+	sqls = append(sqls, fmt.Sprintf(`insert into friendListVer values(%d, %d, %d) on duplicate key update ver = %d, ts = %d`, fromUin, ms, ts, ms, ts))
+	sqls = append(sqls, fmt.Sprintf(`insert into friendListVer values(%d, %d, %d) on duplicate key update ver = %d, ts = %d`, toUin, ms, ts, ms, ts))
 
 	err = mydb.Exec(inst, sqls)
 	if err != nil {
