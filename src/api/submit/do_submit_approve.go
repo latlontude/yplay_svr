@@ -242,7 +242,7 @@ func BatchSubmitApprove(submitId, typ int) (qid int64, err error) {
 	log.Debugf("id:%d, user:%d", submitId, user)
 
 	//插入到题目数据库
-	stmt, err := inst.Prepare(`insert into questions2(qid, qtext, qiconUrl, optionGender, replyGender, schoolType, dataSrc, status, tagId, tagName, subTagId1, subTagName1, subTagId2, subTagName2, subTagId3, subTagName3, ts) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+	stmt, err := inst.Prepare(`insert into questions2(qid, qtext, qiconUrl, optionGender, replyGender, schoolType, dataSrc, delivery, status, tagId, tagName, subTagId1, subTagName1, subTagId2, subTagName2, subTagId3, subTagName3, ts) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_PREPARE, err.Error())
 		log.Errorf(err.Error())
@@ -256,8 +256,8 @@ func BatchSubmitApprove(submitId, typ int) (qid int64, err error) {
 	replyGender := 0
 	schoolType := 0
 	status := 0
-	dataSrc := 2 //投稿题库
-
+	dataSrc := 2  //投稿题库
+	delivery := 0 //同校同年级可见
 	tagId := 0
 	tagName := ""
 
@@ -270,7 +270,7 @@ func BatchSubmitApprove(submitId, typ int) (qid int64, err error) {
 
 	qiconUrl := fmt.Sprintf("%d.png", qiconId)
 
-	res, err := stmt.Exec(0, qtext, qiconUrl, optionGender, replyGender, schoolType, dataSrc, status, tagId, tagName, subTagId1, subTagName1, subTagId2, subTagName2, subTagId3, subTagName3, ts)
+	res, err := stmt.Exec(0, qtext, qiconUrl, optionGender, replyGender, schoolType, dataSrc, delivery, status, tagId, tagName, subTagId1, subTagName1, subTagId2, subTagName2, subTagId3, subTagName3, ts)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
 		log.Errorf(err.Error())
@@ -308,6 +308,7 @@ func BatchSubmitApprove(submitId, typ int) (qid int64, err error) {
 	return
 }
 
+/*
 func InsertApprovedQuestion2Tmp(qid int, qtext string, qiconId int) (err error) {
 
 	if qid == 0 || len(qtext) == 0 {
@@ -359,3 +360,4 @@ func InsertApprovedQuestion2Tmp(qid int, qtext string, qiconId int) (err error) 
 
 	return
 }
+*/
