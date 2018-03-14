@@ -82,7 +82,7 @@ func MakeIMVoteReplyReplyMsg(uin int64, sessionId string, newSessionId string, r
 	var voteData VoteReplyReplyData
 	voteData.Reply = reply
 	voteData.ReplyReply = replyReply
-	voteData.Question = st.QuestionInfo{record.QId, record.QText, record.QIconUrl, 0, 0, 0, 0, 0, 0, "", 0, "", 0, "", 0, "", 0}
+	voteData.Question = st.QuestionInfo{record.QId, record.QText, record.QIconUrl, 0, 0, 0, 0, 0, 0, 0, "", 0, "", 0, "", 0, "", 0}
 	for _, option := range record.Options {
 		voteData.Options = append(voteData.Options, *option)
 	}

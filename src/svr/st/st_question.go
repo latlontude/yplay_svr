@@ -12,6 +12,7 @@ type QuestionInfo struct {
 	ReplyGender  int    `json:"replyGender"`  //答题者性别要求 0无要求 1男性 2女性
 	SchoolType   int    `json:"schoolType"`   //schoolType 0通用 1初中 2高中 3大学
 	DataSrc      int    `json:"dataSrc"`      //题目来源  0普通 1特制题库 2投稿 3运营
+	Delivery     int    `json:"delivery"`     //投稿范围， 0 同校同年级可见，1 同校可见， 2 全网可见
 	Status       int    `json:"status"`
 
 	TagId       int    `json:"tagId"`
@@ -55,6 +56,6 @@ func (this *OptionInfo2) String() string {
 
 func (this *QuestionInfo) String() string {
 
-	return fmt.Sprintf(`QuestionInfo{QId:%d, QText:%s, QIconUrl:%s, OptionGender:%d, ReplyGender:%d, SchoolType:%d, dataSrc:%d, tagId:%d, tagName:%s, subTagId1:%d,subTagName1:%s}`,
-		this.QId, this.QText, this.QIconUrl, this.OptionGender, this.ReplyGender, this.SchoolType, this.DataSrc, this.TagId, this.TagName, this.SubTagId1, this.SubTagName1)
+	return fmt.Sprintf(`QuestionInfo{QId:%d, QText:%s, QIconUrl:%s, OptionGender:%d, ReplyGender:%d, SchoolType:%d, dataSrc:%d,delivery:%d, tagId:%d, tagName:%s, subTagId1:%d,subTagName1:%s}`,
+		this.QId, this.QText, this.QIconUrl, this.OptionGender, this.ReplyGender, this.SchoolType, this.DataSrc, this.Delivery, this.TagId, this.TagName, this.SubTagId1, this.SubTagName1)
 }
