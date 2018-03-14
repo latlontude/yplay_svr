@@ -183,7 +183,8 @@ func SendFreezePush(uin int64, freezeTs int) (err error) {
 
 		log.Errorf("uin %d, will send push msg right now!", uin)
 
-		err = im.SendLeaveFrozenMsg(uin)
+		content := "开始新一轮投票吧(๑‾ ꇴ ‾๑)"
+		err = im.SendLeaveFrozenMsg(uin, content)
 		if err != nil {
 			log.Error(err.Error())
 		}

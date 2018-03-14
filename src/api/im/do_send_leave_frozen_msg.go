@@ -30,7 +30,9 @@ func doSendLeaveFrozenMsg(req *SendLeaveFrozenMsgReq, r *http.Request) (rsp *Sen
 
 	log.Debugf("uin %d, SendLeaveFrozenMsgReq %+v", req.Uin, req)
 
-	err = SendLeaveFrozenMsg(req.User)
+	content := "开始新一轮投票吧(๑‾ ꇴ ‾๑)"
+
+	err = SendLeaveFrozenMsg(req.User, content)
 	if err != nil {
 		log.Errorf("uin %d, SendLeaveFrozenMsgRsp error, %s", req.Uin, err.Error())
 		return
@@ -43,7 +45,7 @@ func doSendLeaveFrozenMsg(req *SendLeaveFrozenMsgReq, r *http.Request) (rsp *Sen
 	return
 }
 
-func MakeIMLeaveFrozenMsg(uin int64) (msg IMC2CMsg, err error) {
+func MakeIMLeaveFrozenMsg(uin int64, content string) (msg IMC2CMsg, err error) {
 
 	// ui, err := st.GetUserProfileInfo(uin)
 	// if err != nil{
@@ -85,7 +87,7 @@ func MakeIMLeaveFrozenMsg(uin int64) (msg IMC2CMsg, err error) {
 
 	se, _ := json.Marshal(extInfo)
 
-	content := fmt.Sprintf("开始新一轮投票吧(๑‾ ꇴ ‾๑)")
+	//content := fmt.Sprintf("开始新一轮投票吧(๑‾ ꇴ ‾๑)")
 
 	offlinePush.PushFlag = 0
 	offlinePush.Desc = content
@@ -98,7 +100,7 @@ func MakeIMLeaveFrozenMsg(uin int64) (msg IMC2CMsg, err error) {
 	return
 }
 
-func SendLeaveFrozenMsg(uin int64) (err error) {
+func SendLeaveFrozenMsg(uin int64, content string) (err error) {
 
 	if uin == 0 {
 		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid params")
@@ -112,7 +114,7 @@ func SendLeaveFrozenMsg(uin int64) (err error) {
 		return
 	}
 
-	msg, err := MakeIMLeaveFrozenMsg(uin)
+	msg, err := MakeIMLeaveFrozenMsg(uin, content)
 	if err != nil {
 		log.Errorf(err.Error())
 		return
