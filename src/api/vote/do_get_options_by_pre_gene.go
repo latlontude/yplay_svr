@@ -82,9 +82,9 @@ func GetOptionsByPreGene(uin int64, qid int, index int, uuid int64) (options []*
 	}
 
 	tmpUids := make([]int64, 0)
-	for uid := range uids {
-		if _, ok := friendInfos[int64(uid)]; ok {
-			tmpUids = append(tmpUids, int64(uid))
+	for _, uid := range uids {
+		if _, ok := friendInfos[uid]; ok {
+			tmpUids = append(tmpUids, uid)
 		}
 	}
 
