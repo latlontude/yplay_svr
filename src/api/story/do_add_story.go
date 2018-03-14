@@ -48,7 +48,7 @@ func AddStory(uin int64, typ int, data, text, thumbnailImgUrl string) (sid int64
 
 	sid = time.Now().UnixNano() / 1000000
 
-	if uin <= 0 || typ <= 0 || len(text) == 0 || len(data) == 0 {
+	if uin <= 0 || typ <= 0 || len(text) == 0 {
 		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid params")
 		log.Errorf(err.Error())
 		return
@@ -132,7 +132,7 @@ func AddStory(uin int64, typ int, data, text, thumbnailImgUrl string) (sid int64
 		log.Errorf(err.Error())
 	}
 
-	sidStr := fmt.Sprintf("%d_%d", sid) // member:uid_storyId
+	sidStr := fmt.Sprintf("%d_%d", uin, sid) // member:uid_storyId
 
 	err = app.ZAdd(keyStr, sid, sidStr) // score member
 	if err != nil {
