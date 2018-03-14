@@ -173,7 +173,7 @@ func AcceptAddFriend(uin int64, msgId int64, act int) (err error) {
 	go im.SendAcceptAddFriendMsg(fromUin, toUin)
 
 	//go CreateNewSnapSession(fromUin, toUin)
-	go CreateSnapSessionAndSendFirstMsg(fromUin, toUin)
+	go CreateSnapSessionAndSendPushMsg(fromUin, toUin)
 
 	go JudgeNeedGeneQids(fromUin, toUin)
 
@@ -268,10 +268,10 @@ func IncrFriendCnt(uin, friendUin int64) (err error) {
 }
 
 //fromUin -> toUin
-func CreateSnapSessionAndSendFirstMsg(uin, uid int64) (err error) {
+func CreateSnapSessionAndSendPushMsg(uin, uid int64) (err error) {
 
 	//创建固定会话
-	gid, err := CreateNewSnapSession(uin, uid)
+	_, err = CreateNewSnapSession(uin, uid)
 	if err != nil {
 		log.Errorf(err.Error())
 		return
@@ -311,7 +311,9 @@ func CreateSnapSessionAndSendFirstMsg(uin, uid int64) (err error) {
 	// }
 
 	//模拟发送一条消息 从uid->uin
-	im.SendTextMsg(gid, "我们已成为好友啦，开始聊天吧ᕕ( ᐛ )ᕗ", uid, uin)
+	//目标是自动在双方的最近连续人加上对方，测试发现在主动发消息的一方不会产生这个，
+	//在接受消息的一方会获取不到昵称和头像 先去掉这个逻辑，从客户端逻辑入手
+	//im.SendTextMsg(gid, "我们已成为好友啦，开始聊天吧ᕕ( ᐛ )ᕗ", uid, uin)
 
 	return
 }
