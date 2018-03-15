@@ -264,8 +264,15 @@ func InsertApprovedQId(uin int64, qid int) (pos int, err error) {
 		return
 	}
 
-	if nowScore < score {
-		nowScore = score
+	if int64(score) == 0 {
+		tmpNowScoreStr = fmt.Sprintf("-%d.%d", int64(score), int64(time.Now().Unix()))
+		tmpNowScore, err1 := strconv.ParseFloat(tmpNowScoreStr, 64)
+		if err1 != nil {
+			log.Errorf(err1.Error())
+			nowScore = score
+		}
+
+		nowScore = tmpNowScore
 	}
 
 	score2mem := make([]interface{}, 0)
