@@ -69,7 +69,9 @@ func MakeIMRemoveFriendMsg(uin1 int64, uin2 int64) (msg IMC2CMsg, err error) {
 	msg.FromAccount = fmt.Sprintf("%d", 100000)
 	msg.ToAccount = fmt.Sprintf("%d", uin2)
 	msg.MsgBody = []IMMsgBody{newFeedMsgBody}
-	msg.MsgLifeTime = 0
+
+	//若消息只发在线用户，不想保存离线，则该字段填0。这里填写非0 表示需要产生离线消息 目标是作为加好友之后能在对方的最近联系人列表出现
+	msg.MsgLifeTime = 604800
 
 	var offlinePush OfflinePushInfo
 
