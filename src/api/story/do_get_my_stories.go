@@ -283,6 +283,7 @@ func GetMyStories(uin int64, ts int64, cnt int) (retStories []*st.RetStoryInfo, 
 
 		if _, ok := res[story.Uin]; ok {
 			retStory.NickName = res[story.Uin].NickName
+			retStory.HeadImgUrl = res[story.Uin].HeadImgUrl
 		}
 
 		retStories = append(retStories, &retStory)
