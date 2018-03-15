@@ -901,6 +901,39 @@ func (this *RedisApp) ZScore(key string, member string) (score int64, err error)
 	return
 }
 
+func (this *RedisApp) ZScoreFloat(key string, member string) (score float64, err error) {
+
+	conn, err := this.GetConn()
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+	defer conn.Close()
+
+	score = 0
+
+	rkey := fmt.Sprintf("%s_%s", this.AppId, key)
+
+	val, err := redis.String(conn.Do("zscore", rkey, member))
+	if err != nil {
+
+		if err == redis.ErrNil {
+
+			err = rest.NewAPIError(constant.E_REDIS_KEY_NO_EXIST, "key not exist,"+err.Error())
+			return
+
+		} else {
+			err = rest.NewAPIError(constant.E_REDIS_GET, "get error,"+err.Error())
+			log.Errorf(err.Error())
+			return
+		}
+	}
+
+	score, err = strconv.ParseFloat(val, 64)
+
+	return
+}
+
 func (this *RedisApp) ZIncrBy(key string, member string, incr int64) (score int64, err error) {
 
 	conn, err := this.GetConn()
