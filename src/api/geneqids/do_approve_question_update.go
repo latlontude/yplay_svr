@@ -9,7 +9,6 @@ import (
 	"math/rand"
 	"net/http"
 	"strconv"
-
 	"time"
 )
 
@@ -211,8 +210,7 @@ func InsertApprovedQId(uin int64, qid int) (pos int, err error) {
 	}
 
 	//上一次答题的ID 上一次题目的性别 上一次答题的索引
-	fields := []string{"cursor", "insertcursor"}
-
+	fields := []string{"cursor", "qid"}
 	keyStr := fmt.Sprintf("%d_progress", uin)
 	keyStr2 := fmt.Sprintf("%d_qids", uin)
 
@@ -226,51 +224,52 @@ func InsertApprovedQId(uin int64, qid int) (pos int, err error) {
 
 	if _, ok := valsStr["cursor"]; !ok {
 
-		//err = rest.NewAPIError(constant.E_PRE_GENE_QIDS_PROGRESS_ERR, "pre gene qids progress info error")
 		log.Errorf("pre gene qids progress info error")
 		return
 	}
 
-	orgPos := -1
-	//如果从来没有答题 则上一次题目设置为0  上答题一次索引为0
+	pos = -1
+	orgQid := 0
+	score := 0.0
+	nowScore := 0.0
+
 	if len(valsStr["cursor"]) > 0 {
-		orgPos, _ = strconv.Atoi(valsStr["cursor"])
+		pos, _ = strconv.Atoi(valsStr["cursor"])
 	}
 
-	total, err := app.ZCard(keyStr2)
+	if len(valsStr["qid"]) > 0 {
+		orgQid, _ = strconv.Atoi(valsStr["qid"])
+	}
+
+	if pos == -1 {
+		pos = 0
+	} else {
+
+		orgQidStr := fmt.Sprintf("%d", orgQid)
+		tmpScore, err1 := app.ZScoreFloat(keyStr2, orgQidStr)
+		if err1 != nil {
+			log.Errorf(err1.Error())
+			return
+		}
+		score = tmpScore
+	}
+
+	maxTimestamp := 2147483647 // unix 32位系统最大时间戳  2038-01-19 11:14:07
+	tmpNowScore := int64(maxTimestamp) - int64(time.Now().Unix())
+	tmpNowScoreStr := fmt.Sprintf("%d.%d", int64(score), tmpNowScore)
+
+	nowScore, err = strconv.ParseFloat(tmpNowScoreStr, 64)
 	if err != nil {
 		log.Errorf(err.Error())
 		return
 	}
 
-	if total == 0 {
-		log.Errorf("uin %d, qid %d, InsertApprovedQId totalCnt 0", uin, qid)
-		return
-	}
-
-	pos = orgPos + 1
-	if pos >= total {
-		pos = pos % total
-	}
-
-	vals, err := app.ZRangeByScoreWithoutLimit(keyStr2, int64(pos), int64(pos))
-	if err != nil {
-		log.Errorf(err.Error())
-		return
+	if nowScore < score {
+		nowScore = score
 	}
 
 	score2mem := make([]interface{}, 0)
-	score2mem = append(score2mem, pos, qid)
-	for _, val := range vals {
-		score2mem = append(score2mem, pos, val)
-	}
-
-	_, err = app.ZMRem(keyStr2, vals)
-	if err != nil {
-		log.Errorf(err.Error())
-		return
-	}
-
+	score2mem = append(score2mem, nowScore, qid)
 	err = app.ZMAdd(keyStr2, score2mem)
 	if err != nil {
 		log.Errorf(err.Error())
@@ -278,57 +277,59 @@ func InsertApprovedQId(uin int64, qid int) (pos int, err error) {
 	}
 
 	/*	insertcursor := -1
-		if len(valsStr["insertcursor"]) > 0 {
-			insertcursor, _ = strconv.Atoi(valsStr["insertcursor"])
-		}
+			if len(valsStr["insertcursor"]) > 0 {
+				insertcursor, _ = strconv.Atoi(valsStr["insertcursor"])
+			}
 
 
 
-				if insertcursor <= 0 {
-					//insertcursor从来没有设置过
-					pos = orgPos + 1 + rand.Intn(3)
-
-				} else {
-
-					if insertcursor > orgPos {
-						//插入位置始终比当前答题的进度要快一些
-						pos = insertcursor + 1 + rand.Intn(3)
-					} else {
-						//可能出现答题快，插入慢
-						//可能插入已经绕回来从头开始了，而答题在列表末尾阶段了
+					if insertcursor <= 0 {
+						//insertcursor从来没有设置过
 						pos = orgPos + 1 + rand.Intn(3)
+
+					} else {
+
+						if insertcursor > orgPos {
+							//插入位置始终比当前答题的进度要快一些
+							pos = insertcursor + 1 + rand.Intn(3)
+						} else {
+							//可能出现答题快，插入慢
+							//可能插入已经绕回来从头开始了，而答题在列表末尾阶段了
+							pos = orgPos + 1 + rand.Intn(3)
+						}
 					}
-				}
 
-				total, err := app.ZCard(keyStr2)
-				if err != nil {
-					log.Errorf(err.Error())
-					return
-				}
+					total, err := app.ZCard(keyStr2)
+					if err != nil {
+						log.Errorf(err.Error())
+						return
+					}
 
-				if total == 0 {
-					log.Errorf("uin %d, qid %d, InsertApprovedQId totalCnt 0", uin, qid)
-					return
-				}
+					if total == 0 {
+						log.Errorf("uin %d, qid %d, InsertApprovedQId totalCnt 0", uin, qid)
+						return
+					}
 
-				if pos >= total {
-					pos = pos % total
-				}
+					if pos >= total {
+						pos = pos % total
+					}
 
 
-			log.Debugf("uin %d, InsertApprovedQId qid %d, total %d, orgcursor %d, insertcursor %d, newPos %d", uin, qid, total, orgPos, insertcursor, pos)
+				log.Debugf("uin %d, InsertApprovedQId qid %d, total %d, orgcursor %d, insertcursor %d, newPos %d", uin, qid, total, orgPos, insertcursor, pos)
+
+
+		log.Debugf("uin %d, InsertApprovedQId qid %d, total:%d orgcursor %d, insertcursor %d", uin, qid, total, orgPos, pos)
+
+		//更新上次的插入进度
+			res := make(map[string]string)
+			res["insertcursor"] = fmt.Sprintf("%d", pos)
+
+			err1 := app.HMSet(keyStr, res)
+			if err1 != nil {
+				log.Errorf(err1.Error())
+			}
 	*/
 
-	log.Debugf("uin %d, InsertApprovedQId qid %d, total:%d orgcursor %d, insertcursor %d", uin, qid, total, orgPos, pos)
-
-	/*	//更新上次的插入进度
-		res := make(map[string]string)
-		res["insertcursor"] = fmt.Sprintf("%d", pos)
-
-		err1 := app.HMSet(keyStr, res)
-		if err1 != nil {
-			log.Errorf(err1.Error())
-		}
-	*/
+	log.Debugf("uin %d, end InsertApprovedQId qid %d, score:%f", uin, qid, nowScore)
 	return
 }
