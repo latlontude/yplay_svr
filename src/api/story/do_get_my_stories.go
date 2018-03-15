@@ -22,30 +22,31 @@ type GetMyStoriesReq struct {
 }
 
 type GetMyStoriesRsp struct {
-	Stories []*st.StoryInfo `json:"stories"`
+	RetStories []*st.RetStoryInfo `json:"stories"`
 }
 
 func doGetMyStories(req *GetMyStoriesReq, r *http.Request) (rsp *GetMyStoriesRsp, err error) {
 
 	log.Debugf("uin %d, GetMyStoriesReq %+v", req.Uin, req)
 
-	stories, err := GetMyStories(req.Uin, req.Ts, req.Cnt)
+	retStories, err := GetMyStories(req.Uin, req.Ts, req.Cnt)
 	if err != nil {
 		log.Errorf("uin %d, GetMyStoriesRsp error, %s", req.Uin, err.Error())
 		return
 	}
 
-	rsp = &GetMyStoriesRsp{stories}
+	rsp = &GetMyStoriesRsp{retStories}
 
 	log.Debugf("uin %d, GetMyStoriesRsp succ, %+v", req.Uin, rsp)
 
 	return
 }
 
-func GetMyStories(uin int64, ts int64, cnt int) (stories []*st.StoryInfo, err error) {
-	log.Debugf("start GetMyStories uin:%d", uin)
+func GetMyStories(uin int64, ts int64, cnt int) (retStories []*st.RetStoryInfo, err error) {
+	log.Debugf("start GetMyStories uin:%d ts:%d cnt:%d", uin, ts, cnt)
 
-	stories = make([]*st.StoryInfo, 0)
+	stories := make([]*st.StoryInfo, 0)
+	retStories = make([]*st.RetStoryInfo, 0)
 
 	if uin <= 0 || cnt <= 0 {
 		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid params")
@@ -233,9 +234,8 @@ func GetMyStories(uin int64, ts int64, cnt int) (stories []*st.StoryInfo, err er
 	log.Debugf("storyviewCntIdMap %+v", storyviewCntIdMap)
 
 	//获取需要拉取用户资料的UIS列表
-	//uinsM := make(map[int64]int)
+	uinsM := make(map[int64]int)
 
-	//将拉取到的用户资料填充到返回结果中
 	for _, svid := range storyIds {
 
 		storyVal, ok := storyVals[svid]
@@ -253,25 +253,42 @@ func GetMyStories(uin int64, ts int64, cnt int) (stories []*st.StoryInfo, err er
 				si.ViewCnt = int(cnt)
 			}
 			stories = append(stories, &si)
-			//uinsM[si.Uin] = 1
+			uinsM[si.Uin] = 1
 		}
 	}
 
-	/*
-		uinsA := make([]int64, 0)
-		for uid, _ := range uinsM {
-			uinsA = append(uinsA, uid)
+	uinsA := make([]int64, 0)
+	for uid, _ := range uinsM {
+		uinsA = append(uinsA, uid)
+	}
+
+	//批量拉取用户资料
+	res, err := st.BatchGetUserProfileInfo(uinsA)
+	if err != nil {
+		log.Error(err.Error())
+		return
+	}
+
+	for _, story := range stories {
+
+		var retStory st.RetStoryInfo
+		retStory.StoryId = story.StoryId
+		retStory.Type = story.Type
+		retStory.Text = story.Text
+		retStory.Data = story.Data
+		retStory.Uin = story.Uin
+		retStory.ThumbnailImgUrl = story.ThumbnailImgUrl
+		retStory.ViewCnt = story.ViewCnt
+		retStory.Ts = story.Ts
+
+		if _, ok := res[story.Uin]; ok {
+			retStory.NickName = res[story.Uin].NickName
 		}
 
-
-			//批量拉取用户资料
-			res, err := st.BatchGetUserProfileInfo(uinsA)
-			if err != nil {
-				log.Error(err.Error())
-				return
-			}
-	*/
+		retStories = append(retStories, &retStory)
+	}
 	log.Debugf("end GetMyStories uin:%d", uin)
+
 	return
 }
 
@@ -311,10 +328,11 @@ func GetMyStoriesCnt(uin int64) (total int, err error) {
 	return
 }
 
-func GetUserStories(uin, uid, ts int64, cnt int) (stories []*st.StoryInfo, err error) {
+func GetUserStories(uin, uid, ts int64, cnt int) (retStories []*st.RetStoryInfo, err error) {
 
 	log.Debugf("start GetUserStories uin:%d, uid:%d", uin, uid)
-	stories = make([]*st.StoryInfo, 0)
+	stories := make([]*st.StoryInfo, 0)
+	retStories = make([]*st.RetStoryInfo, 0)
 
 	if uin <= 0 || uid <= 0 || ts <= 0 {
 		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid params")
@@ -458,6 +476,9 @@ func GetUserStories(uin, uid, ts int64, cnt int) (stories []*st.StoryInfo, err e
 
 	log.Debugf("storyVals:%+v", storyVals)
 
+	//获取需要拉取用户资料的UIS列表
+	uinsM := make(map[int64]int)
+
 	for _, svid := range storyIds {
 
 		storyVal, ok := storyVals[svid]
@@ -472,8 +493,40 @@ func GetUserStories(uin, uid, ts int64, cnt int) (stories []*st.StoryInfo, err e
 			return
 		} else {
 			stories = append(stories, &si)
-
+			uinsM[si.Uin] = 1
 		}
+	}
+
+	uinsA := make([]int64, 0)
+	for uid, _ := range uinsM {
+		uinsA = append(uinsA, uid)
+	}
+
+	//批量拉取用户资料
+	res, err := st.BatchGetUserProfileInfo(uinsA)
+	if err != nil {
+		log.Error(err.Error())
+		return
+	}
+
+	for _, story := range stories {
+
+		var retStory st.RetStoryInfo
+		retStory.StoryId = story.StoryId
+		retStory.Type = story.Type
+		retStory.Text = story.Text
+		retStory.Data = story.Data
+		retStory.Uin = story.Uin
+		retStory.ThumbnailImgUrl = story.ThumbnailImgUrl
+		retStory.ViewCnt = story.ViewCnt
+		retStory.Ts = story.Ts
+
+		if _, ok := res[story.Uin]; ok {
+			retStory.NickName = res[story.Uin].NickName
+			retStory.HeadImgUrl = res[story.Uin].HeadImgUrl
+		}
+
+		retStories = append(retStories, &retStory)
 	}
 	log.Debugf("end GetUserStories")
 	return

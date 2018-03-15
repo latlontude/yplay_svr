@@ -109,6 +109,7 @@ func GetNextQuestionAndOptionsByPreGene(uin int64, uuid int64) (qinfo *st.Questi
 	boyCnt := 0
 	girlCnt := 0
 	friendUins := make([]int64, 0)
+	noNickNameFriendsUins := make([]int64, 0)
 
 	boyUins := make([]int64, 0)
 	girlUins := make([]int64, 0)
@@ -119,6 +120,7 @@ func GetNextQuestionAndOptionsByPreGene(uin int64, uuid int64) (qinfo *st.Questi
 
 		//如果没有性别或者昵称为空，则过滤掉
 		if fi.Gender == 0 || len(fi.NickName) == 0 {
+			noNickNameFriendsUins = append(noNickNameFriendsUins, fi.Uin)
 			continue
 		}
 
@@ -136,7 +138,7 @@ func GetNextQuestionAndOptionsByPreGene(uin int64, uuid int64) (qinfo *st.Questi
 		friendUins = append(friendUins, fi.Uin)
 	}
 
-	log.Debugf("uin %d, boyCnt %d, girlCnt %d", uin, boyCnt, girlCnt)
+	log.Debugf("uin %d, boyCnt %d, girlCnt %d, noNickNameFriendsCnt:%d (%+v)", uin, boyCnt, girlCnt, len(noNickNameFriendsUins), noNickNameFriendsUins)
 
 	//获取好友的钻石列表
 	gemCntMap, err := GetUinsGemCnt(friendUins)
