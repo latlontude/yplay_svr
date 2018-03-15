@@ -22,29 +22,31 @@ type GetFriendStoriesReq struct {
 }
 
 type GetFriendStoriesRsp struct {
-	Stories []*st.StoryInfo `json:"stories"`
+	RetStories []*st.RetStoryInfo `json:"stories"`
 }
 
 func doGetFriendStories(req *GetFriendStoriesReq, r *http.Request) (rsp *GetFriendStoriesRsp, err error) {
 
 	log.Debugf("uin %d, GetFriendStoriesReq %+v", req.Uin, req)
 
-	stories, err := GetFriendStories(req.Uin, req.Ts, req.Cnt)
+	retStories, err := GetFriendStories(req.Uin, req.Ts, req.Cnt)
 	if err != nil {
 		log.Errorf("uin %d, GetFriendStoriesRsp error, %s", req.Uin, err.Error())
 		return
 	}
 
-	rsp = &GetFriendStoriesRsp{stories}
+	rsp = &GetFriendStoriesRsp{retStories}
 
 	log.Debugf("uin %d, GetFriendStoriesRsp succ, %+v", req.Uin, rsp)
 
 	return
 }
 
-func GetFriendStories(uin int64, ts int64, cnt int) (stories []*st.StoryInfo, err error) {
+func GetFriendStories(uin int64, ts int64, cnt int) (retStories []*st.RetStoryInfo, err error) {
 
-	stories = make([]*st.StoryInfo, 0)
+	log.Debugf("start GetFriendStories uin:%d ts:%d cnt:%d", uin, ts, cnt)
+	stories := make([]*st.StoryInfo, 0)
+	retStories = make([]*st.RetStoryInfo, 0)
 
 	if uin <= 0 || cnt <= 0 {
 		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid params")
@@ -188,9 +190,8 @@ func GetFriendStories(uin int64, ts int64, cnt int) (stories []*st.StoryInfo, er
 	}
 
 	//获取需要拉取用户资料的UIS列表
-	//uinsM := make(map[int64]int)
+	uinsM := make(map[int64]int)
 
-	//将拉取到的用户资料填充到返回结果中
 	for _, svid := range storyIds {
 
 		storyVal, ok := storyVals[svid]
@@ -205,25 +206,42 @@ func GetFriendStories(uin int64, ts int64, cnt int) (stories []*st.StoryInfo, er
 			return
 		} else {
 			stories = append(stories, &si)
-			//uinsM[si.Uin] = 1
+			uinsM[si.Uin] = 1
 		}
 	}
 
-	/*
-		uinsA := make([]int64, 0)
-		for uid, _ := range uinsM {
-			uinsA = append(uinsA, uid)
+	uinsA := make([]int64, 0)
+	for uid, _ := range uinsM {
+		uinsA = append(uinsA, uid)
+	}
+
+	//批量拉取用户资料
+	res, err := st.BatchGetUserProfileInfo(uinsA)
+	if err != nil {
+		log.Error(err.Error())
+		return
+	}
+
+	for _, story := range stories {
+
+		var retStory st.RetStoryInfo
+		retStory.StoryId = story.StoryId
+		retStory.Type = story.Type
+		retStory.Text = story.Text
+		retStory.Data = story.Data
+		retStory.Uin = story.Uin
+		retStory.ThumbnailImgUrl = story.ThumbnailImgUrl
+		retStory.ViewCnt = story.ViewCnt
+		retStory.Ts = story.Ts
+
+		if _, ok := res[story.Uin]; ok {
+			retStory.NickName = res[story.Uin].NickName
+			retStory.HeadImgUrl = res[story.Uin].HeadImgUrl
 		}
 
-
-			//批量拉取用户资料
-			res, err := st.BatchGetUserProfileInfo(uinsA)
-			if err != nil {
-				log.Error(err.Error())
-				return
-			}
-	*/
-
+		retStories = append(retStories, &retStory)
+	}
+	log.Debugf("end GetFriendStories")
 	return
 }
 
