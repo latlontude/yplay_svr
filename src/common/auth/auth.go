@@ -105,7 +105,16 @@ func CounterUserPV(uin int64) (err error) {
 	_, err = app.Incr(fmt.Sprintf("%d_%d_%d", uin, y, m))
 	if err != nil {
 		fmt.Printf(err.Error())
-		return
+		//return
+	}
+
+	//用户日活的统计,记录用户最近一次活跃的时间,每天在晚上12点之前统计当天的日活跃用户
+	ts := time.Now().Unix()
+
+	err = app.Set(fmt.Sprintf("%d_rts", uin), fmt.Sprintf("%d", ts))
+	if err != nil {
+		fmt.Printf(err.Error())
+		//return
 	}
 
 	return
