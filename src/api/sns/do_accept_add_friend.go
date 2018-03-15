@@ -285,7 +285,7 @@ func CreateSnapSessionAndSendPushMsg(uin, uid int64) (err error) {
 	}
 
 	//查找对方的昵称
-	sql := fmt.Sprintf(`select nickName from profiles where uin =  %d`, uin)
+	sql := fmt.Sprintf(`select nickName from profiles where uin =  %d`, uid)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -301,7 +301,7 @@ func CreateSnapSessionAndSendPushMsg(uin, uid int64) (err error) {
 	}
 
 	//发送push
-	//主动发起的一方将受到push
+	//主动发起的一方将收到push
 	content := fmt.Sprintf("%s: 我们已成为好友，可以互相评价了！ᕕ( ᐛ )ᕗ", nickName)
 	im.SendLeaveFrozenMsg(uin, content)
 
