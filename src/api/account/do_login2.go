@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"svr/st"
+	"time"
 )
 
 type Login2Req struct {
@@ -163,6 +164,8 @@ func Login2(phone string, code string, uuid int64, device, os, appVer string) (r
 
 	rsp = &Login2Rsp{hasCheckInviteCode, uin, token, env.Config.Token.VER, isNewUser, info, friendListVer}
 
+	go RecordUserDeviceInfo(uin, uuid, phone, device, os, appVer)
+
 	return
 }
 
@@ -269,4 +272,34 @@ func PhoneInviteCodeHasCheck(phone string) (pass int, err error) {
 
 	return
 
+}
+
+func RecordUserDeviceInfo(uin, uuid int64, phone, device, os, appVer string) (err error) {
+	log.Debugf("start RecordUserDeviceInfo uin:%d, uuid:%d phone:%s, device:%s, os:%s, appVer:%s", uin, uuid, phone, device, os, appVer)
+
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		log.Error(err.Error())
+		return
+	}
+
+	stmt, err := inst.Prepare(`insert into userDeviceInfo values(?, ?, ?, ?, ?, ?, ?, ?)`)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_PREPARE, err.Error())
+		log.Error(err)
+		return
+	}
+	defer stmt.Close()
+
+	ts := time.Now().Unix()
+	_, err = stmt.Exec(0, uin, uuid, phone, device, os, appVer, ts)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
+		log.Error(err.Error())
+		return
+	}
+
+	log.Debugf("end RecordUserDeviceInfo")
+	return
 }
