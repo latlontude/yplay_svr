@@ -46,7 +46,7 @@ func GetStoryVideoUploadSig(uin int64) (sig string, expireAt int, err error) {
 	now := int(time.Now().Unix())
 	expireAt = now + 80*24*3600
 
-	src := fmt.Sprintf(`secretId=%d&currentTimeStamp=%d&expireTime=%d&random=%d`, SECRETID, now, expireAt, rand.Intn(1000000))
+	src := fmt.Sprintf(`secretId=%s&currentTimeStamp=%d&expireTime=%d&random=%d`, SECRETID, now, expireAt, rand.Intn(1000000))
 
 	mac := hmac.New(sha1.New, []byte(SECRETKEY))
 	mac.Write([]byte(src))
