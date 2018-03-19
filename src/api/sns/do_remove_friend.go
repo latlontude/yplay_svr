@@ -7,6 +7,7 @@ import (
 	"common/rest"
 	//"common/myredis"
 	"api/im"
+	"api/story"
 	"fmt"
 	"net/http"
 	"time"
@@ -80,7 +81,6 @@ func RemoveFriend(uin, friendUin int64) (err error) {
 	ts := time.Now().Unix()
 	ms := time.Now().UnixNano() / 1000000
 
-	//添加到我的好友列表中
 	sqls := make([]string, 0)
 	sqls = append(sqls, fmt.Sprintf(`delete from friends where uin = %d and friendUin = %d`, uin, friendUin))
 	sqls = append(sqls, fmt.Sprintf(`delete from friends where uin = %d and friendUin = %d`, friendUin, uin))
@@ -107,5 +107,8 @@ func RemoveFriend(uin, friendUin int64) (err error) {
 	//.......
 	go im.SendRemoveFriendMsg(uin, friendUin)
 
+	//从双方的24小时新闻中删除对方发表的新闻，以及双方观看对方的新闻的记录
+	go story.RemoveStoryByDelFriend(uin, friendUin)
+	go story.RemoveStoryByDelFriend(friendUin, uin)
 	return
 }

@@ -24,7 +24,7 @@ func doGetStoryViewRecord(req *GetStoryViewRecordReq, r *http.Request) (rsp *Get
 
 	log.Debugf("uin %d, GetStoryViewRecordReq %+v", req.Uin, req)
 
-	ret, err := GetStoryViewRecord(req.StoryId)
+	ret, err := GetStoryViewRecord(req.Uin, req.StoryId)
 	if err != nil {
 		log.Errorf("uin %d, GetStoryViewRecordRsp error, %s", req.Uin, err.Error())
 		return
@@ -37,8 +37,8 @@ func doGetStoryViewRecord(req *GetStoryViewRecordReq, r *http.Request) (rsp *Get
 	return
 }
 
-func GetStoryViewRecord(storyId int64) (ret map[int64]int64, err error) {
-	log.Debugf("start GetStoryViewRecord storyId:%d", storyId)
+func GetStoryViewRecord(uin, storyId int64) (ret map[int64]int64, err error) {
+	log.Debugf("start GetStoryViewRecord uin:%d, storyId:%d", uin, storyId)
 
 	ret = make(map[int64]int64)
 
@@ -66,6 +66,11 @@ func GetStoryViewRecord(storyId int64) (ret map[int64]int64, err error) {
 	}
 
 	log.Debugf("valsStr:%+v", vals)
+
+	if err != nil {
+		log.Error(err.Error())
+		return
+	}
 
 	var viewUid int64
 	var viewTs int64
@@ -95,6 +100,6 @@ func GetStoryViewRecord(storyId int64) (ret map[int64]int64, err error) {
 		}
 	}
 
-	log.Debugf("end GetStoryViewRecord storyId:%d", storyId)
+	log.Debugf("end GetStoryViewRecord ret:%+v", ret)
 	return
 }

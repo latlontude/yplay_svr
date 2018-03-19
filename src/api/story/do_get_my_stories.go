@@ -105,7 +105,6 @@ func GetMyStories(uin int64, ts int64, cnt int) (retStories []*st.RetStoryInfo, 
 	valsStr, err := app.ZRevRangeByScoreWithScores(keyStr, ts-1, -1, 0, cnt)
 	if err != nil {
 
-		//如果KEY不存在,feed则为空
 		if e, ok := err.(*rest.APIError); ok {
 			if e.Code == constant.E_REDIS_KEY_NO_EXIST {
 				err = nil
@@ -385,11 +384,13 @@ func GetUserStories(uin, uid, ts int64, cnt int) (retStories []*st.RetStoryInfo,
 		log.Errorf(err.Error())
 	}
 
+	if ts == 0 { // ts 为0 代表获取最新的
+		ts = time.Now().UnixNano()
+	}
 	//获取新的STORY ID
 	valsStr, err := app.ZRevRangeByScoreWithScores(keyStr, ts-1, -1, 0, cnt)
 	if err != nil {
 
-		//如果KEY不存在,feed则为空
 		if e, ok := err.(*rest.APIError); ok {
 			if e.Code == constant.E_REDIS_KEY_NO_EXIST {
 				err = nil

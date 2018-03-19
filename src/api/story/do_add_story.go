@@ -1,14 +1,14 @@
 package story
 
 import (
+	"api/im"
 	"common/constant"
+	"common/env"
 	"common/myredis"
 	"common/rest"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
-	"strings"
 	"svr/st"
 	"time"
 )
@@ -45,6 +45,8 @@ func doAddStory(req *AddStoryReq, r *http.Request) (rsp *AddStoryRsp, err error)
 }
 
 func AddStory(uin int64, typ int, data, text, thumbnailImgUrl string) (sid int64, err error) {
+
+	log.Debugf("start AddStory uin:%d, typ:%d, data:%s, text:%s,thumbnailImgUrl: %s", uin, typ, data, text, thumbnailImgUrl)
 
 	sid = time.Now().UnixNano() / 1000000
 
@@ -143,10 +145,12 @@ func AddStory(uin int64, typ int, data, text, thumbnailImgUrl string) (sid int64
 	//在我的好友列表中插入新story
 	go GeneNewStory(uin, sid)
 
+	log.Debugf("end AddStory")
 	return
 }
 
-func GeneNewStory(uin int64, storyId int64) (err error) {
+func GeneNewStory(uin, storyId int64) (err error) {
+	log.Debugf("start GeneNewStory uin:%d, storyId:%d", uin, storyId)
 
 	if uin == 0 || storyId == 0 {
 		return
@@ -165,71 +169,46 @@ func GeneNewStory(uin int64, storyId int64) (err error) {
 		return
 	}
 
-	//users := make([]int64, 0)
-
 	for _, friendUin := range friendUins {
 
-		//friendUin的story里面有一条story表示 好友uin有新的story了
 		keyStr := fmt.Sprintf("%d", friendUin)
+		total, _ := app.ZCard(keyStr)
+		if total > env.Config.Story.TrimCnt { //如果用户有很多好友，但该好友如果长时间不登陆，可能会导致用户的新闻列表越来越长
+			log.Debugf("news total > %d , trim it", env.Config.Story.TrimCnt)
+
+			//删除24小时之前发表的
+			expireTs := time.Now().UnixNano()/1000000 - 86400000
+			_, err = app.ZRemRangeByScore(keyStr, 0, expireTs)
+			if err != nil {
+				log.Errorf(err.Error())
+				continue
+			}
+		}
+
+		//friendUin的story里面有一条story表示 好友uin有新的story了
 		err1 := app.ZAdd(keyStr, storyId, fmt.Sprintf("%d_%d", uin, storyId))
 		if err1 != nil {
 			log.Error(err1.Error())
 			continue
 		}
-
-		//users = append(users, friendUin)
 	}
 
 	//我的好友都会有新story
-	//GeneNewFeedPush(users)
-
+	GeneNewStoryPush(friendUins)
+	log.Debugf("end GeneNewStory")
 	return
 }
 
-func RemoveStory(uin, uid int64) (err error) {
+func GeneNewStoryPush(uins []int64) (err error) {
 
-	log.Debugf("start RemoveStory uin:%d, uid:%d", uin, uid)
-
-	app, err := myredis.GetApp(constant.ENUM_REDIS_APP_FRIEND_STORY_LIST)
-	if err != nil {
-		log.Error(err.Error())
+	if len(uins) == 0 {
 		return
 	}
 
-	keyStr := fmt.Sprintf("%d", uin)
-	vals, err := app.ZRangeByScoreWithoutLimit(keyStr, -1, -1)
-	if err != nil {
-		log.Error(err.Error())
-		return
+	//往channel里面放有新动态的用户
+	for _, uin := range uins {
+		im.ChanStoryPush <- uin
 	}
 
-	log.Debugf("vals:%+v", vals)
-
-	removeStoryIds := make([]string, 0)
-
-	for _, val := range vals {
-		ret := strings.Split(val, "_")
-		if len(ret) != 2 {
-			log.Errorf("format err! val:%s", val)
-			continue
-		}
-
-		storyUin, err1 := strconv.ParseInt(ret[0], 10, 64)
-		if err1 != nil {
-			log.Errorf("strconv.ParseInt err ret[0]:%s", ret[0])
-		}
-
-		if storyUin == uid {
-			removeStoryIds = append(removeStoryIds, val)
-		}
-	}
-
-	_, err = app.ZMRem(keyStr, removeStoryIds)
-	if err != nil {
-		log.Error(err.Error())
-		return
-	}
-
-	log.Debugf("end RemoveStory uin:%d, uid:%d", uin, uid)
 	return
 }

@@ -85,6 +85,11 @@ type YPLAYSvrConfig struct {
 		PushMergeUserCnt int //聚合的用户数
 	}
 
+	Story struct {
+		TrimCnt int
+		PushGap int //新闻聚合发送push的间隔
+	}
+
 	Addr struct {
 		UploadBatchSize int
 	}

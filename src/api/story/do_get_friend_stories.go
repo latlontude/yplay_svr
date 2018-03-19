@@ -54,7 +54,7 @@ func GetFriendStories(uin int64, ts int64, cnt int) (retStories []*st.RetStoryIn
 		return
 	}
 
-	//保存最近一次拉取feed的时间
+	//保存最近一次拉取story的时间
 	go UpdateStoryLastReadTs(uin)
 
 	app, err := myredis.GetApp(constant.ENUM_REDIS_APP_FRIEND_STORY_LIST)
@@ -264,7 +264,6 @@ func UpdateStoryLastReadTs(uin int64) {
 	valStr, err := app.Get(keyStr)
 	if err != nil {
 
-		//如果KEY不存在,feed则为空
 		if e, ok := err.(*rest.APIError); ok {
 			if e.Code == constant.E_REDIS_KEY_NO_EXIST {
 				err = nil
@@ -316,7 +315,6 @@ func GetNewStoriesCnt(uin int64) (cnt int, err error) {
 	valStr, err := app.Get(keyStr)
 	if err != nil {
 
-		//如果KEY不存在,feed则为空
 		if e, ok := err.(*rest.APIError); ok {
 			if e.Code == constant.E_REDIS_KEY_NO_EXIST {
 				err = nil

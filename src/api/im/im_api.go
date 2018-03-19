@@ -32,7 +32,8 @@ var (
 
 	log = env.NewLogger("im")
 
-	ChanFeedPush = make(chan int64, 10000)
+	ChanFeedPush  = make(chan int64, 10000)
+	ChanStoryPush = make(chan int64, 10000)
 
 	Base64PriKeyString = `LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tDQpNSUdIQWdFQU1CTUdCeXFHU000OUFnRUdDQ3FHU000OUF3RUhCRzB3YXdJQkFRUWdIODRPa2tlSHhUTnNnZXJQDQpTazRyQlphTFVHUlJ4YmRrdnNSbk5HeW1IRStoUkFOQ0FBUlg3TCtIOWhhRFQ3Wmw2MUhGcUlCRmZPR0JncCsrDQpDbDNkdlRYemVIY0JoR3VpRGJzSCtndVlRWkJjMmVnRzhmVHZudGcxUEp6UjhHSUNnT2UrVGpBWQ0KLS0tLS1FTkQgUFJJVkFURSBLRVktLS0tLQ==`
 )
@@ -40,6 +41,7 @@ var (
 func Init() (err error) {
 
 	go NewFeedPushRoutine()
+	go NewStoryPushRoutine()
 
 	return
 }
