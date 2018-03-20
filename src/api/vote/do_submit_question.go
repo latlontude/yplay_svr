@@ -59,7 +59,7 @@ func SubmitQuestion(uin int64, iconId int, qtext string) (err error) {
 		return
 	}
 
-	stmt, err := inst.Prepare(`insert ignore into submitQuestions values(?,?,?,?,?,?,?,?,?)`)
+	stmt, err := inst.Prepare(`insert ignore into submitQuestionstmp values(?,?,?,?,?,?,?,?,?)`)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_PREPARE, err.Error())
 		log.Error(err.Error())
