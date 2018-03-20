@@ -7,7 +7,15 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"svr/st"
 )
+
+type ViewerInfo struct {
+	Uin        int64  `schema:"uin"`
+	HeadImgUrl string `schema:"headImgUrl"`
+	NickName   string `schema:"nickName"`
+	Ts         int64  `schema:"ts"`
+}
 
 type GetStoryViewRecordReq struct {
 	Uin     int64  `schema:"uin"`
@@ -17,7 +25,7 @@ type GetStoryViewRecordReq struct {
 }
 
 type GetStoryViewRecordRsp struct {
-	ViewInfo map[int64]int64 `json:"viewInfo"`
+	ViewInfos []ViewerInfo `json:"viewInfos"`
 }
 
 func doGetStoryViewRecord(req *GetStoryViewRecordReq, r *http.Request) (rsp *GetStoryViewRecordRsp, err error) {
@@ -37,10 +45,10 @@ func doGetStoryViewRecord(req *GetStoryViewRecordReq, r *http.Request) (rsp *Get
 	return
 }
 
-func GetStoryViewRecord(uin, storyId int64) (ret map[int64]int64, err error) {
+func GetStoryViewRecord(uin, storyId int64) (ret []ViewerInfo, err error) {
 	log.Debugf("start GetStoryViewRecord uin:%d, storyId:%d", uin, storyId)
 
-	ret = make(map[int64]int64)
+	ret = make([]ViewerInfo, 0)
 
 	if storyId <= 0 {
 		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid params")
@@ -74,6 +82,8 @@ func GetStoryViewRecord(uin, storyId int64) (ret map[int64]int64, err error) {
 
 	var viewUid int64
 	var viewTs int64
+	viewUids := make([]int64, 0)
+	viewUidTsMap := make(map[int64]int64)
 
 	for i, val := range vals {
 
@@ -95,8 +105,27 @@ func GetStoryViewRecord(uin, storyId int64) (ret map[int64]int64, err error) {
 			}
 
 			if viewTs > 0 && viewUid > 0 {
-				ret[viewUid] = viewTs
+				viewUidTsMap[viewUid] = viewTs
+				viewUids = append(viewUids, viewUid)
 			}
+		}
+	}
+
+	//批量拉取用户资料
+	res, err := st.BatchGetUserProfileInfo(viewUids)
+	if err != nil {
+		log.Error(err.Error())
+		return
+	}
+
+	for _, uid := range viewUids {
+		if _, ok := res[uid]; ok {
+			var v ViewerInfo
+			v.Uin = uid
+			v.NickName = res[uid].NickName
+			v.HeadImgUrl = res[uid].HeadImgUrl
+			v.Ts = viewUidTsMap[uid]
+			ret = append(ret, v)
 		}
 	}
 

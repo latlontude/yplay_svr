@@ -15,7 +15,6 @@ type UpdateStoryViewRecordReq struct {
 	Token   string `schema:"token"`
 	Ver     int    `schema:"ver"`
 	StoryId int64  `schema:"storyId"` //观看的动态id
-	Ts      int64  `schema:"ts"`      //  观看动态的时间
 }
 
 type UpdateStoryViewRecordRsp struct {
@@ -25,7 +24,7 @@ func doUpdateStoryViewRecord(req *UpdateStoryViewRecordReq, r *http.Request) (rs
 
 	log.Debugf("uin %d, UpdateStoryViewRecordReq %+v", req.Uin, req)
 
-	err = UpdateStoryViewRecord(req.Uin, req.StoryId, req.Ts)
+	err = UpdateStoryViewRecord(req.Uin, req.StoryId)
 	if err != nil {
 		log.Errorf("uin %d, UpdateStoryViewRecordRsp error, %s", req.Uin, err.Error())
 		return
@@ -38,11 +37,11 @@ func doUpdateStoryViewRecord(req *UpdateStoryViewRecordReq, r *http.Request) (rs
 	return
 }
 
-func UpdateStoryViewRecord(uin, storyId, ts int64) (err error) {
+func UpdateStoryViewRecord(uin, storyId int64) (err error) {
 
 	log.Debugf("start UpdateStoryViewRecord")
 
-	if uin <= 0 || storyId <= 0 || ts <= 0 {
+	if uin <= 0 || storyId <= 0 {
 		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid params")
 		log.Errorf(err.Error())
 		return
@@ -63,10 +62,12 @@ func UpdateStoryViewRecord(uin, storyId, ts int64) (err error) {
 		return
 	}
 
+	viewTs := time.Now().UnixNano() / 1000000
+
 	if !exist {
 
 		//加入该条动态的观看者记录列表
-		score1 := ts
+		score1 := viewTs
 		err = app.ZAdd(keyStr, score1, member)
 		if err != nil {
 			log.Errorf(err.Error())
@@ -99,7 +100,7 @@ func UpdateStoryViewRecord(uin, storyId, ts int64) (err error) {
 		return
 	}
 
-	score := ts
+	score := viewTs
 	err = app.ZAdd(keyStr, score, member)
 	if err != nil {
 		log.Errorf(err.Error())
@@ -203,14 +204,16 @@ func RemoveUserViewRecordByDelFriend(uin, uid int64) (err error) {
 			continue
 		}
 
-		retMap, err1 := GetStoryViewRecord(uin, storyId)
+		viewerInfos, err1 := GetStoryViewRecord(uin, storyId)
 		if err1 != nil {
 			log.Errorf("failed to get storyId:%s view record", storyIdStr)
 			continue
 		}
 
-		if _, ok := retMap[uid]; ok {
-			remViewRecordStoryIds = append(remViewRecordStoryIds, storyIdStr)
+		for _, info := range viewerInfos {
+			if info.Uin == uid {
+				remViewRecordStoryIds = append(remViewRecordStoryIds, storyIdStr)
+			}
 		}
 	}
 
