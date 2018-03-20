@@ -59,7 +59,7 @@ func SubmitQuestion(uin int64, iconId int, qtext string) (err error) {
 		return
 	}
 
-	stmt, err := inst.Prepare(`insert ignore into submitQuestionstmp values(?,?,?,?,?,?,?,?,?)`)
+	stmt, err := inst.Prepare(`insert ignore into submitQuestions values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_PREPARE, err.Error())
 		log.Error(err.Error())
@@ -68,12 +68,26 @@ func SubmitQuestion(uin int64, iconId int, qtext string) (err error) {
 	defer stmt.Close()
 
 	ts := time.Now().Unix()
+	mts := 0
 
 	qid := 0
+	optionGender := 0
+	replyGender := 0
+	schoolType := 0
+	delivery := 0
+	tagId := 0
+	tagName := ""
+	subTagId1 := 0
+	subTagName1 := ""
+	subTagId2 := 0
+	subTagName2 := ""
+	subTagId3 := 0
+	subTagName3 := ""
+
 	status := 0
 	desc := ""
 
-	_, err = stmt.Exec(0, uin, qtext, iconId, qid, status, desc, ts, ts)
+	_, err = stmt.Exec(0, uin, qtext, iconId, qid, optionGender, replyGender, schoolType, delivery, tagId, tagName, subTagId1, subTagName1, subTagId2, subTagName2, subTagId3, subTagName3, status, desc, ts, mts)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
 		log.Error(err.Error())

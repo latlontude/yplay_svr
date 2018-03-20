@@ -15,7 +15,6 @@ import (
 type BatchSubmitApproveReq struct {
 	MinId int `schema:"minId"`
 	MaxId int `schema:"maxId"`
-	typ   int `schema:"type"`
 }
 
 type BatchSubmitApproveRsp struct {
@@ -29,7 +28,6 @@ type SubmitApproveReq struct {
 
 	SubmitId int   `schema:"submitId"`
 	User     int64 `schema:"user"`
-	typ      int   `schema:"type"` //type : 0, 投给同校，1 投给同校同年级
 }
 
 type SubmitApproveRsp struct {
@@ -38,9 +36,9 @@ type SubmitApproveRsp struct {
 
 func doBatchSubmitApprove(req *BatchSubmitApproveReq, r *http.Request) (rsp *BatchSubmitApproveRsp, err error) {
 
-	log.Errorf("doBatchSubmitApproveReq minId:%d, maxId:%d,typ:%d", req.MinId, req.MaxId, req.typ)
+	log.Errorf("doBatchSubmitApproveReq minId:%d, maxId:%d,", req.MinId, req.MaxId)
 
-	qids, err := BatchSubmit(req.MinId, req.MaxId, req.typ)
+	qids, err := BatchSubmit(req.MinId, req.MaxId)
 	if err != nil {
 		log.Errorf("BatchSubmitApproveRsp error, %s", err.Error())
 		return
@@ -57,7 +55,7 @@ func doSubmitApprove(req *SubmitApproveReq, r *http.Request) (rsp *SubmitApprove
 
 	log.Errorf("uin %d, SubmitApproveReq %+v", req.Uin, req)
 
-	qid, err := SubmitApprove(req.Uin, req.User, req.SubmitId, req.typ)
+	qid, err := SubmitApprove(req.Uin, req.User, req.SubmitId)
 	if err != nil {
 		log.Errorf("uin %d, SubmitApproveRsp error, %s", req.Uin, err.Error())
 		return
@@ -70,8 +68,8 @@ func doSubmitApprove(req *SubmitApproveReq, r *http.Request) (rsp *SubmitApprove
 	return
 }
 
-func SubmitApprove(uin, user int64, submitId, typ int) (qid int64, err error) {
-	log.Debugf("start SubmitApprove uin:%d, user:%d, submitId:%d, typ:%d", uin, user, submitId, typ)
+func SubmitApprove(uin, user int64, submitId int) (qid int64, err error) {
+	log.Debugf("start SubmitApprove uin:%d, user:%d, submitId:%d", uin, user, submitId)
 
 	if submitId == 0 || user == 0 {
 		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid param")
@@ -85,7 +83,7 @@ func SubmitApprove(uin, user int64, submitId, typ int) (qid int64, err error) {
 		return
 	}
 
-	sql := fmt.Sprintf(`select qtext, qiconId from submitQuestions where id = %d and uin = %d and status != %d`, submitId, user, 1)
+	sql := fmt.Sprintf(`select qtext, qiconId, optionGender, replyGender, schoolType, delivery, tagId, tagName, subTagId1, subTagName1, subTagId2, subTagName2, subTagId3, subTagName3 from submitQuestions where id = %d and uin = %d and status != %d`, submitId, user, 1)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -96,9 +94,26 @@ func SubmitApprove(uin, user int64, submitId, typ int) (qid int64, err error) {
 
 	qtext := ""
 	qiconId := 0
+	optionGender := 0
+	replyGender := 0
+	schoolType := 0
+	delivery := 0
+
+	status := 0
+	dataSrc := 2 //投稿题库
+
+	tagId := 0
+	tagName := ""
+	subTagId1 := 0
+	subTagId2 := 0
+	subTagId3 := 0
+	subTagName1 := ""
+	subTagName2 := ""
+	subTagName3 := ""
+
 	find := false
 	for rows.Next() {
-		rows.Scan(&qtext, &qiconId)
+		rows.Scan(&qtext, &qiconId, &optionGender, &replyGender, &schoolType, &delivery, &tagId, &tagName, &subTagId1, &subTagName1, &subTagId2, &subTagName2, &subTagId3, &subTagName3)
 		find = true
 	}
 
@@ -117,23 +132,6 @@ func SubmitApprove(uin, user int64, submitId, typ int) (qid int64, err error) {
 	defer stmt.Close()
 
 	ts := time.Now().Unix()
-
-	optionGender := 0
-	replyGender := 0
-	schoolType := 0
-	status := 0
-	dataSrc := 2    //投稿题库
-	delivery := typ //同校同年级可见,同校可见
-
-	tagId := 0
-	tagName := ""
-
-	subTagId1 := 0
-	subTagId2 := 0
-	subTagId3 := 0
-	subTagName1 := ""
-	subTagName2 := ""
-	subTagName3 := ""
 
 	qiconUrl := fmt.Sprintf("%d.png", qiconId)
 
@@ -169,13 +167,13 @@ func SubmitApprove(uin, user int64, submitId, typ int) (qid int64, err error) {
 	go im.SendSubmitQustionApprovedMsg(user)
 
 	//审核通过的题目立即插入到用户的未答题的列表里面
-	go geneqids.ApproveQuestionUpdate(user, int(qid), typ)
+	go geneqids.ApproveQuestionUpdate(user, int(qid), delivery)
 
-	log.Debugf("end SubmitApprove uin:%d, user:%d, submitId:%d, typ:%d", uin, user, submitId, typ)
+	log.Debugf("end SubmitApprove uin:%d, user:%d, submitId:%d, delivery:%d", uin, user, submitId, delivery)
 	return
 }
 
-func BatchSubmit(minId, maxId, typ int) (qids []int64, err error) {
+func BatchSubmit(minId, maxId int) (qids []int64, err error) {
 
 	if minId == 0 || maxId == 0 {
 		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid param")
@@ -188,7 +186,7 @@ func BatchSubmit(minId, maxId, typ int) (qids []int64, err error) {
 			break
 		}
 
-		qid, err := BatchSubmitApprove(id, typ)
+		qid, err := BatchSubmitApprove(id)
 		if err != nil {
 			log.Errorf(err.Error())
 			id++
@@ -202,7 +200,7 @@ func BatchSubmit(minId, maxId, typ int) (qids []int64, err error) {
 	return
 }
 
-func BatchSubmitApprove(submitId, typ int) (qid int64, err error) {
+func BatchSubmitApprove(submitId int) (qid int64, err error) {
 
 	log.Debugf("start BatchSubmitApprove submitId:%d", submitId)
 
@@ -218,7 +216,7 @@ func BatchSubmitApprove(submitId, typ int) (qid int64, err error) {
 		return
 	}
 
-	sql := fmt.Sprintf(`select qtext, qiconId, uin from submitQuestions where id = %d  and status != %d`, submitId, 1)
+	sql := fmt.Sprintf(`select uin, qtext, qiconId, optionGender, replyGender, schoolType, delivery, tagId, tagName, subTagId1, subTagName1, subTagId2, subTagName2, subTagId3, subTagName3 from submitQuestions where id = %d and status != %d`, submitId, 1)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -229,10 +227,25 @@ func BatchSubmitApprove(submitId, typ int) (qid int64, err error) {
 
 	qtext := ""
 	qiconId := 0
+	optionGender := 0
+	replyGender := 0
+	schoolType := 0
+	status := 0
+	dataSrc := 2 //投稿题库
+	delivery := 0
+	tagId := 0
+	tagName := ""
+
+	subTagId1 := 0
+	subTagId2 := 0
+	subTagId3 := 0
+	subTagName1 := ""
+	subTagName2 := ""
+	subTagName3 := ""
 	var user int64
 	find := false
 	for rows.Next() {
-		rows.Scan(&qtext, &qiconId, &user)
+		rows.Scan(&user, &qtext, &qiconId, &optionGender, &replyGender, &schoolType, &delivery, &tagId, &tagName, &subTagId1, &subTagName1, &subTagId2, &subTagName2, &subTagId3, &subTagName3)
 		find = true
 	}
 
@@ -254,22 +267,6 @@ func BatchSubmitApprove(submitId, typ int) (qid int64, err error) {
 
 	ts := time.Now().Unix()
 
-	optionGender := 0
-	replyGender := 0
-	schoolType := 0
-	status := 0
-	dataSrc := 2    //投稿题库
-	delivery := typ //同校同年级可见,同校可见
-	tagId := 0
-	tagName := ""
-
-	subTagId1 := 0
-	subTagId2 := 0
-	subTagId3 := 0
-	subTagName1 := ""
-	subTagName2 := ""
-	subTagName3 := ""
-
 	qiconUrl := fmt.Sprintf("%d.png", qiconId)
 
 	res, err := stmt.Exec(0, qtext, qiconUrl, optionGender, replyGender, schoolType, dataSrc, delivery, status, tagId, tagName, subTagId1, subTagName1, subTagId2, subTagName2, subTagId3, subTagName3, ts)
@@ -304,7 +301,7 @@ func BatchSubmitApprove(submitId, typ int) (qid int64, err error) {
 	go im.SendSubmitQustionApprovedMsg(user)
 
 	//审核通过的题目立即插入到用户的未答题的列表里面
-	go geneqids.ApproveQuestionUpdate(user, int(qid), typ)
+	go geneqids.ApproveQuestionUpdate(user, int(qid), delivery)
 
 	log.Debugf("end BatchSubmitApprove submitId:%d", submitId)
 	return
