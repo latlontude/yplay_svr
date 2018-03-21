@@ -140,6 +140,8 @@ func GetUserProfileInfo(uin int64) (info *UserProfileInfo, err error) {
 
 		if len(info.HeadImgUrl) > 0 {
 			info.HeadImgUrl = fmt.Sprintf("http://yplay-1253229355.image.myqcloud.com/headimgs/%s", info.HeadImgUrl)
+		} else {
+			info.HeadImgUrl = fmt.Sprintf("http://yplay-1253229355.image.myqcloud.com/headimgs/defaultHeader.png")
 		}
 
 		find = true
@@ -209,6 +211,8 @@ func BatchGetUserProfileInfo(uins []int64) (res map[int64]*UserProfileInfo, err 
 
 		if len(info.HeadImgUrl) > 0 {
 			info.HeadImgUrl = fmt.Sprintf("http://yplay-1253229355.image.myqcloud.com/headimgs/%s", info.HeadImgUrl)
+		} else {
+			info.HeadImgUrl = fmt.Sprintf("http://yplay-1253229355.image.myqcloud.com/headimgs/defaultHeader.png")
 		}
 
 		res[info.Uin] = &info
@@ -264,6 +268,8 @@ func GetUserProfileInfo2(uin int64) (info *UserProfileInfo2, err error) {
 
 		if len(info.HeadImgUrl) > 0 {
 			info.HeadImgUrl = fmt.Sprintf("http://yplay-1253229355.image.myqcloud.com/headimgs/%s", info.HeadImgUrl)
+		} else {
+			info.HeadImgUrl = fmt.Sprintf("http://yplay-1253229355.image.myqcloud.com/headimgs/defaultHeader.png")
 		}
 
 		find = true
@@ -359,6 +365,8 @@ func BatchGetUserProfileInfo2(uins []int64) (res map[int64]*UserProfileInfo2, er
 
 		if len(info.HeadImgUrl) > 0 {
 			info.HeadImgUrl = fmt.Sprintf("http://yplay-1253229355.image.myqcloud.com/headimgs/%s", info.HeadImgUrl)
+		} else {
+			info.HeadImgUrl = fmt.Sprintf("http://yplay-1253229355.image.myqcloud.com/headimgs/defaultHeader.png")
 		}
 
 		res[info.Uin] = &info
