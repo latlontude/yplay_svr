@@ -3,10 +3,12 @@ package user
 import (
 	"api/geneqids"
 	"common/constant"
+	"common/env"
 	"common/mydb"
 	"common/rest"
 	"fmt"
 	"net/http"
+	"strings"
 	"svr/st"
 )
 
@@ -128,6 +130,19 @@ func UpdateUserProfileInfo(uin int64, nickName, headImgId string, gender, age in
 					return
 				}
 			}
+			sensitiveStr := env.Config.Sensitive.Set // 获取配置文件中的敏感词库
+			set := strings.Split(sensitiveStr, ",")
+
+			log.Debugf("set :%+v", set)
+
+			for _, word := range set {
+				if strings.Contains(nickName, word) {
+					prompt := fmt.Sprintf("nickName contains sensitive word:%s", word)
+					err = rest.NewAPIError(constant.E_INVALID_NICKNAME, prompt)
+					log.Error(err.Error())
+					return
+				}
+			}
 
 			modsM[constant.ENUM_PROFILE_MOD_FIELD_NICKNAME] = fmt.Sprintf("nickName:%s", nickName)
 		}
@@ -148,7 +163,7 @@ func UpdateUserProfileInfo(uin int64, nickName, headImgId string, gender, age in
 				}
 			}
 
-			modsM[constant.ENUM_PROFILE_MOD_FIELD_USERNAME] = fmt.Sprintf("nickName:%s", userName)
+			modsM[constant.ENUM_PROFILE_MOD_FIELD_USERNAME] = fmt.Sprintf("userName:%s", userName)
 		}
 	}
 

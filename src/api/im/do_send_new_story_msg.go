@@ -45,7 +45,7 @@ func MakeIMNewStoryMsg(uin int64) (msg IMC2CMsg, err error) {
 	log.Debugf("begin MakeIMNewStoryMsg uin %d", uin)
 
 	var customData IMCustomData
-	customData.DataType = 5
+	customData.DataType = 12
 	customData.Data = ""
 
 	var customContent IMCustomContent

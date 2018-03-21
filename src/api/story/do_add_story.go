@@ -50,7 +50,7 @@ func AddStory(uin int64, typ int, data, text, thumbnailImgUrl string) (sid int64
 
 	sid = time.Now().UnixNano() / 1000000
 
-	if uin <= 0 || typ <= 0 || len(text) == 0 {
+	if uin <= 0 || typ != 1 || typ != 2 || len(text) == 0 || len(data) == 0 {
 		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid params")
 		log.Errorf(err.Error())
 		return

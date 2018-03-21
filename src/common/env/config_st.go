@@ -90,6 +90,10 @@ type YPLAYSvrConfig struct {
 		PushGap int //新闻聚合发送push的间隔
 	}
 
+	Sensitive struct {
+		Set string //昵称敏感词库
+	}
+
 	Addr struct {
 		UploadBatchSize int
 	}
