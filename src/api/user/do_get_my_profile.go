@@ -1,6 +1,7 @@
 package user
 
 import (
+	"api/story"
 	"net/http"
 	"svr/st"
 )
@@ -38,6 +39,14 @@ func doGetMyProfile(req *GetMyProfileReq, r *http.Request) (rsp *GetMyProfileRsp
 	}
 
 	ver, _ := st.GetFriendListVer(req.Uin)
+
+	newsCnt, err := story.GetMyStoriesCnt(req.Uin)
+	if err != nil {
+		log.Errorf("faied to get news count")
+		return
+	}
+
+	info.NewsCnt = newsCnt
 
 	rsp = &GetMyProfileRsp{info, modInfos, ver}
 

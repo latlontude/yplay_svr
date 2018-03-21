@@ -52,6 +52,7 @@ type UserProfileInfo2 struct {
 
 	GemCnt    int `json:"gemCnt"`
 	FriendCnt int `json:"friendCnt"`
+	NewsCnt   int `json:"newsCnt"`
 }
 
 func (this *UserProfileInfo) String() string {
@@ -62,8 +63,8 @@ func (this *UserProfileInfo) String() string {
 
 func (this *UserProfileInfo2) String() string {
 
-	return fmt.Sprintf(`UserProfileInfo2{Uin:%d, UserName:%s, Phone:%s, NickName:%s, HeadImgUrl:%s, Gender:%d, Age:%d, Grade:%d, SchoolId:%d, SchoolType:%d, SchoolName:%s, DeptId:%d, DeptName:%s, GemCnt:%d, FriendCnt:%d}`,
-		this.Uin, this.UserName, this.Phone, this.NickName, this.HeadImgUrl, this.Gender, this.Age, this.Grade, this.SchoolId, this.SchoolType, this.SchoolName, this.DeptId, this.DeptName, this.GemCnt, this.FriendCnt)
+	return fmt.Sprintf(`UserProfileInfo2{Uin:%d, UserName:%s, Phone:%s, NickName:%s, HeadImgUrl:%s, Gender:%d, Age:%d, Grade:%d, SchoolId:%d, SchoolType:%d, SchoolName:%s, DeptId:%d, DeptName:%s, GemCnt:%d, FriendCnt:%d, NewsCnt:%d}`,
+		this.Uin, this.UserName, this.Phone, this.NickName, this.HeadImgUrl, this.Gender, this.Age, this.Grade, this.SchoolId, this.SchoolType, this.SchoolName, this.DeptId, this.DeptName, this.GemCnt, this.FriendCnt, this.NewsCnt)
 }
 
 // func CopyProfileInfo2ProfileInfo2(info *UserProfileInfo, info2 *UserProfileInfo2) {
