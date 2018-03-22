@@ -7,6 +7,8 @@ const ENUM_OPTION_BATCH_SIZE = 4    //每个题目下的选择项数目
 
 const ENUM_ADDR_MAX_BATCH_UPLOAD_SIZE = 100 //通讯录每次上传的最大数目
 
+const DEFAULT_MAX_SEND_SMS_CNT = 5 // 投票给未注册好友，最大发送短信次数5次
+
 const TOKEN_YPLAY_AES_KEY = "frankshi;@yeejay"
 
 const ENUM_USER_STAT_GEM_CNT = 1    //钻石统计
@@ -50,6 +52,7 @@ const ENUM_REDIS_APP_FRIEND_STORY_LIST = "friendstorymsg"         //每个人的
 const ENUM_REDIS_APP_MY_STORY_LIST = "mystorymsg"                 //自己的story列表
 const ENUM_REDIS_APP_LAST_READ_STORY_MS = "lastreadstoryms"       //最近一次读story的时间
 const ENUM_REDIS_APP_USER_LOOKED_OPTION_UINS = "lookedoptionuins" //用户答题中看到的选项UIN列表用于优化选项
+const ENUM_REDIS_APP_INVITE_FRIEND_BY_VOTE = "invitedcnt"         //记录该未注册好友因被投票注册的次数
 
 const ENUM_VOTE_STATUS_INIT = 0
 const ENUM_VOTE_STATUS_REPLY = 1

@@ -325,7 +325,7 @@ func GetNextQuestionAndOptionsByPreGene(uin int64, uuid int64) (qinfo *st.Questi
 		//我的好友数据
 		for _, uid := range randomUins {
 
-			option := &st.OptionInfo2{uid, friendInfos[uid].NickName, uinsVoteCntMap[int(uid)]}
+			option := &st.OptionInfo2{uid, friendInfos[uid].NickName, "", uinsVoteCntMap[int(uid)]}
 			options = append(options, option)
 			prepared += fmt.Sprintf("%d:", uid)
 		}
@@ -411,7 +411,7 @@ func GetNextQuestionAndOptionsByPreGene(uin int64, uuid int64) (qinfo *st.Questi
 	selectedUins := allOptionUins[:4]
 
 	for _, uid := range selectedUins {
-		option := &st.OptionInfo2{uid, friendInfos[uid].NickName, uinsVoteCntMap[int(uid)]}
+		option := &st.OptionInfo2{uid, friendInfos[uid].NickName, "", uinsVoteCntMap[int(uid)]}
 		options = append(options, option)
 	}
 

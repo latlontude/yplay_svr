@@ -54,7 +54,7 @@ func IsValidPhone(phone string) (ok bool) {
 	 * 133,134,153,1700,177,180,181,189
 	 */
 
-        reg4_str := "^1(7[3]|6[6]|9[0-9])\\d{8}$"
+	reg4_str := "^1(7[3]|6[6]|9[0-9])\\d{8}$"
 
 	ok, _ = regexp.MatchString(reg1_str, phone)
 	if ok {
@@ -71,7 +71,7 @@ func IsValidPhone(phone string) (ok bool) {
 		return
 	}
 
-        ok, _ = regexp.MatchString(reg4_str, phone)
+	ok, _ = regexp.MatchString(reg4_str, phone)
 	if ok {
 		return
 	}
@@ -109,6 +109,73 @@ func SendPhoneMsg(phone string, text1, text2 string, minute string) (err error) 
 	req.Ext = ""
 
 	req.Params = []string{text1, text2, minute}
+
+	d, err := json.Marshal(req)
+	if err != nil {
+		return
+	}
+
+	rsp, err := http.Post(url, "application/json", strings.NewReader(string(d)))
+	if err != nil {
+		return
+	}
+
+	defer rsp.Body.Close()
+
+	if rsp.StatusCode != 200 {
+		return
+	}
+
+	body, err := ioutil.ReadAll(rsp.Body)
+	if err != nil {
+		return
+	}
+
+	var ret SmsRspBody
+
+	err = json.Unmarshal(body, &ret)
+	if err != nil {
+		return
+	}
+
+	if ret.Result != 0 {
+		err = errors.New(ret.ErrMsg)
+		return
+	}
+
+	return
+}
+
+func SendPhoneMsgByTemplate(phone string, params []string, tplId uint32) (err error) {
+
+	const SMS_SDK_APPID = 1400031527
+	const SMS_APPKEY = "a0a26597a1d8c60ac486b1b33359345a"
+
+	if len(phone) == 0 || len(params) == 0 || tplId == 0 {
+		return
+	}
+
+	ts := uint32(time.Now().Unix())
+
+	url := fmt.Sprintf("https://yun.tim.qq.com/v5/tlssmssvr/sendsms?sdkappid=%d&random=%d", SMS_SDK_APPID, ts)
+
+	s := fmt.Sprintf("appkey=%s&random=%d&time=%d&mobile=%s", SMS_APPKEY, ts, ts, phone)
+
+	h := sha256.New()
+	h.Write([]byte(s))
+	sig := fmt.Sprintf("%x", h.Sum(nil))
+
+	var req SmsReqBody
+
+	req.Phone.NationCode = "86"
+	req.Phone.Mobile = phone
+	req.TplId = tplId
+
+	req.Sig = string(sig)
+	req.Ts = ts
+	req.Extend = ""
+	req.Ext = ""
+	req.Params = params
 
 	d, err := json.Marshal(req)
 	if err != nil {
