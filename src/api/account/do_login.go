@@ -130,10 +130,12 @@ func Login(phone string, code string, uuid int64) (rsp *LoginRsp, err error) {
 
 func GetUinByPhone(phone string) (uin int64, isNewUser int, err error) {
 
-	if !sms.IsValidPhone(phone) {
-		err = rest.NewAPIError(constant.E_INVALID_PHONE, "phone number invalid")
-		log.Error(err.Error())
-		return
+	if phone != env.Config.Service.Phone {
+		if !sms.IsValidPhone(phone) {
+			err = rest.NewAPIError(constant.E_INVALID_PHONE, "phone number invalid")
+			log.Error(err.Error())
+			return
+		}
 	}
 
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)

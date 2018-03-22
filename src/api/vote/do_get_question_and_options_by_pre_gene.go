@@ -124,6 +124,10 @@ func GetNextQuestionAndOptionsByPreGene(uin int64, uuid int64) (qinfo *st.Questi
 			continue
 		}
 
+		if fi.Uin == 100001 {
+			continue // 客服号不出现在选项里
+		}
+
 		//统计男/女生的数目
 		if fi.Gender == 1 {
 			boyCnt += 1

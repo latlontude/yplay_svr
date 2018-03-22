@@ -22,7 +22,8 @@ var (
 		"/invitefriendsbysms": auth.Apify2(doInviteFriendsBySms), //邀请好友 通过发送SMS
 		"/removefriend":       auth.Apify2(doRemoveFriend),       //解除好友关系 双向解除
 
-		"/getreqaddfrienduins": auth.Apify2(doGetReqAddFriendUins), //已经申请加好友的ID列表
+		"/getreqaddfrienduins":     auth.Apify2(doGetReqAddFriendUins),     //已经申请加好友的ID列表
+		"/addcustomserviceaccount": auth.Apify2(doAddCustomServiceAccount), //添加客服号
 	}
 
 	log = env.NewLogger("sns")

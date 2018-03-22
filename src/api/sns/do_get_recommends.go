@@ -102,6 +102,16 @@ func GetRecommends(uin int64, typ int, uuid int64, pageNum, pageSize int) (total
 		total, friends, err = GetRecommendsFrom2DegreeFriends(uin, pageNum, pageSize)
 	}
 
+	tmpFriends := make([]*RecommendInfo, 0)
+	for _, info := range friends {
+		if info.Uin == 100001 { //过滤掉噗噗客服号
+			total--
+		} else {
+			tmpFriends = append(tmpFriends, info)
+		}
+	}
+	friends = tmpFriends
+
 	return
 }
 

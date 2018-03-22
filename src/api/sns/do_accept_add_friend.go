@@ -173,7 +173,7 @@ func AcceptAddFriend(uin int64, msgId int64, act int) (err error) {
 	go im.SendAcceptAddFriendMsg(fromUin, toUin)
 
 	//go CreateNewSnapSession(fromUin, toUin)
-	go CreateSnapSessionAndSendPushMsg(fromUin, toUin)
+	CreateSnapSessionAndSendPushMsg(fromUin, toUin)
 
 	go JudgeNeedGeneQids(fromUin, toUin)
 

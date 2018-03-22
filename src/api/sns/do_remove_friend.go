@@ -43,7 +43,12 @@ func doRemoveFriend(req *RemoveFriendReq, r *http.Request) (rsp *RemoveFriendRsp
 
 func RemoveFriend(uin, friendUin int64) (err error) {
 
-	if uin == 0 || friendUin == 0 || uin == friendUin {
+	if uin == 0 || friendUin == 0 || uin == friendUin || friendUin == 100001 {
+		return
+	}
+
+	if friendUin == 100001 { //客服号
+		log.Debugf(" service account can not be removed!")
 		return
 	}
 

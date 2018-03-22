@@ -106,6 +106,11 @@ type YPLAYSvrConfig struct {
 		ModMaxCnt       int
 		GenderModMaxCnt int
 	}
+
+	Service struct {
+		Phone string
+		Code  string
+	}
 }
 
 //计算2度好友关系的SVR配置

@@ -77,10 +77,12 @@ func Login2(phone string, code string, uuid int64, device, os, appVer string) (r
 		return
 	}
 
-	if !sms.IsValidPhone(phone) {
-		err = rest.NewAPIError(constant.E_INVALID_PHONE, "phone number invalid")
-		log.Error(err.Error())
-		return
+	if phone != env.Config.Service.Phone {
+		if !sms.IsValidPhone(phone) {
+			err = rest.NewAPIError(constant.E_INVALID_PHONE, "phone number invalid")
+			log.Error(err.Error())
+			return
+		}
 	}
 
 	app, err := myredis.GetApp(constant.ENUM_REDIS_APP_SMS)
@@ -92,7 +94,7 @@ func Login2(phone string, code string, uuid int64, device, os, appVer string) (r
 	keyStr := fmt.Sprintf("%s", phone)
 	valStr, err := app.Get(keyStr) //code 缓存63秒
 
-	if (phone != "18682235582" && phone != "13480970139") && err != nil {
+	if (phone != "18682235582" && phone != "13480970139" && phone != env.Config.Service.Phone) && err != nil {
 		err = rest.NewAPIError(constant.E_SMS_CODE_ERR, "code not exist in redis")
 		log.Error(err.Error())
 		return
@@ -101,6 +103,12 @@ func Login2(phone string, code string, uuid int64, device, os, appVer string) (r
 	//该手机号码不校验验证码
 	if phone == "18682235582" || phone == "13480970139" {
 		if len(code) != 4 {
+			err = rest.NewAPIError(constant.E_SMS_CODE_ERR, "invalid code")
+			log.Error(err.Error())
+			return
+		}
+	} else if phone == env.Config.Service.Phone {
+		if code != env.Config.Service.Code {
 			err = rest.NewAPIError(constant.E_SMS_CODE_ERR, "invalid code")
 			log.Error(err.Error())
 			return
@@ -158,7 +166,7 @@ func Login2(phone string, code string, uuid int64, device, os, appVer string) (r
 	needInviteCode := CheckNeedInviteCode(device, os, appVer)
 
 	//如果不需要验证码，则将验证码校验机制关闭
-	if needInviteCode == 0 {
+	if needInviteCode == 0 || phone == env.Config.Service.Phone {
 		hasCheckInviteCode = 1
 	}
 
