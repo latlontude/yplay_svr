@@ -39,6 +39,7 @@ type OptionInfo struct {
 type OptionInfo2 struct {
 	Uin      int64  `json:"uin"`
 	NickName string `json:"nickName"`
+	PhoneNum string `json:"phoneNum"`
 	BeSelCnt int    `json:"beSelCnt"`
 }
 
@@ -50,8 +51,8 @@ func (this *OptionInfo) String() string {
 
 func (this *OptionInfo2) String() string {
 
-	return fmt.Sprintf(`OptionInfo2{Uin:%d, NickName:%s, BeSelCnt:%d}`,
-		this.Uin, this.NickName, this.BeSelCnt)
+	return fmt.Sprintf(`OptionInfo2{Uin:%d, NickName:%s, PhoneNum:%s, BeSelCnt:%d}`,
+		this.Uin, this.NickName, this.PhoneNum, this.BeSelCnt)
 }
 
 func (this *QuestionInfo) String() string {

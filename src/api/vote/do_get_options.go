@@ -183,7 +183,7 @@ func GetOptions(uin int64, qid int, index int, uuid int64) (options []*st.Option
 		//我的好友数据
 		for _, uid := range uids {
 
-			option := &st.OptionInfo2{uid, friendInfos[uid].NickName, uinsVoteCntMap[int(uid)]}
+			option := &st.OptionInfo2{uid, friendInfos[uid].NickName, "", uinsVoteCntMap[int(uid)]}
 			options = append(options, option)
 		}
 
@@ -234,7 +234,7 @@ func GetOptions(uin int64, qid int, index int, uuid int64) (options []*st.Option
 			nickName = fi.NickName
 		}
 
-		option := &st.OptionInfo2{uid, nickName, uinsVoteCntMap[int(uid)]}
+		option := &st.OptionInfo2{uid, nickName, "", uinsVoteCntMap[int(uid)]}
 		options = append(options, option)
 	}
 

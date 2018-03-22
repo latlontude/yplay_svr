@@ -7,10 +7,12 @@ import (
 	"common/mydb"
 	"common/myredis"
 	"common/rest"
+	"common/sms"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	//"strconv"
+	"strconv"
+	"svr/cache"
 	"svr/st"
 	"time"
 )
@@ -20,10 +22,11 @@ type DoVoteReq struct {
 	Token string `schema:"token"`
 	Ver   int    `schema:"ver"`
 
-	QId       int    `schema:"qid"`
-	VoteToUin int64  `schema:"voteToUin"`
-	Options   string `schema:"options"`
-	Index     int    `schema:"index"` //题目编号
+	QId         int    `schema:"qid"`
+	VoteToUin   int64  `schema:"voteToUin"`
+	OptionIndex int    `schema:"optionIndex"`
+	Options     string `schema:"options"`
+	Index       int    `schema:"index"` //题目编号
 }
 
 type DoVoteRsp struct {
@@ -34,7 +37,7 @@ func doVote(req *DoVoteReq, r *http.Request) (rsp *DoVoteRsp, err error) {
 
 	log.Debugf("uin %d, DoVoteReq %+v", req.Uin, req)
 
-	voteRecordId, err := Vote(req.Uin, req.QId, req.VoteToUin, req.Options, req.Index)
+	voteRecordId, err := Vote(req.Uin, req.QId, req.VoteToUin, req.OptionIndex, req.Options, req.Index)
 	if err != nil {
 		log.Errorf("uin %d, DoVoteRsp error, %s", req.Uin, err.Error())
 		return
@@ -47,7 +50,7 @@ func doVote(req *DoVoteReq, r *http.Request) (rsp *DoVoteRsp, err error) {
 	return
 }
 
-func Vote(uin int64, qid int, voteToUin int64, optionStr string, index int) (voteRecordId int64, err error) {
+func Vote(uin int64, qid int, voteToUin int64, optionIndex int, optionStr string, index int) (voteRecordId int64, err error) {
 
 	if uin == 0 || qid == 0 || len(optionStr) == 0 {
 		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid params")
@@ -75,6 +78,44 @@ func Vote(uin int64, qid int, voteToUin int64, optionStr string, index int) (vot
 
 		log.Errorf("uin %d, voteToUin %d, qid %d, are not friend or voteToUin is 0", uin, voteToUin, qid)
 
+		if optionIndex > 0 {
+			log.Debugf("optionStr:%s", optionStr)
+			var ret []st.OptionInfo2
+
+			err = json.Unmarshal([]byte(optionStr), &ret)
+			if err != nil {
+				log.Errorf("decode json err!")
+				return
+			}
+
+			phone := ret[optionIndex-1].PhoneNum
+			if len(phone) > 0 {
+
+				log.Debugf("qid:%d, selected userinfo :%+v", qid, ret[optionIndex-1])
+				qinfo := cache.QUESTIONS[qid]
+				userInfo, err1 := st.GetUserProfileInfo(uin)
+				if err1 != nil {
+					log.Errorf("get user infomation err")
+					return
+				}
+
+				schoolDscr := st.GetGradeDescBySchool(userInfo.SchoolType, userInfo.Grade)
+				gradeDscr := "同学"
+				if userInfo.Gender == 1 {
+					gradeDscr = "男生"
+				} else {
+					gradeDscr = "女生"
+				}
+
+				text1 := fmt.Sprintf("神秘%s%s评价你“%s”，竟然是ta！揭秘真相☞http://yplay.vivacampus.com/api/helper/downloadredirect。", schoolDscr, gradeDscr, qinfo.QText)
+				text2 := "365*24*60"
+
+				params := make([]string, 0)
+				params = append(params, text1, text2)
+				go sendSmsByVoteToUnRegisterUser(phone, params)
+			}
+
+		}
 		return
 	}
 
@@ -328,5 +369,82 @@ func GeneNewFeedPush(uins []int64) (err error) {
 		im.ChanFeedPush <- uin
 	}
 
+	return
+}
+
+func sendSmsByVoteToUnRegisterUser(phone string, params []string) (err error) {
+	log.Debugf("start SendSmsByVoteToUnRegisterUser phone:%s, params:%+v", phone, params)
+
+	if len(phone) == 0 {
+		return
+	}
+
+	if !sms.IsValidPhone(phone) {
+		log.Errorf("invalid phone:%s", phone)
+		return
+	}
+
+	app, err := myredis.GetApp(constant.ENUM_REDIS_APP_INVITE_FRIEND_BY_VOTE)
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+
+	exist, err := app.Exist(phone)
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+
+	keyStr := phone
+	field := "sendcnt"
+
+	if !exist {
+		kvs := make(map[string]string)
+		kvs[field] = fmt.Sprintf("%d", 0) //初次发送短信
+		err = app.HMSet(keyStr, kvs)
+		if err != nil {
+			log.Error(err.Error())
+			return
+		}
+
+		err = app.Expire(keyStr, 86400) // 24小时过期
+		if err != nil {
+			log.Errorf(err.Error())
+			return
+		}
+	}
+
+	fields := []string{"sendcnt"}
+	valsStr, err := app.HMGet(keyStr, fields)
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+	log.Debugf("phone %s, HMGet rsp %+v", phone, valsStr)
+
+	cnt, _ := strconv.Atoi(valsStr["sendcnt"])
+	if cnt > constant.DEFAULT_MAX_SEND_SMS_CNT {
+		log.Debugf("phone:%s has send message count > %d", phone, constant.DEFAULT_MAX_SEND_SMS_CNT)
+		return
+	}
+
+	_, err = app.HIncrBy(keyStr, field, 1)
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+
+	//发送短信开关是否打开
+	if env.Config.Sms.InviteFriendSend > 0 {
+		const SMS_TPL_ID = 0
+		err = sms.SendPhoneMsgByTemplate(phone, params, SMS_TPL_ID)
+		if err != nil {
+			log.Debugf("faied to send message")
+			log.Errorf(err.Error())
+		}
+	}
+
+	log.Debugf("end SendSmsByVoteToUnRegisterUser")
 	return
 }
