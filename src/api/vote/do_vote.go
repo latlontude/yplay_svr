@@ -107,11 +107,12 @@ func Vote(uin int64, qid int, voteToUin int64, optionIndex int, optionStr string
 					gradeDscr = "女生"
 				}
 
-				text1 := fmt.Sprintf("神秘%s%s评价你“%s”，竟然是ta！揭秘真相☞http://yplay.vivacampus.com/api/helper/downloadredirect。", schoolDscr, gradeDscr, qinfo.QText)
-				text2 := "365*24*60"
+				text1 := fmt.Sprintf("神秘%s%s评价你", schoolDscr, gradeDscr)
+				text2 := fmt.Sprintf("“%s” 竟然是ta！揭秘真相☞http://yplay.vivacampus.com/api/helper/downloadredirect。", qinfo.QText)
+				text3 := "365*24*60"
 
 				params := make([]string, 0)
-				params = append(params, text1, text2)
+				params = append(params, text1, text2, text3)
 				go sendSmsByVoteToUnRegisterUser(phone, params)
 			}
 
@@ -437,7 +438,7 @@ func sendSmsByVoteToUnRegisterUser(phone string, params []string) (err error) {
 
 	//发送短信开关是否打开
 	if env.Config.Sms.InviteFriendSend > 0 {
-		const SMS_TPL_ID = 0
+		const SMS_TPL_ID = 20545
 		err = sms.SendPhoneMsgByTemplate(phone, params, SMS_TPL_ID)
 		if err != nil {
 			log.Debugf("faied to send message")
