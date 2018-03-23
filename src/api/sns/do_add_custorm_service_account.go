@@ -4,7 +4,6 @@ import (
 	"api/im"
 	"common/constant"
 	"common/mydb"
-	"common/myredis"
 	"common/rest"
 	"fmt"
 	"net/http"
@@ -99,7 +98,7 @@ func AddCustomServiceAccount(uin int64) (err error) {
 	im.SendAcceptAddFriendMsg(uin, serviceAccountUin)
 
 	sessionId := ""
-	sessionId, err = getSnapSession(uin, serviceAccountUin)
+	sessionId, err = im.GetSnapSession(uin, serviceAccountUin)
 	if err != nil || len(sessionId) == 0 {
 		sessionId, err = CreateNewSnapSession(uin, serviceAccountUin)
 		if err != nil {
@@ -112,29 +111,5 @@ func AddCustomServiceAccount(uin int64) (err error) {
 	go im.SendTextMsg(sessionId, text, serviceAccountUin, uin)
 	log.Debugf("end AddCustomServiceAccount")
 
-	return
-}
-
-func getSnapSession(uin, uid int64) (sessionId string, err error) {
-	log.Debugf("start getSnapSession uin:%d uid:%d", uin, uid)
-
-	app, err := myredis.GetApp(constant.ENUM_REDIS_APP_SNAPCHAT_SESSION)
-	if err != nil {
-		log.Error(err.Error())
-		return
-	}
-
-	keyStr := fmt.Sprintf("%d_%d", uin, uid)
-	if uin > uid {
-		keyStr = fmt.Sprintf("%d_%d", uid, uin)
-	}
-
-	val, err := app.Get(keyStr)
-	if err != nil {
-		log.Error(err.Error())
-	}
-	sessionId = val
-
-	log.Debugf("end getSnapSession sessionId:%s", sessionId)
 	return
 }

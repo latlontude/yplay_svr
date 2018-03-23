@@ -153,3 +153,19 @@ func SendAcceptAddFriendMsg(uin1 int64, uin2 int64) (err error) {
 
 	return
 }
+
+func SendBeFriendsStartChatMsg(fromUin, toUin int64) (err error) {
+	log.Debugf("start SendBeFriendsStartChatMsg fromUin:%d, toUin:%d", fromUin, toUin)
+
+	sessionId, err := GetSnapSession(fromUin, toUin)
+	if err != nil {
+		log.Errorf(err.Error())
+		log.Errorf("faied to get sessionId")
+		return
+	}
+
+	text := "我们已成为好友啦，开始聊天吧ᕕ( ᐛ )ᕗ"
+	SendTextMsg(sessionId, text, fromUin, toUin)
+	log.Debugf("end SendBeFriendsStartChatMsg")
+	return
+}

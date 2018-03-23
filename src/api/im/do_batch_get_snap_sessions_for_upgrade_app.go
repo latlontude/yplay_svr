@@ -148,3 +148,27 @@ func BatchGetSnapSessonsForUpgradeApp(uin int64, users string) (ss []*SnapChatSe
 
 	return
 }
+
+func GetSnapSession(uin, uid int64) (sessionId string, err error) {
+	log.Debugf("start GetSnapSession uin:%d uid:%d", uin, uid)
+
+	app, err := myredis.GetApp(constant.ENUM_REDIS_APP_SNAPCHAT_SESSION)
+	if err != nil {
+		log.Error(err.Error())
+		return
+	}
+
+	keyStr := fmt.Sprintf("%d_%d", uin, uid)
+	if uin > uid {
+		keyStr = fmt.Sprintf("%d_%d", uid, uin)
+	}
+
+	val, err := app.Get(keyStr)
+	if err != nil {
+		log.Error(err.Error())
+	}
+	sessionId = val
+
+	log.Debugf("end GetSnapSession sessionId:%s", sessionId)
+	return
+}

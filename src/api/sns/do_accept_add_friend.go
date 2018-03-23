@@ -175,6 +175,9 @@ func AcceptAddFriend(uin int64, msgId int64, act int) (err error) {
 	//go CreateNewSnapSession(fromUin, toUin)
 	CreateSnapSessionAndSendPushMsg(fromUin, toUin)
 
+	//向发送加好友方发送已经成为好友通知
+	go im.SendBeFriendsStartChatMsg(fromUin, toUin)
+
 	go JudgeNeedGeneQids(fromUin, toUin)
 
 	return
@@ -320,7 +323,7 @@ func CreateSnapSessionAndSendPushMsg(uin, uid int64) (err error) {
 
 func CreateNewSnapSession(uin, uid int64) (groupId string, err error) {
 
-	log.Errorf("begin uin %d, uid %d, CreateNewSnapSession ", uin, uid)
+	log.Debugf("begin uin %d, uid %d, CreateNewSnapSession ", uin, uid)
 
 	if uin == uid || uin <= 0 || uid <= 0 {
 		log.Errorf("invalid uin %d, uid %d", uin, uid)
@@ -333,7 +336,7 @@ func CreateNewSnapSession(uin, uid int64) (groupId string, err error) {
 		return
 	}
 
-	log.Errorf("uin1 %d, uin2 %d, create snap chat session success, groupId %s", uin, uid, groupId)
+	log.Debugf("uin1 %d, uin2 %d, create snap chat session success, groupId %s", uin, uid, groupId)
 
 	return
 }
