@@ -176,7 +176,7 @@ func AcceptAddFriend(uin int64, msgId int64, act int) (err error) {
 	CreateSnapSessionAndSendPushMsg(fromUin, toUin)
 
 	//向发送加好友方发送已经成为好友通知
-	go im.SendBeFriendsStartChatMsg(fromUin, toUin)
+	go im.SendBeFriendsStartChatMsg(toUin, fromUin)
 
 	go JudgeNeedGeneQids(fromUin, toUin)
 
