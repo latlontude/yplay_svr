@@ -14,6 +14,7 @@ type AddCustomServiceAccountReq struct {
 	Uin   int64  `schema:"uin"`
 	Token string `schema:"token"`
 	Ver   int    `schema:"ver"`
+	Uid   int64  `schema:"user"`
 }
 
 type AddCustomServiceAccountRsp struct {
@@ -23,7 +24,7 @@ func doAddCustomServiceAccount(req *AddCustomServiceAccountReq, r *http.Request)
 
 	log.Errorf("uin %d, doAddCustomServiceAccountReq %+v", req.Uin, req)
 
-	err = AddCustomServiceAccount(req.Uin)
+	err = AddCustomServiceAccount(req.Uid)
 	if err != nil {
 		log.Errorf("uin %d, AddCustomServiceAccount error, %s", req.Uin, err.Error())
 		return
