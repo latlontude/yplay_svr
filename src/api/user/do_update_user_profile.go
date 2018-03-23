@@ -119,6 +119,10 @@ func UpdateUserProfileInfo(uin int64, nickName, headImgId string, gender, age in
 
 		args = append(args, nickName)
 
+		sensitiveStr := env.Config.Sensitive.Set // 获取配置文件中的敏感词库
+		set := strings.Split(sensitiveStr, ",")
+		log.Debugf("set :%+v", set)
+
 		if flag > 0 {
 
 			//检查修改次数是否超限制
@@ -130,10 +134,6 @@ func UpdateUserProfileInfo(uin int64, nickName, headImgId string, gender, age in
 					return
 				}
 			}
-			sensitiveStr := env.Config.Sensitive.Set // 获取配置文件中的敏感词库
-			set := strings.Split(sensitiveStr, ",")
-
-			log.Debugf("set :%+v", set)
 
 			for _, word := range set {
 				if strings.Contains(nickName, word) {
@@ -145,6 +145,15 @@ func UpdateUserProfileInfo(uin int64, nickName, headImgId string, gender, age in
 			}
 
 			modsM[constant.ENUM_PROFILE_MOD_FIELD_NICKNAME] = fmt.Sprintf("nickName:%s", nickName)
+		} else {
+			for _, word := range set {
+				if strings.Contains(nickName, word) {
+					prompt := fmt.Sprintf("nickName contains sensitive word:%s", word)
+					err = rest.NewAPIError(constant.E_INVALID_NICKNAME, prompt)
+					log.Error(err.Error())
+					return
+				}
+			}
 		}
 	}
 

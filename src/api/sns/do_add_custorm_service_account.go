@@ -4,6 +4,7 @@ import (
 	"api/im"
 	"common/constant"
 	"common/mydb"
+	"common/myredis"
 	"common/rest"
 	"fmt"
 	"net/http"
@@ -95,10 +96,45 @@ func AddCustomServiceAccount(uin int64) (err error) {
 	go IncrFriendCnt(uin, serviceAccountUin)
 
 	//更新好友的好友关系
-	go im.SendAcceptAddFriendMsg(uin, serviceAccountUin)
+	im.SendAcceptAddFriendMsg(uin, serviceAccountUin)
 
-	go CreateNewSnapSession(uin, serviceAccountUin)
+	sessionId := ""
+	sessionId, err = getSnapSession(uin, serviceAccountUin)
+	if err != nil || len(sessionId) == 0 {
+		sessionId, err = CreateNewSnapSession(uin, serviceAccountUin)
+		if err != nil {
+			log.Errorf(err.Error())
+			return
+		}
+	}
+
+	text := "欢迎来到噗噗！如果你在使用中有任何的问题或建议，非常欢迎与我沟通！噗——"
+	go im.SendTextMsg(sessionId, text, serviceAccountUin, uin)
 	log.Debugf("end AddCustomServiceAccount")
 
+	return
+}
+
+func getSnapSession(uin, uid int64) (sessionId string, err error) {
+	log.Debugf("start getSnapSession uin:%d uid:%d", uin, uid)
+
+	app, err := myredis.GetApp(constant.ENUM_REDIS_APP_SNAPCHAT_SESSION)
+	if err != nil {
+		log.Error(err.Error())
+		return
+	}
+
+	keyStr := fmt.Sprintf("%d_%d", uin, uid)
+	if uin > uid {
+		keyStr = fmt.Sprintf("%d_%d", uid, uin)
+	}
+
+	val, err := app.Get(keyStr)
+	if err != nil {
+		log.Error(err.Error())
+	}
+	sessionId = val
+
+	log.Debugf("end getSnapSession sessionId:%s", sessionId)
 	return
 }

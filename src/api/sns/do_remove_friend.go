@@ -43,15 +43,15 @@ func doRemoveFriend(req *RemoveFriendReq, r *http.Request) (rsp *RemoveFriendRsp
 
 func RemoveFriend(uin, friendUin int64) (err error) {
 
-	if uin == 0 || friendUin == 0 || uin == friendUin || friendUin == 100001 {
+	if uin == 0 || friendUin == 0 || uin == friendUin {
 		return
 	}
-
-	if friendUin == 100001 { //客服号
-		log.Debugf(" service account can not be removed!")
-		return
-	}
-
+	/*
+		if friendUin == 100001 { //客服号
+			log.Debugf(" service account can not be removed!")
+			return
+		}
+	*/
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
 	if inst == nil {
 		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
