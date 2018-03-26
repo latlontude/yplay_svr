@@ -15,6 +15,7 @@ type GetUserGemStatInfoReq struct {
 	Token string `schema:"token"`
 	Ver   int    `schema:"ver"`
 
+	Hide     int   `schema:"hide"` // 0 不隐藏，1 隐藏
 	UserUin  int64 `schema:"userUin"`
 	PageNum  int   `schema:"pageNum"`
 	PageSize int   `schema:"pageSize"`
@@ -29,7 +30,13 @@ func doGetUserGemStatInfo(req *GetUserGemStatInfoReq, r *http.Request) (rsp *Get
 
 	log.Debugf("uin %d, GetUserGemStatInfoReq %+v", req.Uin, req)
 
-	total, stats, err := GetUserGemStatInfo(req.UserUin, req.PageNum, req.PageSize)
+	if req.Uin != req.UserUin && req.Hide != 0 {
+		err = rest.NewAPIError(constant.E_DB_QUERY, "invalid params")
+		log.Errorf("query other people diamond infomation,but hide field is not zero")
+		return
+	}
+
+	total, stats, err := GetUserGemStatInfo(req.UserUin, req.Hide, req.PageNum, req.PageSize)
 	if err != nil {
 		log.Errorf("uin %d, GetUserGemStatInfoRsp error, %s", req.Uin, err.Error())
 		return
@@ -42,7 +49,7 @@ func doGetUserGemStatInfo(req *GetUserGemStatInfoReq, r *http.Request) (rsp *Get
 	return
 }
 
-func GetUserGemStatInfo(uin int64, pageNum, pageSize int) (total int, stats []*st.UserGemStatInfo, err error) {
+func GetUserGemStatInfo(uin int64, hide, pageNum, pageSize int) (total int, stats []*st.UserGemStatInfo, err error) {
 
 	stats = make([]*st.UserGemStatInfo, 0)
 
@@ -68,8 +75,7 @@ func GetUserGemStatInfo(uin int64, pageNum, pageSize int) (total int, stats []*s
 		return
 	}
 
-	sql := fmt.Sprintf(`select statValue from userStat where uin = %d and statField = %d`, uin, constant.ENUM_USER_STAT_GEM_CNT)
-
+	sql := fmt.Sprintf(`select count(id) as cnt from voteRecords where voteToUin = %d and hide = %d`, uin, hide)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -86,7 +92,7 @@ func GetUserGemStatInfo(uin int64, pageNum, pageSize int) (total int, stats []*s
 		return
 	}
 
-	sql = fmt.Sprintf(`select qid, count(id) as cnt, max(ts) as t from voteRecords where voteToUin = %d group by qid order by cnt desc, t desc limit %d, %d`, uin, s, e)
+	sql = fmt.Sprintf(`select qid, count(id) as cnt, max(ts) as t from voteRecords where voteToUin = %d and hide = %d group by qid order by cnt desc, t desc limit %d, %d`, uin, hide, s, e)
 
 	rows, err = inst.Query(sql)
 	if err != nil {

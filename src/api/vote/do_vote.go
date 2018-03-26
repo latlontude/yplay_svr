@@ -156,8 +156,9 @@ func Vote(uin int64, qid int, voteToUin int64, optionIndex int, optionStr string
 
 	//IM会话ID
 	imSessionId := ""
+	hide := 0
 
-	stmt, err := inst.Prepare(`insert into voteRecords values(?, ?, ?, ?, ?, ?, ?, ?)`)
+	stmt, err := inst.Prepare(`insert into voteRecords values(?, ?, ?, ?, ?, ?, ?, ?, ?)`)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_PREPARE, err.Error())
 		log.Error(err)
@@ -165,7 +166,7 @@ func Vote(uin int64, qid int, voteToUin int64, optionIndex int, optionStr string
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Exec(0, uin, qid, voteToUin, optionStr, status, ts, imSessionId)
+	res, err := stmt.Exec(0, uin, qid, voteToUin, optionStr, hide, status, ts, imSessionId)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
 		log.Error(err.Error())
@@ -447,5 +448,33 @@ func sendSmsByVoteToUnRegisterUser(phone string, params []string) (err error) {
 	}
 
 	log.Debugf("end SendSmsByVoteToUnRegisterUser")
+	return
+}
+
+func getTableColumns(database, table string) (cnt int, err error) {
+
+	log.Debugf("start getTableColumns database:%s table:%s", database, table)
+
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		log.Error(err)
+		return
+	}
+
+	sql := fmt.Sprintf("select count(*) from information_schema.columns where table_schema = '%s' and table_name = '%s'", database, table)
+	rows, err := inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Errorf(err.Error())
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		rows.Scan(&cnt)
+	}
+
+	log.Debugf("end getTableColumns cnt:%d", cnt)
 	return
 }

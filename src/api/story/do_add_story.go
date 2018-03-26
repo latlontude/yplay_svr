@@ -17,7 +17,7 @@ type AddStoryReq struct {
 	Uin             int64  `schema:"uin"`
 	Token           string `schema:"token"`
 	Ver             int    `schema:"ver"`
-	Type            int    `schema:"type"`
+	Type            int    `schema:"type"` // 1 文字+图片 2 文字+视频 3 文字+gif动图
 	Data            string `schema:"data"`
 	Text            string `schema:"text"`
 	ThumbnailImgUlr string `schema:"thumbnailImgUlr"`
@@ -50,7 +50,7 @@ func AddStory(uin int64, typ int, data, text, thumbnailImgUrl string) (sid int64
 
 	sid = time.Now().UnixNano() / 1000000
 
-	if uin <= 0 || (typ != 1 && typ != 2) || len(text) == 0 || len(data) == 0 {
+	if uin <= 0 || (typ != 1 && typ != 2 && typ != 3) || len(text) == 0 || len(data) == 0 {
 		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid params")
 		log.Errorf(err.Error())
 		return
