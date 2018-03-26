@@ -418,7 +418,7 @@ func GetNextQuestionAndOptions(uin int64, uuid int64) (qinfo *st.QuestionInfo, o
 		//我的好友数据
 		for _, uid := range friendUins {
 
-			option := &st.OptionInfo2{uid, friendInfos[uid].NickName, "", uinsVoteCntMap[int(uid)]}
+			option := &st.OptionInfo2{uid, friendInfos[uid].NickName, uinsVoteCntMap[int(uid)]}
 			options = append(options, option)
 		}
 
@@ -533,7 +533,7 @@ func GetNextQuestionAndOptions(uin int64, uuid int64) (qinfo *st.QuestionInfo, o
 	selectedUins := allOptionUins[:4]
 
 	for _, uid := range selectedUins {
-		option := &st.OptionInfo2{uid, friendInfos[uid].NickName, "", uinsVoteCntMap[int(uid)]}
+		option := &st.OptionInfo2{uid, friendInfos[uid].NickName, uinsVoteCntMap[int(uid)]}
 		options = append(options, option)
 	}
 
@@ -904,7 +904,7 @@ func GetOptionsByCombine(uin int64, uuid int64, excludeUins []int64, qgender int
 			nickName = ALL_GIRL_STARS[idx]
 		}
 
-		option := &st.OptionInfo2{0, nickName, "", 0}
+		option := &st.OptionInfo2{0, nickName, 0}
 
 		options = append(options, option)
 	}
@@ -975,7 +975,7 @@ func GetOptionsFromAddFriendMsg(uin int64, cnt int, qgender int) (options []*st.
 
 	a := rand.Perm(len(unfriendsUidsInfo))
 	for _, idx := range a {
-		option := &st.OptionInfo2{unfriendsUidsInfo[idx].Uin, unfriendsUidsInfo[idx].NickName, "", 0}
+		option := &st.OptionInfo2{unfriendsUidsInfo[idx].Uin, unfriendsUidsInfo[idx].NickName, 0}
 		options = append(options, option)
 		if len(options) == cnt {
 			break
@@ -1051,7 +1051,7 @@ func GetOptionsFromAddrBookRegister(uin, uuid int64, excludeUins []int64, needCn
 	strs += fmt.Sprintf("%d,", uin)
 	strs += fmt.Sprintf("%d", 0) //查找注册非好友
 
-	sql := fmt.Sprintf(`select friendUin, friendName from addrBook where uuid = %d and friendUin not in (%s)`, uuid, strs)
+	sql := fmt.Sprintf(`select friendUin from addrBook where uuid = %d and friendUin not in (%s)`, uuid, strs)
 
 	rows, err := inst.Query(sql)
 	if err != nil {
@@ -1062,13 +1062,10 @@ func GetOptionsFromAddrBookRegister(uin, uuid int64, excludeUins []int64, needCn
 	defer rows.Close()
 
 	registerUnfriendsUins := make([]int64, 0)
-	registerUnfriendsUinInfoMap := make(map[int64]string)
 	for rows.Next() {
 		var uid int64
-		var friendName string
-		rows.Scan(&uid, &friendName)
+		rows.Scan(&uid)
 		registerUnfriendsUins = append(registerUnfriendsUins, uid)
-		registerUnfriendsUinInfoMap[uid] = friendName
 	}
 
 	log.Debugf("registerUnfriendsUins:%+v", registerUnfriendsUins)
@@ -1085,11 +1082,8 @@ func GetOptionsFromAddrBookRegister(uin, uuid int64, excludeUins []int64, needCn
 	registerUnfriendsUidsInfo := make([]*st.UserProfileInfo, 0)
 	for _, info := range res {
 		if len(info.NickName) == 0 {
-			if _, ok := registerUnfriendsUinInfoMap[info.Uin]; ok {
-				info.NickName = registerUnfriendsUinInfoMap[info.Uin]
-			}
+			continue
 		}
-
 		if info.Gender == qgender || qgender == 0 {
 			registerUnfriendsUidsInfo = append(registerUnfriendsUidsInfo, info)
 		}
@@ -1097,7 +1091,7 @@ func GetOptionsFromAddrBookRegister(uin, uuid int64, excludeUins []int64, needCn
 
 	a := rand.Perm(len(registerUnfriendsUidsInfo))
 	for _, idx := range a {
-		option := &st.OptionInfo2{registerUnfriendsUidsInfo[idx].Uin, registerUnfriendsUidsInfo[idx].NickName, "", 0}
+		option := &st.OptionInfo2{registerUnfriendsUidsInfo[idx].Uin, registerUnfriendsUidsInfo[idx].NickName, 0}
 		options = append(options, option)
 		if len(options) == needCnt {
 			break
@@ -1152,7 +1146,7 @@ func GetOptionsFromAddrBookUnRegister(uin, uuid int64, needCnt int) (options []*
 
 	for _, idx := range idxs {
 
-		sql = fmt.Sprintf(`select friendUin, friendName, friendPhone from addrBook where uuid = %d and friendUin = 0 limit %d, %d`, uuid, idx, 1)
+		sql = fmt.Sprintf(`select friendUin, friendName from addrBook where uuid = %d and friendUin = 0 limit %d, %d`, uuid, idx, 1)
 
 		rows, err = inst.Query(sql)
 		if err != nil {
@@ -1165,7 +1159,7 @@ func GetOptionsFromAddrBookUnRegister(uin, uuid int64, needCnt int) (options []*
 
 		for rows.Next() {
 			var option st.OptionInfo2
-			rows.Scan(&option.Uin, &option.NickName, &option.PhoneNum)
+			rows.Scan(&option.Uin, &option.NickName)
 
 			options = append(options, &option)
 		}
