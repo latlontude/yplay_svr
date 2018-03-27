@@ -18,7 +18,7 @@ func CachePhones() (err error) {
 		return
 	}
 
-	sql := fmt.Sprintf(`select uin, phone from profiles`)
+	sql := fmt.Sprintf(`select uin, phone from profiles where nickName != "" `)
 
 	rows, err := inst.Query(sql)
 	if err != nil {
