@@ -24,11 +24,10 @@ type GeneStoryShareMsgRsp struct {
 }
 
 type StoryShareMsg struct {
-	StoryMsg    st.RetStoryInfo `json:"storyMsg"`
-	Status      int             `json:"status"` // 1 互为好友，2 storyOwnUin单向添加toUin为好友，3 toUin单向添加storyOwnUin为好友，0 storyOwnUin 和 toUin不是好友，互相之间也没有发送过添加好友请求。
-	FromUin     int64           `json:"fromUin"`
-	ToUin       int64           `json:"toUin"`
-	StoryOwnUin int64           `json:"storyOwnUin"`
+	StoryMsg     st.RetStoryInfo    `json:"storyMsg"`
+	Status       int                `json:"status"`       // 1 互为好友，2 storyOwnUin单向添加toUin为好友，3 toUin单向添加storyOwnUin为好友，0 storyOwnUin 和 toUin不是好友，互相之间也没有发送过添加好友请求。
+	SendInfo     st.UserProfileInfo `json:"senderInfo"`   //发出分享的人的个人信息
+	ReceiverInfo st.UserProfileInfo `json:"receiverInfo"` //接受分享的人的个人信息
 }
 
 func doGeneStoryShareMsg(req *GeneStoryShareMsgReq, r *http.Request) (rsp *GeneStoryShareMsgRsp, err error) {
@@ -84,23 +83,29 @@ func GeneStoryShareMsg(uin, uid, storyId int64) (err error) {
 	shareMsg.StoryMsg.ViewCnt = story.ViewCnt
 	shareMsg.StoryMsg.Ts = story.Ts
 
-	userInfo, err := st.GetUserProfileInfo(story.Uin)
+	res, err := st.BatchGetUserProfileInfo([]int64{uin, uid, story.Uin})
 	if err != nil {
 		log.Errorf(err.Error())
 		return
 	}
+
+	if len(res) != 3 {
+		err = rest.NewAPIError(constant.E_USER_NOT_EXIST, "user not exists!")
+		log.Errorf(err.Error())
+		return
+	}
+
 	status, err := getFriendsStatus(story.Uin, uid)
 	if err != nil {
 		log.Errorf(err.Error())
 		return
 	}
 
-	shareMsg.StoryMsg.NickName = userInfo.NickName
-	shareMsg.StoryMsg.HeadImgUrl = userInfo.HeadImgUrl
+	shareMsg.StoryMsg.NickName = res[story.Uin].NickName
+	shareMsg.StoryMsg.HeadImgUrl = res[story.Uin].HeadImgUrl
 
-	shareMsg.FromUin = uin
-	shareMsg.ToUin = uid
-	shareMsg.StoryOwnUin = story.Uin
+	shareMsg.SendInfo = *res[uin]
+	shareMsg.ReceiverInfo = *res[uid]
 	shareMsg.Status = status
 
 	log.Debugf("shareMsg:%+v", shareMsg)
