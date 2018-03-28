@@ -11,10 +11,10 @@ import (
 )
 
 type ViewerInfo struct {
-	Uin        int64  `schema:"uin"`
-	HeadImgUrl string `schema:"headImgUrl"`
-	NickName   string `schema:"nickName"`
-	Ts         int64  `schema:"ts"`
+	Uin        int64  `json:"uin"`
+	HeadImgUrl string `json:"headImgUrl"`
+	NickName   string `json:"nickName"`
+	Ts         int64  `json:"ts"`
 }
 
 type GetStoryViewRecordReq struct {
