@@ -83,16 +83,22 @@ func GeneStoryShareMsg(uin, uid, storyId int64) (err error) {
 	shareMsg.StoryMsg.ViewCnt = story.ViewCnt
 	shareMsg.StoryMsg.Ts = story.Ts
 
-	res, err := st.BatchGetUserProfileInfo([]int64{uin, uid, story.Uin})
+	uids := make([]int64, 0)
+	uids = append(uids, uin, uid, story.Uin)
+	log.Debugf("uids :%+v", uids)
+
+	res, err := st.BatchGetUserProfileInfo(uids)
 	if err != nil {
 		log.Errorf(err.Error())
 		return
 	}
 
-	if len(res) != 3 {
-		err = rest.NewAPIError(constant.E_USER_NOT_EXIST, "user not exists!")
-		log.Errorf(err.Error())
-		return
+	for _, u := range uids {
+		if _, ok := res[u]; !ok {
+			err = rest.NewAPIError(constant.E_USER_NOT_EXIST, "user not exists!")
+			log.Errorf(err.Error())
+			return
+		}
 	}
 
 	status, err := getFriendsStatus(story.Uin, uid)
