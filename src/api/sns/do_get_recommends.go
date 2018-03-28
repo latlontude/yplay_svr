@@ -184,8 +184,22 @@ func GetRecommendsFromSameSchool(uin int64, subType int, pageNum, pageSize int) 
 		return
 	}
 
+	schoolIdsStr := ""
+	schoolIds, err := SchoolName2SchoolIds(ui)
+	if err != nil {
+		log.Errorf(err.Error())
+		schoolIdsStr = fmt.Sprintf("%d", ui.SchoolId)
+	} else {
+		for _, schoolId := range schoolIds {
+			schoolIdsStr += fmt.Sprintf("%d,", schoolId)
+		}
+		schoolIdsStr = schoolIdsStr[:len(schoolIdsStr)-1]
+	}
+
+	log.Debugf("schoolIdsStr:%s", schoolIdsStr)
+
 	//同校已经注册的
-	conditions := fmt.Sprintf(`schoolId = %d and uin not in (%s)`, ui.SchoolId, strs)
+	conditions := fmt.Sprintf(`schoolId in (%s) and uin not in (%s)`, schoolIdsStr, strs)
 
 	if subType == constant.ENUM_RECOMMEND_FRIEND_TYPE_SAME_SCHOOL_GRADE {
 
@@ -771,5 +785,35 @@ func GetRecommendsFrom2DegreeFriends(uin int64, pageNum, pageSize int) (total in
 		}
 	}
 
+	return
+}
+
+func SchoolName2SchoolIds(ui *st.UserProfileInfo) (schoolIds []int, err error) {
+	log.Debugf("start SchoolName2SchoolIds ui:%+v", ui)
+
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		log.Error(err.Error())
+		return
+	}
+
+	sql := fmt.Sprintf(`select schoolId from profiles where country = "%s" and province = "%s" and city = "%s" and schoolName = "%s" group by schoolId`, ui.Country, ui.Province, ui.City, ui.SchoolName)
+
+	rows, err := inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Error(err.Error())
+		return
+	}
+	defer rows.Close()
+
+	schoolIds = make([]int, 0)
+	for rows.Next() {
+		var schoolId int
+		rows.Scan(&schoolId)
+		schoolIds = append(schoolIds, schoolId)
+	}
+	log.Debugf("end SchoolName2SchoolIds schoolIds:%+v", schoolIds)
 	return
 }
