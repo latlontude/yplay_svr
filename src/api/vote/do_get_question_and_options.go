@@ -1375,11 +1375,11 @@ func GetUinsByAddFriendSrc(uin int64) (uinsMap map[int64]int, err error) {
 		} else if srcType == 4 {
 			//同校同年级
 			uids3 = append(uids3, uid)
-		} else if srcType == 3 || srcType == 5 || srcType == 6 {
-			//同校/同校男生/同校女生/
+		} else if srcType == 3 || srcType == 5 || srcType == 6 || srcType == 9 {
+			//同校/同校男生/同校女生/同校同学院
 			uids4 = append(uids4, uid)
-		} else if srcType == 7 {
-			//共同好友
+		} else if srcType == 7 || srcType == 10 {
+			//共同好友/来自分享注册的好友
 			uids5 = append(uids5, uid)
 		}
 	}
