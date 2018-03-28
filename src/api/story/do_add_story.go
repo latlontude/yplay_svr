@@ -13,6 +13,15 @@ import (
 	"time"
 )
 
+type PictureData struct {
+	ImgLargeUrl string `json:"imgLargeUrl"`
+	ImgOrgUrl   string `json:"imgOrgUrl"`
+}
+type VideoData struct {
+	VideoDuration int    `json:"videoDuration"`
+	VideoUrl      string `json:"videoUrl"`
+}
+
 type AddStoryReq struct {
 	Uin             int64  `schema:"uin"`
 	Token           string `schema:"token"`
@@ -54,6 +63,22 @@ func AddStory(uin int64, typ int, data, text, thumbnailImgUrl string) (sid int64
 		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid params")
 		log.Errorf(err.Error())
 		return
+	}
+
+	if typ == 1 || typ == 3 {
+		var v PictureData
+		err = json.Unmarshal([]byte(data), &v)
+		if err != nil {
+			log.Errorf("decode json err!")
+			return
+		}
+	} else if typ == 2 {
+		var v VideoData
+		err = json.Unmarshal([]byte(data), &v)
+		if err != nil {
+			log.Errorf("decode json err!")
+			return
+		}
 	}
 
 	var si st.StoryInfo

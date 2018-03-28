@@ -125,7 +125,8 @@ func GeneStoryShareMsg(uin, uid, storyId int64) (err error) {
 
 	log.Debugf("dataStr:%s", dataStr)
 
-	go im.SendStoryShareMsg(uin, uid, dataStr)
+	descStr := fmt.Sprintf("%s 发来新消息", shareMsg.SendInfo.NickName)
+	go im.SendStoryShareMsg(uin, uid, dataStr, descStr)
 
 	log.Debugf("end GeneStoryShareMsg")
 	return

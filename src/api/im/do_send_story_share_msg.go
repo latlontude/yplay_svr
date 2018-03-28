@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-func MakeStoryShareMsg(fromUin int64, groupId, data string) (msg IMMsg, err error) {
+func MakeStoryShareMsg(fromUin int64, groupId, data, descStr string) (msg IMMsg, err error) {
 	log.Debugf("start MakeStoryShareMsg groupId:%s", groupId)
 
 	var customData IMCustomData
@@ -36,7 +36,7 @@ func MakeStoryShareMsg(fromUin int64, groupId, data string) (msg IMMsg, err erro
 
 	var offlinePush OfflinePushInfo
 
-	offlinePush.Desc = "你收到一条分享消息"
+	offlinePush.Desc = descStr
 
 	//构造ext信息，客户端通过notifyType来区分不同场景的push，然后来跳转
 	var extContent NotifyExtIMContent
@@ -61,7 +61,7 @@ func MakeStoryShareMsg(fromUin int64, groupId, data string) (msg IMMsg, err erro
 	return
 }
 
-func SendStoryShareMsg(fromUin, toUin int64, shareData string) (err error) {
+func SendStoryShareMsg(fromUin, toUin int64, shareData, descStr string) (err error) {
 
 	log.Debugf("start SendStoryShareMsg fromUin:%d, toUin:%d", fromUin, toUin)
 	if fromUin == 0 || toUin == 0 {
@@ -82,7 +82,7 @@ func SendStoryShareMsg(fromUin, toUin int64, shareData string) (err error) {
 		return
 	}
 
-	msg, err := MakeStoryShareMsg(fromUin, groupId, shareData)
+	msg, err := MakeStoryShareMsg(fromUin, groupId, shareData, descStr)
 	if err != nil {
 		log.Errorf(err.Error())
 		return
