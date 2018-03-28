@@ -129,8 +129,20 @@ func Login(phone string, code string, uuid int64) (rsp *LoginRsp, err error) {
 }
 
 func GetUinByPhone(phone string) (uin int64, isNewUser int, err error) {
+	log.Debugf("start GetUinByPhone phone:%s", phone)
 
-	if phone != env.Config.Service.Phone {
+	innerTestPhones := strings.Split(env.Config.InnerTest.Phones, ",") //内部测试手机号
+	log.Debugf("innerTestPhones:%+v", innerTestPhones)
+
+	find := false
+	for _, value := range innerTestPhones {
+		if value == phone {
+			find = true
+			break
+		}
+	}
+
+	if phone != env.Config.Service.Phone && !find {
 		if !sms.IsValidPhone(phone) {
 			err = rest.NewAPIError(constant.E_INVALID_PHONE, "phone number invalid")
 			log.Error(err.Error())
@@ -214,6 +226,7 @@ func GetUinByPhone(phone string) (uin int64, isNewUser int, err error) {
 	//到IM系统注册账号
 	go im.SyncAccount(uin, fmt.Sprintf("%d", uin), "")
 
+	log.Debugf("end GetUinByPhone uin:%d", uin)
 	return
 }
 
