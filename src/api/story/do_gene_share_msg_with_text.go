@@ -3,7 +3,6 @@ package story
 import (
 	"api/im"
 	"common/constant"
-	"common/mydb"
 	"common/myredis"
 	"common/rest"
 	"encoding/json"
@@ -12,45 +11,47 @@ import (
 	"svr/st"
 )
 
-type GeneStoryShareMsgReq struct {
+type GeneStoryShareMsgWithTextReq struct {
 	Uin     int64  `schema:"uin"`
 	Token   string `schema:"token"`
 	Ver     int    `schema:"ver"`
 	StoryId int64  `schema:"storyId"`
-	Uid     int64  `schema:"uid"` //要分享给的用户
+	Uid     int64  `schema:"uid"`  //要分享给的用户
+	Text    string `schema:"text"` //聊天消息
 }
 
-type GeneStoryShareMsgRsp struct {
+type GeneStoryShareMsgWithTextRsp struct {
 }
 
-type StoryShareMsg struct {
+type StoryShareMsgWithText struct {
 	StoryMsg     st.RetStoryInfo    `json:"storyMsg"`
 	Status       int                `json:"status"`       // 1 互为好友，2 storyOwnUin单向添加toUin为好友，3 toUin单向添加storyOwnUin为好友，0 storyOwnUin 和 toUin不是好友，互相之间也没有发送过添加好友请求。
 	SendInfo     st.UserProfileInfo `json:"senderInfo"`   //发出分享的人的个人信息
 	ReceiverInfo st.UserProfileInfo `json:"receiverInfo"` //接受分享的人的个人信息
+	Text         string             `json:"text"`         //聊天消息
 }
 
-func doGeneStoryShareMsg(req *GeneStoryShareMsgReq, r *http.Request) (rsp *GeneStoryShareMsgRsp, err error) {
+func doGeneStoryShareMsgWithText(req *GeneStoryShareMsgWithTextReq, r *http.Request) (rsp *GeneStoryShareMsgWithTextRsp, err error) {
 
-	log.Debugf("uin %d, doGeneStoryShareMsgRsp %+v", req.Uin, req)
+	log.Debugf("uin %d, doGeneStoryShareMsgWithTextRsp %+v", req.Uin, req)
 
-	err = GeneStoryShareMsg(req.Uin, req.Uid, req.StoryId)
+	err = GeneStoryShareMsgWithText(req.Uin, req.Uid, req.StoryId, req.Text)
 	if err != nil {
-		log.Errorf("uin %d, GeneStoryShareMsgRsp error, %s", req.Uin, err.Error())
+		log.Errorf("uin %d, GeneStoryShareMsgWithTextRsp error, %s", req.Uin, err.Error())
 		return
 	}
 
-	rsp = &GeneStoryShareMsgRsp{}
+	rsp = &GeneStoryShareMsgWithTextRsp{}
 
-	log.Debugf("uin %d, GeneStoryShareMsgRsp succ, %+v", req.Uin, rsp)
+	log.Debugf("uin %d, GeneStoryShareMsgWithTextRsp succ, %+v", req.Uin, rsp)
 
 	return
 }
 
-func GeneStoryShareMsg(uin, uid, storyId int64) (err error) {
-	log.Debugf("start GeneStoryShareMsg uin:%d uid:%d storyId:%d", uin, uid, storyId)
+func GeneStoryShareMsgWithText(uin, uid, storyId int64, text string) (err error) {
+	log.Debugf("start GeneStoryShareMsgWithText uin:%d uid:%d storyId:%d text:%s", uin, uid, storyId, text)
 
-	var shareMsg StoryShareMsg
+	var shareMsg StoryShareMsgWithText
 	app, err := myredis.GetApp(constant.ENUM_REDIS_APP_STORY_MSG)
 	if err != nil {
 		log.Errorf(err.Error())
@@ -115,6 +116,7 @@ func GeneStoryShareMsg(uin, uid, storyId int64) (err error) {
 	shareMsg.SendInfo = *res[uin]
 	shareMsg.ReceiverInfo = *res[uid]
 	shareMsg.Status = status
+	shareMsg.Text = text
 
 	log.Debugf("shareMsg:%+v", shareMsg)
 
@@ -128,50 +130,8 @@ func GeneStoryShareMsg(uin, uid, storyId int64) (err error) {
 	log.Debugf("dataStr:%s", dataStr)
 
 	descStr := fmt.Sprintf("%s 发来新消息", shareMsg.SendInfo.NickName)
-	go im.SendStoryShareMsg(uin, uid, dataStr, descStr)
+	go im.SendStoryShareMsgWithText(uin, uid, dataStr, descStr)
 
-	log.Debugf("end GeneStoryShareMsg")
-	return
-}
-
-func getFriendsStatus(uid1, uid2 int64) (status int, err error) {
-	log.Debugf("start getFriendsStatus uid1:%d uid2:%d", uid1, uid2)
-
-	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
-	if inst == nil {
-		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
-		log.Errorf(err.Error())
-		return
-	}
-
-	sql := fmt.Sprintf(`select fromUin, toUin, status from addFriendMsg where (fromUin = %d and toUin = %d) or (fromUin = %d and toUin = %d)`, uid1, uid2, uid2, uid1)
-	rows, err := inst.Query(sql)
-	if err != nil {
-		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
-		log.Errorf(err.Error())
-		return
-	}
-	defer rows.Close()
-
-	var fromUin int64
-	var toUin int64
-	var stat int
-	for rows.Next() {
-		rows.Scan(&fromUin, &toUin, &stat)
-		if stat == 1 {
-			status = constant.ENUM_SNS_STATUS_IS_FRIEND //互为好友
-		} else if fromUin == uid1 {
-			status = constant.ENUM_SNS_STATUS_HAS_INVAITE_FRIEND // uid1 单向添加uid2为好友，但uid2未同意
-		} else {
-			status = constant.ENUM_SNS_STATUS_FRIEND_HAS_INVAITE_ME //uid2 单向添加uid1为好友，但uid1未同意
-		}
-		break
-	}
-
-	if fromUin == 0 && toUin == 0 && stat == 0 {
-		status = constant.ENUM_SNS_STATUS_NOT_FRIEND //非好友
-	}
-
-	log.Debugf("end getFriendsStatus status:%d", status)
+	log.Debugf("end GeneStoryShareMsgWithText")
 	return
 }
