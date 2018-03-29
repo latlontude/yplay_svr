@@ -18,7 +18,7 @@ var (
 		"/submitquestion":    auth.Apify2(doSubmitQuestion),    //用户投稿问题
 		"/queryrankinglist":  auth.Apify2(doGetRankingList),    // 获取用户正在答题的排行榜数据
 		"/getstarinlastweek": auth.Apify2(doGetStarInLastWeek), // 获取本周话题明星
-
+		"/releasefrozen":     auth.Apify(doReleaseFrozen),      // 解除冷冻
 	}
 
 	log = env.NewLogger("vote")
