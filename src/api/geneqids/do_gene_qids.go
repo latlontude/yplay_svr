@@ -1056,18 +1056,18 @@ func PreGeneUserQIds(uin int64) (qidsMap map[int]int, err error) {
 						if qinfo.Delivery == 0 {
 							//同校同年级的才加入，过滤掉待审核学校
 							if si.SchoolId < 9999997 && si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
-								qidsMap[qinfo.QId] = SUBMITOUT7
-								submitOut7++
+								qidsMap[qinfo.QId] = SUBMITIN7
+								submitIn7++
 							}
 						} else if qinfo.Delivery == 1 {
 							//同校才加入，过滤掉待审核学校
 							if si.SchoolId < 9999997 && si.SchoolId == ui.SchoolId {
-								qidsMap[qinfo.QId] = SUBMITOUT7
-								submitOut7++
+								qidsMap[qinfo.QId] = SUBMITIN7
+								submitIn7++
 							}
 						} else if qinfo.Delivery == 2 {
-							qidsMap[qinfo.QId] = SUBMITOUT7
-							submitOut7++
+							qidsMap[qinfo.QId] = SUBMITIN7
+							submitIn7++
 						}
 					}
 				}
@@ -1211,18 +1211,18 @@ func PreGeneUserQIds(uin int64) (qidsMap map[int]int, err error) {
 							if qinfo.Delivery == 0 {
 								//同校同年级的才加入，过滤掉待审核学校
 								if si.SchoolId < 9999997 && si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
-									qidsMap[qinfo.QId] = SUBMITOUT7
-									submitOut7++
+									qidsMap[qinfo.QId] = SUBMITIN7
+									submitIn7++
 								}
 							} else if qinfo.Delivery == 1 {
 								//同校才加入，过滤掉待审核学校
 								if si.SchoolId < 9999997 && si.SchoolId == ui.SchoolId {
-									qidsMap[qinfo.QId] = SUBMITOUT7
-									submitOut7++
+									qidsMap[qinfo.QId] = SUBMITIN7
+									submitIn7++
 								}
 							} else if qinfo.Delivery == 2 {
-								qidsMap[qinfo.QId] = SUBMITOUT7
-								submitOut7++
+								qidsMap[qinfo.QId] = SUBMITIN7
+								submitIn7++
 							}
 
 						}
@@ -1354,18 +1354,18 @@ func PreGeneUserQIds(uin int64) (qidsMap map[int]int, err error) {
 							if qinfo.Delivery == 0 {
 								//同校同年级的才加入，过滤掉待审核学校
 								if si.SchoolId < 9999997 && si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
-									qidsMap[qinfo.QId] = SUBMITOUT7
-									submitOut7++
+									qidsMap[qinfo.QId] = SUBMITIN7
+									submitIn7++
 								}
 							} else if qinfo.Delivery == 1 {
 								//同校才加入，过滤掉待审核学校
 								if si.SchoolId < 9999997 && si.SchoolId == ui.SchoolId {
-									qidsMap[qinfo.QId] = SUBMITOUT7
-									submitOut7++
+									qidsMap[qinfo.QId] = SUBMITIN7
+									submitIn7++
 								}
 							} else if qinfo.Delivery == 2 {
-								qidsMap[qinfo.QId] = SUBMITOUT7
-								submitOut7++
+								qidsMap[qinfo.QId] = SUBMITIN7
+								submitIn7++
 							}
 
 						}
@@ -1495,18 +1495,18 @@ func PreGeneUserQIds(uin int64) (qidsMap map[int]int, err error) {
 							if qinfo.Delivery == 0 {
 								//同校同年级的才加入，过滤掉待审核学校
 								if si.SchoolId < 9999997 && si.SchoolId == ui.SchoolId && si.Grade == ui.Grade {
-									qidsMap[qinfo.QId] = SUBMITOUT7
-									submitOut7++
+									qidsMap[qinfo.QId] = SUBMITIN7
+									submitIn7++
 								}
 							} else if qinfo.Delivery == 1 {
 								//同校才加入，过滤掉待审核学校
 								if si.SchoolId < 9999997 && si.SchoolId == ui.SchoolId {
-									qidsMap[qinfo.QId] = SUBMITOUT7
-									submitOut7++
+									qidsMap[qinfo.QId] = SUBMITIN7
+									submitIn7++
 								}
 							} else if qinfo.Delivery == 2 {
-								qidsMap[qinfo.QId] = SUBMITOUT7
-								submitOut7++
+								qidsMap[qinfo.QId] = SUBMITIN7
+								submitIn7++
 							}
 
 						}
