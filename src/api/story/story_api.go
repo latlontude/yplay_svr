@@ -18,6 +18,7 @@ var (
 		"/getstoryviewrecord":     auth.Apify2(doGetStoryViewRecord),     //获取动态观看记录
 		"/getstoryvideouploadsig": auth.Apify2(doGetStoryVideoUploadSig), //获取视频上传的签名
 		"/genestorysharemsg":      auth.Apify2(doGeneStoryShareMsg),      //发送分享消息
+		"/report":                 auth.Apify2(doStoryReport),            //举报新闻
 	}
 
 	log = env.NewLogger("story")
