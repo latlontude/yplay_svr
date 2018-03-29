@@ -15,7 +15,7 @@ func MakeStoryShareMsgWithText(fromUin int64, groupId, data, descStr string) (ms
 	log.Debugf("start MakeStoryShareMsgWithText groupId:%s", groupId)
 
 	var customData IMCustomData
-	customData.DataType = 12
+	customData.DataType = 13
 	customData.Data = data
 
 	var customContent IMCustomContent
