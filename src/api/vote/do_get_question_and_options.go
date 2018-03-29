@@ -1051,7 +1051,7 @@ func GetOptionsFromAddrBookRegister(uin, uuid int64, excludeUins []int64, needCn
 	strs += fmt.Sprintf("%d,", uin)
 	strs += fmt.Sprintf("%d", 0) //查找注册非好友
 
-	sql := fmt.Sprintf(`select friendUin from addrBook where uuid = %d and friendUin not in (%s)`, uuid, strs)
+	sql := fmt.Sprintf(`select friendUin, friendName from addrBook where uuid = %d and friendUin not in (%s)`, uuid, strs)
 
 	rows, err := inst.Query(sql)
 	if err != nil {
@@ -1062,10 +1062,13 @@ func GetOptionsFromAddrBookRegister(uin, uuid int64, excludeUins []int64, needCn
 	defer rows.Close()
 
 	registerUnfriendsUins := make([]int64, 0)
+	registerUnfriendsUinInfoMap := make(map[int64]string)
 	for rows.Next() {
 		var uid int64
-		rows.Scan(&uid)
+		var friendName string
+		rows.Scan(&uid, &friendName)
 		registerUnfriendsUins = append(registerUnfriendsUins, uid)
+		registerUnfriendsUinInfoMap[uid] = friendName
 	}
 
 	log.Debugf("registerUnfriendsUins:%+v", registerUnfriendsUins)
@@ -1082,8 +1085,11 @@ func GetOptionsFromAddrBookRegister(uin, uuid int64, excludeUins []int64, needCn
 	registerUnfriendsUidsInfo := make([]*st.UserProfileInfo, 0)
 	for _, info := range res {
 		if len(info.NickName) == 0 {
-			continue
+			if _, ok := registerUnfriendsUinInfoMap[info.Uin]; ok {
+				info.NickName = registerUnfriendsUinInfoMap[info.Uin]
+			}
 		}
+
 		if info.Gender == qgender || qgender == 0 {
 			registerUnfriendsUidsInfo = append(registerUnfriendsUidsInfo, info)
 		}
