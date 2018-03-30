@@ -172,6 +172,10 @@ func getFriendsStatus(uid1, uid2 int64) (status int, err error) {
 		status = constant.ENUM_SNS_STATUS_NOT_FRIEND //非好友
 	}
 
+	if uid1 == uid2 {
+		status = constant.ENUM_SNS_STATUS_IS_FRIEND //互为好友 把自己的消息分享给自己
+	}
+
 	log.Debugf("end getFriendsStatus status:%d", status)
 	return
 }

@@ -344,7 +344,9 @@ func GetNextQuestionAndOptionsByPreGene(uin int64, uuid int64) (qinfo *st.Questi
 				prepared += fmt.Sprintf("%d:", option.Uin)
 			}
 		}
-		prepared = prepared[:len(prepared)-1]
+		if len(prepared) > 0 {
+			prepared = prepared[:len(prepared)-1]
+		}
 
 		log.Debugf("prepared:%+v", prepared)
 
