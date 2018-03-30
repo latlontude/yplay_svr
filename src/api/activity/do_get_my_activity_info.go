@@ -4,9 +4,6 @@ import (
 	"common/constant"
 	"common/mydb"
 	"common/rest"
-	"common/util"
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"svr/st"
@@ -19,10 +16,10 @@ type GetMyActivityInfoReq struct {
 }
 
 type BannerInfo struct {
-	ImgUrl    int               `json:"imgUrl"`
+	ImgUrl    string            `json:"imgUrl"`
 	ImgWidth  int               `json:"imgWidth"`
 	ImgHeight int               `json:"imgHeight"`
-	H5Url     int               `json:"h5Url"`
+	H5Url     string            `json:"h5Url"`
 	Params    map[string]string `json:"params"`
 	TsStart   int               `json:"tsStart"`
 	TsEnd     int               `json:"tsEnd"`
@@ -37,13 +34,13 @@ func doGetMyActivityInfo(req *GetMyActivityInfoReq, r *http.Request) (rsp *GetMy
 
 	log.Errorf("uin %d, GetMyActivityInfoReq %+v", req.Uin, req)
 
-	open, banners, err = GetMyActivityInfo(req.Uin)
+	open, banners, err := GetMyActivityInfo(req.Uin)
 	if err != nil {
 		log.Errorf("uin %d, GetMyActivityInfoRsp error, %s", req.Uin, err.Error())
 		return
 	}
 
-	rsp = GetMyActivityInfoRsp{open, banners}
+	rsp = &GetMyActivityInfoRsp{open, banners}
 
 	log.Errorf("uin %d, GetMyActivityInfoRsp succ, %+v", req.Uin, rsp)
 
@@ -68,7 +65,7 @@ func GetMyActivityInfo(uin int64) (open int, banners []*BannerInfo, err error) {
 		return
 	}
 
-	ui, err = st.GetUserProfileInfo(uin)
+	ui, err := st.GetUserProfileInfo(uin)
 	if err != nil {
 		log.Errorf(err.Error())
 		return
@@ -89,14 +86,17 @@ func GetMyActivityInfo(uin int64) (open int, banners []*BannerInfo, err error) {
 	}
 	defer rows.Close()
 
+	params := make(map[string]string)
+	params["a"] = "100"
+	params["b"] = "200"
+
 	for rows.Next() {
 
 		var bi BannerInfo
+		bi.Params = params
 
 		rows.Scan(&bi.ImgUrl, &bi.ImgWidth, &bi.ImgHeight, &bi.H5Url, &bi.TsStart, &bi.TsEnd)
 		banners = append(banners, &bi)
-
-		break
 	}
 
 	if len(banners) > 0 {

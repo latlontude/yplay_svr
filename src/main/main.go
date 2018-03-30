@@ -2,6 +2,7 @@ package main
 
 import (
 	"api/account"
+	"api/activity"
 	"api/addr"
 	"api/feed"
 	"api/geneqids"
@@ -71,6 +72,7 @@ func main() {
 	httputil.HandleAPIMap("/api/helper/", helper.APIMap)
 	httputil.HandleAPIMap("/api/story/", story.APIMap)
 	httputil.HandleAPIMap("/svr/cache/", cache.APIMap)
+	httputil.HandleAPIMap("/api/activity/", activity.APIMap)
 
 	log.Errorf("Starting yplay_svr...")
 	panicUnless(httputil.ListenHttp(env.Config.HttpServer.BindAddr))
