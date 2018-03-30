@@ -72,7 +72,7 @@ func GetMyActivityInfo(uin int64) (open int, banners []*BannerInfo, err error) {
 	}
 
 	//没有参加活动的权限
-	if ui.SchoolId != 78629 {
+	if ui.SchoolId != 1 {
 		return
 	}
 
