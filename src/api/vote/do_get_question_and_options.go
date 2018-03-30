@@ -1027,8 +1027,8 @@ func GetOptionsFromAddrBook(uin, uuid int64, excludeUins []int64, needCnt int, q
 	return
 }
 
-//从通讯录随机选取，尽可能的返回，可能不足
 func GetOptionsFromAddrBookRegister(uin, uuid int64, excludeUins []int64, needCnt int, qgender int) (options []*st.OptionInfo2, err error) {
+	log.Debugf("start GetOptionsFromAddrBookRegister uin:%d, uuid:%d ,excludeUins:%+v, needCnt:%d qgender:%d", uin, uuid, excludeUins, needCnt, qgender)
 
 	options = make([]*st.OptionInfo2, 0)
 
@@ -1051,7 +1051,7 @@ func GetOptionsFromAddrBookRegister(uin, uuid int64, excludeUins []int64, needCn
 	strs += fmt.Sprintf("%d,", uin)
 	strs += fmt.Sprintf("%d", 0) //查找注册非好友
 
-	sql := fmt.Sprintf(`select friendUin, friendName from addrBook where uuid = %d and friendUin not in (%s)`, uuid, strs)
+	sql := fmt.Sprintf(`select friendUin, friendName  from addrBook where uploaderUin = %d and friendUin not in (%s)`, uin, strs)
 
 	rows, err := inst.Query(sql)
 	if err != nil {
@@ -1095,20 +1095,53 @@ func GetOptionsFromAddrBookRegister(uin, uuid int64, excludeUins []int64, needCn
 		}
 	}
 
-	a := rand.Perm(len(registerUnfriendsUidsInfo))
-	for _, idx := range a {
-		option := &st.OptionInfo2{registerUnfriendsUidsInfo[idx].Uin, registerUnfriendsUidsInfo[idx].NickName, "", 0}
-		options = append(options, option)
-		if len(options) == needCnt {
-			break
+	uids, err := getSameCityUins(uin, registerUnfriendsUidsInfo)
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+
+	sameCityRegisterUnfriendsUidsInfo := make([]*st.UserProfileInfo, 0)
+	unSameCityRegisterUnfriendsUidsInfo := make([]*st.UserProfileInfo, 0)
+	for _, ui := range registerUnfriendsUidsInfo {
+		find := false
+		for _, uid := range uids {
+			if ui.Uin == uid {
+				sameCityRegisterUnfriendsUidsInfo = append(sameCityRegisterUnfriendsUidsInfo, ui)
+				find = true
+				break
+			}
+		}
+		if !find {
+			unSameCityRegisterUnfriendsUidsInfo = append(unSameCityRegisterUnfriendsUidsInfo, ui)
 		}
 	}
 
+	a := rand.Perm(len(sameCityRegisterUnfriendsUidsInfo))
+	for _, idx := range a {
+		if len(options) == needCnt {
+			break
+		}
+		option := &st.OptionInfo2{registerUnfriendsUidsInfo[idx].Uin, registerUnfriendsUidsInfo[idx].NickName, "", 0}
+		options = append(options, option)
+	}
+
+	a = rand.Perm(len(unSameCityRegisterUnfriendsUidsInfo))
+	for _, idx := range a {
+		if len(options) == needCnt {
+			break
+		}
+		option := &st.OptionInfo2{registerUnfriendsUidsInfo[idx].Uin, registerUnfriendsUidsInfo[idx].NickName, "", 0}
+		options = append(options, option)
+	}
+
+	log.Debugf("end GetOptionsFromAddrBookRegister options:%+v", options)
 	return
 }
 
 //从通讯录随机选取，尽可能的返回，可能不足
 func GetOptionsFromAddrBookUnRegister(uin, uuid int64, needCnt int) (options []*st.OptionInfo2, err error) {
+	log.Debugf("start GetOptionsFromAddrBookUnRegister uin:%d uuid:%d neeedCnt:%d", uin, uuid, needCnt)
 
 	options = make([]*st.OptionInfo2, 0)
 
@@ -1124,7 +1157,7 @@ func GetOptionsFromAddrBookUnRegister(uin, uuid int64, needCnt int) (options []*
 		return
 	}
 
-	sql := fmt.Sprintf(`select count(friendUin) from addrBook where uuid = %d and friendUin = 0`, uuid)
+	sql := fmt.Sprintf(`select count(friendUin) from addrBook where uploaderUin= %d and friendUin = 0`, uin)
 
 	rows, err := inst.Query(sql)
 	if err != nil {
@@ -1148,29 +1181,250 @@ func GetOptionsFromAddrBookUnRegister(uin, uuid int64, needCnt int) (options []*
 		needCnt = total
 	}
 
-	idxs := GetRandomIdxs(total, needCnt)
+	sql = fmt.Sprintf(`select friendPhone,friendName from addrBook where uuid = %d and friendUin = 0 `, uuid)
+	rows, err = inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Error(err.Error())
+		return
+	}
 
-	for _, idx := range idxs {
+	defer rows.Close()
 
-		sql = fmt.Sprintf(`select friendUin, friendPhone, friendName from addrBook where uuid = %d and friendUin = 0 limit %d, %d`, uuid, idx, 1)
+	phone2nameMap := make(map[string]string)
+	phones := make([]string, 0)
+	for rows.Next() {
+		var phone string
+		var name string
+		rows.Scan(&phone, &name)
+		phone2nameMap[phone] = name
+		phones = append(phones, phone)
+	}
 
-		rows, err = inst.Query(sql)
+	sameCityPhones, err := getSameCityPhones(uin, phones)
+	unSameCityPhones := make([]string, 0)
+	if err != nil {
+		log.Errorf(err.Error())
+	}
+
+	for _, phone := range phones {
+		find := false
+		for _, phone1 := range sameCityPhones {
+			if phone == phone1 {
+				find = true
+				break
+			}
+		}
+
+		if !find {
+			unSameCityPhones = append(unSameCityPhones, phone)
+		}
+	}
+
+	a := rand.Perm(len(sameCityPhones))
+	for _, idx := range a {
+		if len(options) == needCnt {
+			break
+		}
+
+		var option st.OptionInfo2
+		option.Uin = 0
+		option.PhoneNum = sameCityPhones[idx]
+		option.NickName = phone2nameMap[option.PhoneNum]
+		options = append(options, &option)
+	}
+
+	a = rand.Perm(len(unSameCityPhones))
+	for _, idx := range a {
+		if len(options) == needCnt {
+			break
+		}
+
+		var option st.OptionInfo2
+		option.Uin = 0
+		option.PhoneNum = unSameCityPhones[idx]
+		option.NickName = phone2nameMap[option.PhoneNum]
+		options = append(options, &option)
+	}
+
+	log.Debugf("end GetOptionsFromAddrBookUnRegister options:%+v", options)
+	return
+}
+
+func getSameCityUins(uin int64, usersInfo []*st.UserProfileInfo) (uids []int64, err error) {
+	log.Debugf("start getSameCityUins uin:%d, usersInfo cnt :%d", uin, len(usersInfo))
+	uids = make([]int64, 0)
+
+	uinInfo, err := st.GetUserProfileInfo(uin)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		log.Error(err.Error())
+		return
+	}
+	/*
+		identifier := uinInfo.Phone[:7]
+		log.Debugf("identifier :%s", identifier)
+
+		sql := fmt.Sprintf(`select province, city from kuaidial where identifier = %s`, identifier)
+		rows, err := inst.Query(sql)
 		if err != nil {
 			err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
 			log.Error(err)
 			return
 		}
-
 		defer rows.Close()
 
+		var province string
+		var city string
 		for rows.Next() {
-			var option st.OptionInfo2
-			rows.Scan(&option.Uin, &option.PhoneNum, &option.NickName)
+			rows.Scan(&province, &city)
+		}
+		log.Debugf("province:%s, city:%s", province, city)
+	*/
+	identifierStr := ""
+	uniqueIdentifiersMap := make(map[string]int)
+	for _, ui := range usersInfo {
+		identifier := ui.Phone[:7]
+		uniqueIdentifiersMap[identifier] = 1
+	}
 
-			options = append(options, &option)
+	for identifier, _ := range uniqueIdentifiersMap {
+		identifierStr += fmt.Sprintf("%s,", identifier)
+	}
+
+	if len(identifierStr) > 0 {
+		identifierStr = identifierStr[:len(identifierStr)-1]
+	}
+
+	sql := ""
+	if len(uinInfo.City) > 0 && len(uinInfo.Province) > 0 {
+		sql = fmt.Sprintf(`select identifier from kuaidial where identifier in (%s) and province = "%s" and city = "%s"`, identifierStr, uinInfo.Province, uinInfo.City)
+	} else if len(uinInfo.Province) > 0 {
+		sql = fmt.Sprintf(`select identifier from kuaidial where identifier in (%s) and province = "%s"`, identifierStr, uinInfo.Province)
+	} else {
+		log.Debugf("user have no province!")
+		return
+	}
+
+	rows, err := inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Error(err)
+		return
+	}
+	defer rows.Close()
+
+	identifiersMap := make(map[string]int)
+	for rows.Next() {
+		var identifier string
+		rows.Scan(&identifier)
+		identifiersMap[identifier] = 1
+	}
+
+	for _, ui := range usersInfo {
+		identifier := ui.Phone[:7]
+		if _, ok := identifiersMap[identifier]; ok {
+			uids = append(uids, ui.Uin)
 		}
 	}
 
+	log.Debugf("end getSameCityUins uids cnt :%d", len(uids))
+	return
+}
+
+func getSameCityPhones(uin int64, phones []string) (retPhones []string, err error) {
+	log.Debugf("start getSameCityPhones uin:%d, phones cnt:%d", uin, len(phones))
+	retPhones = make([]string, 0)
+
+	uinInfo, err := st.GetUserProfileInfo(uin)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	log.Debugf("city:%s, province:%s", uinInfo.City, uinInfo.Province)
+
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		log.Error(err.Error())
+		return
+	}
+
+	/*identifier := uinInfo.Phone[:7]
+	log.Debugf("identifier :%s", identifier)
+
+	sql := fmt.Sprintf(`select province, city from kuaidial where identifier = %s`, identifier)
+	rows, err := inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Error(err)
+		return
+	}
+	defer rows.Close()
+
+	var province string
+	var city string
+	for rows.Next() {
+		rows.Scan(&province, &city)
+	}
+	log.Debugf("province:%s, city:%s", province, city)
+	*/
+	identifierStr := ""
+	uniqueIdentifiersMap := make(map[string]int)
+	for _, phone := range phones {
+		identifier := phone[:7]
+		uniqueIdentifiersMap[identifier] = 1
+	}
+
+	for identifier, _ := range uniqueIdentifiersMap {
+		identifierStr += fmt.Sprintf("%s,", identifier)
+	}
+
+	if len(identifierStr) > 0 {
+		identifierStr = identifierStr[:len(identifierStr)-1]
+	}
+
+	log.Debugf("identifierStr:%s", identifierStr)
+	sql := ""
+	if len(uinInfo.City) > 0 && len(uinInfo.Province) > 0 {
+		sql = fmt.Sprintf(`select identifier from kuaidial where identifier in (%s) and province = "%s" and city = "%s"`, identifierStr, uinInfo.Province, uinInfo.City)
+	} else if len(uinInfo.Province) > 0 {
+		sql = fmt.Sprintf(`select identifier from kuaidial where identifier in (%s) and province = "%s"`, identifierStr, uinInfo.Province)
+	} else {
+		log.Debugf("user have no province!")
+		return
+	}
+
+	rows, err := inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Error(err)
+		return
+	}
+	defer rows.Close()
+
+	identifiersMap := make(map[string]int)
+	for rows.Next() {
+		var identifier string
+		rows.Scan(&identifier)
+		identifiersMap[identifier] = 1
+	}
+
+	for _, phone := range phones {
+		identifier := phone[:7]
+		if _, ok := identifiersMap[identifier]; ok {
+			retPhones = append(retPhones, phone)
+		}
+	}
+
+	log.Debugf("end getSameCityPhones retPhones cnt :%d", len(retPhones))
 	return
 }
 
