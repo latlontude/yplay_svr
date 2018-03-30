@@ -2,7 +2,6 @@ package httputil
 
 import (
 	"common/rest"
-	//"fmt"
 	"github.com/gorilla/mux"
 	"net/http"
 	"path"

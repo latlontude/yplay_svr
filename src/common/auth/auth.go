@@ -152,3 +152,11 @@ func Apify4(fun interface{}) http.Handler {
 		rest.RAW,
 	}
 }
+
+//无token校验
+func Apify5(fun interface{}) http.Handler {
+	return rest.HandlerChain{
+		rest.RPC(fun),
+		rest.DOWNLOAD,
+	}
+}
