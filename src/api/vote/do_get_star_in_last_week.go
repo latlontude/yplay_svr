@@ -2,10 +2,12 @@ package vote
 
 import (
 	"common/constant"
+	"common/env"
 	"common/mydb"
 	"common/rest"
 	"fmt"
 	"net/http"
+	"strings"
 	"svr/st"
 	"time"
 )
@@ -184,9 +186,23 @@ func GetStarOfWeek(uin int64, last int) (ret GetStarRspTmp, err error) {
 	sameSchoolAndSameGradeWeekStarFlag := false
 	friendsWeekStarFlag := false
 
+	weekRankBlacklist := strings.Split(env.Config.WeekRankBlacklist.Uins, ",") //周排行榜要过滤掉的用户
+	log.Debugf("weekRankBlacklist:%+v", weekRankBlacklist)
+
 	for _, uid := range uidsSlice {
 
-		if uid == 101038 || uid == 100929 || uid == 100776 || uid == 100446 || uid == 100784 || uid == 100771 {
+		find := false
+		for _, value := range weekRankBlacklist {
+
+			uidStr := fmt.Sprintf("%d", uid)
+			if value == uidStr {
+				find = true
+				break
+			}
+		}
+
+		if find {
+			log.Debugf("find %d in weekRankBlacklist", uid)
 			continue
 		}
 

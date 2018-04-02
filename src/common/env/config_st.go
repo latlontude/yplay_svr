@@ -107,14 +107,18 @@ type YPLAYSvrConfig struct {
 		GenderModMaxCnt int
 	}
 
-	Service struct {
+	Service struct {  //噗噗客服登录账号
 		Phone string
 		Code  string
 	}
 
-	InnerTest struct {
+	InnerTest struct { //内部测试手机号
 		Phones string
 		Code   string
+	}
+
+	WeekRankBlacklist struct {
+		Uins string
 	}
 }
 
