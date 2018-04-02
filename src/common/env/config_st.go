@@ -116,6 +116,10 @@ type YPLAYSvrConfig struct {
 		Phones string
 		Code   string
 	}
+
+	Activity struct {
+		Schools string
+	}
 }
 
 //计算2度好友关系的SVR配置

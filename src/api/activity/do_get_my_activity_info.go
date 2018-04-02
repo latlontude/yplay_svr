@@ -71,8 +71,17 @@ func GetMyActivityInfo(uin int64) (open int, banners []*BannerInfo, err error) {
 		return
 	}
 
+	//看看是否在配置的学校列表中
+	find := false
+	for sid, _ := range OpenSchools {
+		if ui.SchoolId == sid {
+			find = true
+			break
+		}
+	}
+
 	//没有参加活动的权限
-	if ui.SchoolId != 1 {
+	if !find {
 		return
 	}
 

@@ -56,6 +56,7 @@ func main() {
 
 	panicUnless(cache.Init())
 	panicUnless(im.Init()) //主要是好友动态的channnel routine创建
+	panicUnless(activity.Init())
 
 	httputil.HandleAPIMap("/api/account/", account.APIMap)
 	httputil.HandleAPIMap("/api/feed/", feed.APIMap)

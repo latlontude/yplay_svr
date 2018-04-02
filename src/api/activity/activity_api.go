@@ -4,6 +4,8 @@ import (
 	"common/auth"
 	"common/env"
 	"common/httputil"
+	"strconv"
+	"strings"
 )
 
 var (
@@ -12,4 +14,22 @@ var (
 	}
 
 	log = env.NewLogger("activity")
+
+	OpenSchools map[int]int
 )
+
+func Init() (err error) {
+
+	OpenSchools = make(map[int]int)
+
+	schools := strings.Split(env.Config.Activity.Schools, ",") //内部测试手机号
+
+	for _, s := range schools {
+		sid, _ := strconv.Atoi(s)
+		if sid > 0 {
+			OpenSchools[sid] = 1
+		}
+	}
+
+	return
+}
