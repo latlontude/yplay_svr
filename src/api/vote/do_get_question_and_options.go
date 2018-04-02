@@ -1391,7 +1391,6 @@ func getSameCityPhones(uin int64, phones []string) (retPhones []string, err erro
 		identifierStr = identifierStr[:len(identifierStr)-1]
 	}
 
-	log.Debugf("identifierStr:%s", identifierStr)
 	sql := ""
 	if len(uinInfo.City) > 0 && len(uinInfo.Province) > 0 {
 		sql = fmt.Sprintf(`select identifier from kuaidial where identifier in (%s) and province = "%s" and city = "%s"`, identifierStr, uinInfo.Province, uinInfo.City)
