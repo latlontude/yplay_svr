@@ -1,14 +1,14 @@
 package ddactivity
 
 import (
-	"common/auth"
+	//"common/auth"
 	"common/env"
 	"common/httputil"
 )
 
 var (
 	APIMap = httputil.APIMap{
-		"/loadpage": auth.Apify5(doLoadPage),
+	//"/loadpage": auth.Apify5(doLoadPage),
 	}
 
 	log = env.NewLogger("ddactivity")

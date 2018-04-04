@@ -10,6 +10,7 @@ var (
 	FrozenMonitorConfig FrozenMonitorSvrConfig
 	PreGeneQIdsConfig   PreGeneQIdsSvrConfig
 	WxPublicConfig      WxPublicSvrConfig
+	DdActivityConfig    DdActivitySvrConfig
 )
 
 type DataBase struct {
@@ -107,7 +108,7 @@ type YPLAYSvrConfig struct {
 		GenderModMaxCnt int
 	}
 
-	Service struct {  //噗噗客服登录账号
+	Service struct { //噗噗客服登录账号
 		Phone string
 		Code  string
 	}
@@ -119,7 +120,7 @@ type YPLAYSvrConfig struct {
 
 	Activity struct {
 		Schools string
-    }
+	}
 
 	WeekRankBlacklist struct {
 		Uins string
@@ -176,6 +177,20 @@ type PreGeneQIdsSvrConfig struct {
 }
 
 type WxPublicSvrConfig struct {
+	HttpServer struct {
+		BindAddr string
+	}
+
+	Log struct {
+		LogPath     string
+		LogFileName string
+		LogLevel    string //"fatal,error,warning,info,debug"
+	}
+
+	DbInsts map[string]DataBase
+}
+
+type DdActivitySvrConfig struct {
 	HttpServer struct {
 		BindAddr string
 	}
