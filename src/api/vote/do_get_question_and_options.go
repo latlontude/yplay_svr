@@ -1253,7 +1253,12 @@ func GetOptionsFromAddrBookUnRegister(uin, uuid int64, needCnt int) (options []*
 
 func getSameCityUins(uin int64, usersInfo []*st.UserProfileInfo) (uids []int64, err error) {
 	log.Debugf("start getSameCityUins uin:%d, usersInfo cnt :%d", uin, len(usersInfo))
+
 	uids = make([]int64, 0)
+	if len(usersInfo) == 0 {
+		log.Debugf("userInfo is nill")
+		return
+	}
 
 	uinInfo, err := st.GetUserProfileInfo(uin)
 	if err != nil {
@@ -1312,6 +1317,7 @@ func getSameCityUins(uin int64, usersInfo []*st.UserProfileInfo) (uids []int64, 
 		return
 	}
 
+	log.Debugf("sql :%s", sql)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
