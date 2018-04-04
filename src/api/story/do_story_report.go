@@ -3,8 +3,12 @@ package story
 import (
 	"common/constant"
 	"common/mydb"
+	"common/myredis"
 	"common/rest"
+	"encoding/json"
+	"fmt"
 	"net/http"
+	"svr/st"
 	"time"
 )
 
@@ -40,6 +44,12 @@ func doStoryReport(req *StoryReportReq, r *http.Request) (rsp *StoryReportRsp, e
 func StoryReport(uin, storyId int64, typ int, desc string) (err error) {
 	log.Debugf("start StoryReport uin:%d storyId:%d typ:%d desc:%s", uin, storyId, typ, desc)
 
+	if typ < 1 || typ > 5 {
+		err = rest.NewAPIError(constant.E_INVALID_REPORT_TYPE, "report type invalid")
+		log.Errorf(err.Error())
+		return
+	}
+
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
 	if inst == nil {
 		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
@@ -49,15 +59,36 @@ func StoryReport(uin, storyId int64, typ int, desc string) (err error) {
 
 	ts := time.Now().Unix()
 	status := 0
-	stmt, err := inst.Prepare(`insert into report values(?, ?, ?, ?, ?, ?, ?)`)
+	stmt, err := inst.Prepare(`insert into report values(?, ?, ?, ?, ?, ?, ?, ?, ?)`)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_PREPARE, err.Error())
 		log.Error(err.Error())
 		return
 	}
 	defer stmt.Close()
+	app, err := myredis.GetApp(constant.ENUM_REDIS_APP_STORY_MSG)
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
 
-	_, err = stmt.Exec(0, uin, storyId, typ, desc, status, ts)
+	keyStr := fmt.Sprintf("%d", storyId)
+	storyMsg, err := app.Get(keyStr)
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+
+	log.Debugf("storyMsg:%s", storyMsg)
+
+	var si st.StoryInfo
+	err = json.Unmarshal([]byte(storyMsg), &si)
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+
+	_, err = stmt.Exec(0, uin, si.Uin, storyId, storyMsg, typ, desc, status, ts)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
 		log.Error(err.Error())
