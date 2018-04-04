@@ -386,7 +386,7 @@ func SubmitQueryList(uin int64, typ int, pageNum, pageSize int) (retInfos []*Sub
 	} else {
 		start := s
 		end := e
-		if len(tmpInfos) < e {
+		if len(tmpInfos)-1 < e {
 			end = len(tmpInfos) - 1
 		}
 

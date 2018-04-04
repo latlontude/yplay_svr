@@ -57,6 +57,21 @@ func StoryReport(uin, storyId int64, typ int, desc string) (err error) {
 		return
 	}
 
+	sql := fmt.Sprintf(`select id from report where status = 0 and uin = %d and storyId = %d`, uin, storyId)
+	rows, err := inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Errorf(err.Error())
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		err = rest.NewAPIError(constant.E_REPORT_TYPE_REPEAT, "repeat report")
+		log.Errorf(err.Error())
+		return
+	}
+
 	ts := time.Now().Unix()
 	status := 0
 	stmt, err := inst.Prepare(`insert into report values(?, ?, ?, ?, ?, ?, ?, ?, ?)`)
