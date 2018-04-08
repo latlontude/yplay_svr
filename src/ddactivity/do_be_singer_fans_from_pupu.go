@@ -1,4 +1,4 @@
-package activity
+package ddactivity
 
 import (
 	"common/constant"
@@ -9,30 +9,32 @@ import (
 	"time"
 )
 
-type BeSingerFansFromWxReq struct {
-	OpenId   string `schema:"openId"`
+type BeSingerFansFromPupuReq struct {
+	Uin      int64  `schema:"uin"`
+	Token    string `schema:"token"`
+	Ver      int    `schema:"ver"`
 	SingerId int    `schema:"singerId"`
 }
 
-type BeSingerFansFromWxRsp struct {
+type BeSingerFansFromPupuRsp struct {
 	Status int `json:"status"` // 1 成功成为歌手粉丝，2 已经是该歌手的粉丝，3 已经是其他歌手的粉丝
 }
 
-func doBeSingerFansFromWx(req *BeSingerFansFromWxReq, r *http.Request) (rsp *BeSingerFansFromWxRsp, err error) {
-	log.Debugf("start doBeSingerFansFromWx openId:%s singerId:%d", req.OpenId, req.SingerId)
-	status, err := BeSingerFansFromWx(req.OpenId, req.SingerId)
+func doBeSingerFansFromPupu(req *BeSingerFansFromPupuReq, r *http.Request) (rsp *BeSingerFansFromPupuRsp, err error) {
+	log.Debugf("start doBeSingerFansFromPupu uin:%d singerId:%d", req.Uin, req.SingerId)
+	status, err := BeSingerFansFromPupu(req.Uin, req.SingerId)
 	if err != nil {
 		log.Errorf(err.Error())
 		return
 	}
 
-	rsp = &BeSingerFansFromWxRsp{status}
-	log.Debugf("end doBeSingerFansFromWx status:%d", status)
+	rsp = &BeSingerFansFromPupuRsp{status}
+	log.Debugf("end doBeSingerFansFromPupu status:%d", status)
 	return
 }
 
-func BeSingerFansFromWx(openId string, singerId int) (status int, err error) {
-	log.Debugf("start BeSingerFansFromWx openId:%s", openId)
+func BeSingerFansFromPupu(uin int64, singerId int) (status int, err error) {
+	log.Debugf("start BeSingerFansFromPupu uin:%d", uin)
 
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
 	if inst == nil {
@@ -41,7 +43,7 @@ func BeSingerFansFromWx(openId string, singerId int) (status int, err error) {
 		return
 	}
 
-	sql := fmt.Sprintf(`select singerId, openId from ddsingerFansFromWx where status = 0 and openId = "%s" and singerId = %d`, openId, singerId)
+	sql := fmt.Sprintf(`select singerId, uin from ddsingerFansFromPupu where status = 0 and uin = %d and singerId = %d`, uin, singerId)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -52,11 +54,11 @@ func BeSingerFansFromWx(openId string, singerId int) (status int, err error) {
 
 	for rows.Next() {
 		status = 2
-		log.Debugf("openId:%s has been singer:%d fans", openId, singerId)
+		log.Debugf("uin:%d has been singer:%d fans", uin, singerId)
 		return
 	}
 
-	sql = fmt.Sprintf(`select openId from ddsingerFansFromWx where status = 0 and openId = "%s"`, openId)
+	sql = fmt.Sprintf(`select uin from ddsingerFansFromPupu where status = 0 and uin = %d`, uin)
 	rows, err = inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -67,11 +69,11 @@ func BeSingerFansFromWx(openId string, singerId int) (status int, err error) {
 
 	for rows.Next() {
 		status = 3
-		log.Debugf("openId:%s has been other singer fans", openId)
+		log.Debugf("uin:%d has been other singer fans", uin)
 		return
 	}
 
-	stmt, err := inst.Prepare(`insert into ddsingerFansFromWx values(?, ?, ?, ?)`)
+	stmt, err := inst.Prepare(`insert into ddsingerFansFromPupu values(?, ?, ?, ?)`)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_PREPARE, err.Error())
 		log.Error(err.Error())
@@ -81,7 +83,7 @@ func BeSingerFansFromWx(openId string, singerId int) (status int, err error) {
 
 	ts := time.Now().Unix()
 	stat := 0
-	_, err = stmt.Exec(openId, singerId, stat, ts)
+	_, err = stmt.Exec(uin, singerId, stat, ts)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
 		log.Error(err.Error())
@@ -89,6 +91,6 @@ func BeSingerFansFromWx(openId string, singerId int) (status int, err error) {
 	}
 
 	status = 1
-	log.Debugf("end BeSingerFansFromWx")
+	log.Debugf("end BeSingerFansFromPupu")
 	return
 }

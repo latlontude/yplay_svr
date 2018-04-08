@@ -1,4 +1,4 @@
-package activity
+package ddactivity
 
 import (
 	"common/constant"

@@ -47,7 +47,7 @@ type WxUserInfo struct {
 	UnionId    string   `json:"unionid"`
 }
 
-func LoadPage(code, state string) (err error) {
+func LoadPage(code, state string) (openId string, err error) {
 	log.Debugf(" start LoadPage code:%s state:%s", code, state)
 	accessToken, openid, err := getAccessToken(code)
 	if err != nil {
@@ -73,6 +73,7 @@ func LoadPage(code, state string) (err error) {
 		}
 	}
 
+	openId = openid
 	log.Debugf("end LoadPage")
 	return
 }

@@ -7,7 +7,6 @@ import (
 	"ddactivity"
 	"flag"
 	"fmt"
-	"html/template"
 	"io"
 	"net/http"
 	"os"
@@ -15,25 +14,9 @@ import (
 	"strings"
 )
 
-/*
-type DDActivityConfig struct {
-	HttpServer struct {
-		BindAddr string
-	}
-
-	Log struct {
-		LogPath     string
-		LogFileName string
-		LogLevel    string //"fatal,error,warning,info,debug"
-	}
-}
-*/
-
 var (
 	confFile string
-	//config   DDActivityConfig
-
-	log = env.NewLogger("main")
+	log      = env.NewLogger("main")
 )
 
 func init() {
@@ -53,15 +36,16 @@ func main() {
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	panicUnless(env.InitConfig(confFile, &env.DdActivityConfig))
-	panicUnless(env.InitLog(env.DdActivityConfig.Log.LogPath, env.DdActivityConfig.Log.LogFileName, env.DdActivityConfig.Log.LogLevel))
-	panicUnless(mydb.Init(env.DdActivityConfig.DbInsts))
+	panicUnless(env.InitConfig(confFile, &ddactivity.Config))
+	panicUnless(env.InitLog(ddactivity.Config.Log.LogPath, ddactivity.Config.Log.LogFileName, ddactivity.Config.Log.LogLevel))
+	panicUnless(mydb.Init(ddactivity.Config.DbInsts))
 	panicUnless(httputil.Init())
 
-	http.HandleFunc("/votepage", LoadPageHandler)
+	http.HandleFunc("/wxvotepage", WxLoadPageHandler)
+	http.HandleFunc("/appvotepage", AppLoadPageHandler)
 	http.HandleFunc("/images/", ImageHandler)
 	http.HandleFunc("/", MyHandler)
-	http.ListenAndServe(":80", nil)
+	http.ListenAndServe(ddactivity.Config.HttpServer.BindAddr, nil)
 	log.Errorf("Starting ddactivity_svr...")
 
 }
@@ -70,33 +54,48 @@ func MyHandler(w http.ResponseWriter, r *http.Request) {
 
 	path := strings.Trim(r.URL.Path, "/")
 	if path == "MP_verify_cA6HNMxTCt2LwPpD.txt" {
-		t, err := template.ParseFiles("../download/MP_verify_cA6HNMxTCt2LwPpD.txt")
-		if err != nil {
-			log.Errorf(err.Error())
-		}
-		t.Execute(w, nil)
+		http.ServeFile(w, r, "../download/MP_verify_cA6HNMxTCt2LwPpD.txt")
 	} else {
 		io.WriteString(w, "welcome to pupu!\n")
 	}
 }
 
-func LoadPageHandler(w http.ResponseWriter, r *http.Request) {
-	log.Debugf("start LoadPageHandler r:%+v", r)
+func WxLoadPageHandler(w http.ResponseWriter, r *http.Request) {
+	log.Debugf("start WxLoadPageHandler r:%+v", r)
 	r.ParseForm()
 	if r.Method == "GET" {
-		err := ddactivity.LoadPage(r.Form["code"][0], r.Form["state"][0])
+		openId, err := ddactivity.LoadPage(r.Form["code"][0], r.Form["state"][0])
 		if err != nil {
 			io.WriteString(w, "welcome to pupu! \n")
 		} else {
-			t, err := template.ParseFiles("../download/index.html")
-			if err != nil {
-				log.Errorf(err.Error())
-			}
-			t.Execute(w, nil)
+			ck1 := http.Cookie{Name: "openId", Value: fmt.Sprintf("%s", openId), Path: "/"}
+			http.SetCookie(w, &ck1)
+
+			htmlPath := "../download/index.html"
+			http.ServeFile(w, r, htmlPath)
 		}
 	}
 
-	log.Debugf("end LoadPageHandler")
+	log.Debugf("end WxLoadPageHandler")
+}
+
+func AppLoadPageHandler(w http.ResponseWriter, r *http.Request) {
+	log.Debugf("start AppLoadPageHandler r:%+v", r)
+	r.ParseForm()
+	if r.Method == "GET" {
+		ck1 := http.Cookie{Name: "uin", Value: r.Form["uin"][0], Path: "/"}
+		ck2 := http.Cookie{Name: "token", Value: r.Form["token"][0], Path: "/"}
+		ck3 := http.Cookie{Name: "ver", Value: r.Form["ver"][0], Path: "/"}
+
+		http.SetCookie(w, &ck1)
+		http.SetCookie(w, &ck2)
+		http.SetCookie(w, &ck3)
+
+		htmlPath := "../download/index.html"
+		http.ServeFile(w, r, htmlPath)
+	}
+
+	log.Debugf("end AppLoadPageHandler")
 }
 
 func ImageHandler(w http.ResponseWriter, r *http.Request) {

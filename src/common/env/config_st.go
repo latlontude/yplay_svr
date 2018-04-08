@@ -10,7 +10,6 @@ var (
 	FrozenMonitorConfig FrozenMonitorSvrConfig
 	PreGeneQIdsConfig   PreGeneQIdsSvrConfig
 	WxPublicConfig      WxPublicSvrConfig
-	DdActivityConfig    DdActivitySvrConfig
 )
 
 type DataBase struct {
@@ -177,20 +176,6 @@ type PreGeneQIdsSvrConfig struct {
 }
 
 type WxPublicSvrConfig struct {
-	HttpServer struct {
-		BindAddr string
-	}
-
-	Log struct {
-		LogPath     string
-		LogFileName string
-		LogLevel    string //"fatal,error,warning,info,debug"
-	}
-
-	DbInsts map[string]DataBase
-}
-
-type DdActivitySvrConfig struct {
 	HttpServer struct {
 		BindAddr string
 	}
