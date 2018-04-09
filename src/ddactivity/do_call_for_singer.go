@@ -121,7 +121,7 @@ func CallForSinger(uin int64, typ int) (status int, err error) {
 
 	ts1 := time.Now().Unix()
 	stat := 0
-	_, err = stmt.Exec(0, singerId, uin, ts1, typ, stat)
+	_, err = stmt.Exec(0, singerId, uin, typ, stat, ts1)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
 		log.Error(err.Error())
@@ -202,8 +202,6 @@ func getCallTypeInfos(uin int64) (callInfos []CallTypeInfo, err error) {
 			}
 
 			callInfos = append(callInfos, info)
-		} else {
-			log.Errorf("wrong call typ:%d", typ)
 		}
 	}
 

@@ -11,11 +11,8 @@ import (
 )
 
 type SchoolNameApproveReq struct {
-	Uin      int64  `schema:"uin"`
-	Token    string `schema:"token"`
-	Ver      int    `schema:"ver"`
-	User     int64  `schema:"user"`
-	SchoolId int    `schema:"schoolId"`
+	User     int64 `schema:"user"`
+	SchoolId int   `schema:"schoolId"`
 }
 
 type SchoolNameApproveRsp struct {
@@ -23,17 +20,17 @@ type SchoolNameApproveRsp struct {
 
 func doApproveSchoolName(req *SchoolNameApproveReq, r *http.Request) (rsp *SchoolNameApproveRsp, err error) {
 
-	log.Errorf("uin %d, doApproveSchoolName req %+v", req.Uin, req)
+	log.Errorf("doApproveSchoolName req %+v", req)
 
 	err = ApproveSchoolName(req.User, req.SchoolId)
 	if err != nil {
-		log.Errorf("uin %d, SubmitApproveSchoolRsp error %s", req.Uin, err.Error())
+		log.Errorf("SubmitApproveSchoolRsp error %s", err.Error())
 		return
 	}
 
 	rsp = &SchoolNameApproveRsp{}
 
-	log.Errorf("uin %d, SubmitApproveSchoolRsp succ", req.Uin)
+	log.Errorf("SubmitApproveSchoolRsp succ")
 	return
 
 }

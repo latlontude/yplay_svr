@@ -29,7 +29,7 @@ func doBeSingerFansFromPupu(req *BeSingerFansFromPupuReq, r *http.Request) (rsp 
 	}
 
 	rsp = &BeSingerFansFromPupuRsp{status}
-	log.Debugf("end doBeSingerFansFromPupu status:%d", status)
+	log.Debugf("end doBeSingerFansFromPupu rsp:%+v", rsp)
 	return
 }
 
@@ -92,5 +92,32 @@ func BeSingerFansFromPupu(uin int64, singerId int) (status int, err error) {
 
 	status = 1
 	log.Debugf("end BeSingerFansFromPupu")
+	return
+}
+
+func Ishasvote(uin int64) (status int, err error) {
+	log.Debugf("start Ishasvote uin:%d", uin)
+
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		log.Error(err.Error())
+		return
+	}
+
+	sql := fmt.Sprintf(`select uin from ddsingerFansFromPupu where status = 0 and uin = %d`, uin)
+	rows, err := inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Errorf(err.Error())
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		status = 1
+	}
+
+	log.Debugf("status:%d", status)
 	return
 }

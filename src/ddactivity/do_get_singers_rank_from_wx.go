@@ -4,6 +4,7 @@ import (
 	"common/constant"
 	"common/mydb"
 	"common/rest"
+	"common/util"
 	"fmt"
 	"net/http"
 )
@@ -14,6 +15,7 @@ type GetSingerWithVoteFromWxReq struct {
 
 type GetSingerWithVoteFromWxRsp struct {
 	SingersWithVote []SingerWithVoteInfo `json:"singersWithVote"`
+	VotedSingerId   int                  `json:"votedSingerId"`
 }
 
 func doGetSingersRankingListFromWx(req *GetSingerWithVoteFromWxReq, r *http.Request) (rsp *GetSingerWithVoteFromWxRsp, err error) {
@@ -24,15 +26,22 @@ func doGetSingersRankingListFromWx(req *GetSingerWithVoteFromWxReq, r *http.Requ
 		return
 	}
 
-	rsp = &GetSingerWithVoteFromWxRsp{singersWithVote}
-	log.Debugf("end doGetSingersRankingListFromWx")
+	singerId, err := GetMyVotedSingerIdFromWx(req.openId)
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+
+	rsp = &GetSingerWithVoteFromWxRsp{singersWithVote, singerId}
+	log.Debugf("end doGetSingersRankingListFromWx rsp:%+v", rsp)
 	return
 }
 
-func GetSingersRankingListFromWx(openId string) (singersWithVotes []SingerWithVoteInfo, err error) {
+func GetSingersRankingListFromWx(openId string) (retSingersWithVotes []SingerWithVoteInfo, err error) {
 	log.Debugf("start GetSingersRankingListFromPupu openId:%s", openId)
 
-	singersWithVotes = make([]SingerWithVoteInfo, 0)
+	singersWithVotes := make([]SingerWithVoteInfo, 0)
+	retSingersWithVotes = make([]SingerWithVoteInfo, 0)
 
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
 	if inst == nil {
@@ -68,6 +77,21 @@ func GetSingersRankingListFromWx(openId string) (singersWithVotes []SingerWithVo
 		}
 	}
 
-	log.Debugf("end GetSingers singersWithVotes:%+v", singersWithVotes)
+	sortSingerIds := make([]int, 0)
+	pairs := util.ReverseSortMap1(singerIdVoteMap)
+	for _, p := range pairs {
+		sortSingerIds = append(sortSingerIds, p.Key)
+	}
+
+	for _, singerId := range sortSingerIds {
+		for i, s := range singersWithVotes {
+			if s.SingerId == singerId {
+				retSingersWithVotes = append(retSingersWithVotes, singersWithVotes[i])
+				break
+			}
+		}
+	}
+	log.Debugf("end GetSingers retSingersWithVotes:%+v", retSingersWithVotes)
+
 	return
 }

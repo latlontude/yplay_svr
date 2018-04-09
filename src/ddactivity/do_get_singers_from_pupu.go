@@ -25,19 +25,26 @@ type GetSingerFromPupuReq struct {
 }
 
 type GetSingerFromPupuRsp struct {
-	Singers []SingerInfo `json:"singers"`
+	Singers       []SingerInfo `json:"singers"`
+	VotedSingerId int          `json:"votedSingerId"`
 }
 
-func doGetSingerFromPupu(req *GetSingerFromPupuReq, r *http.Request) (rsp *GetSingerFromPupuRsp, err error) {
-	log.Debugf("start doGetSingerFromPupu uin:%d", req.Uin)
+func doGetSingersFromPupu(req *GetSingerFromPupuReq, r *http.Request) (rsp *GetSingerFromPupuRsp, err error) {
+	log.Debugf("start doGetSingersFromPupu uin:%d", req.Uin)
 	singers, err := GetSingersFromPupu(req.Uin)
 	if err != nil {
 		log.Errorf(err.Error())
 		return
 	}
 
-	rsp = &GetSingerFromPupuRsp{singers}
-	log.Debugf("end doGetSingerFromPupu")
+	singerId, err := GetMyVotedSingerIdFromPupu(req.Uin)
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+
+	rsp = &GetSingerFromPupuRsp{singers, singerId}
+	log.Debugf("end doGetSingersFromPupu rsp:%+v", rsp)
 	return
 }
 
@@ -69,5 +76,32 @@ func GetSingersFromPupu(uin int64) (singers []SingerInfo, err error) {
 	}
 
 	log.Debugf("end GetSingersFromPupu singers:%+v", singers)
+	return
+}
+
+func GetMyVotedSingerIdFromPupu(uin int64) (singerId int, err error) {
+	log.Debugf("start GetMyVotedSingerIdFromPupu uin:%d", uin)
+
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		log.Error(err.Error())
+		return
+	}
+
+	sql := fmt.Sprintf(`select singerId from ddsingerFansFromPupu where status = 0 and uin = %d`, uin)
+	rows, err := inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Errorf(err.Error())
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		rows.Scan(&singerId)
+	}
+
+	log.Debugf("end GetMyVotedSingerIdFromPupu singerId:%d", singerId)
 	return
 }

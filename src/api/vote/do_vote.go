@@ -103,12 +103,12 @@ func Vote(uin int64, qid int, voteToUin int64, optionIndex int, optionStr string
 				gradeDscr := "同学"
 				if userInfo.Gender == 1 {
 					gradeDscr = "男生"
-				} else {
+				} else if userInfo.Gender == 2 {
 					gradeDscr = "女生"
 				}
 
 				text1 := fmt.Sprintf("神秘%s%s评价你", schoolDscr, gradeDscr)
-				text2 := fmt.Sprintf("“%s” 竟然是ta！揭秘真相☞http://yplay.vivacampus.com/api/helper/downloadredirect。", qinfo.QText)
+				text2 := fmt.Sprintf("“%s” 竟然是ta！揭秘真相☞http://yplay.vivacampus.com/api/helper/downloadredirect ", qinfo.QText)
 				text3 := "365*24*60"
 
 				params := make([]string, 0)

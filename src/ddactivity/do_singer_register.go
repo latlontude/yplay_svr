@@ -48,6 +48,9 @@ func SingerRegister(uin int64) (err error) {
 	}
 
 	//看看是否在配置的学校列表中
+	log.Debugf("openSchools:%+v", OpenSchools)
+	log.Debugf("ui schoolId:%d", ui.SchoolId)
+
 	find := false
 	for sid, _ := range OpenSchools {
 		if ui.SchoolId == sid {
@@ -58,6 +61,7 @@ func SingerRegister(uin int64) (err error) {
 
 	//没有参加活动的权限
 	if !find {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
 		log.Debugf("user:%d school does not fit", uin)
 		return
 	}
