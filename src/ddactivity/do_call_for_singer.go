@@ -133,10 +133,12 @@ func CallForSinger(uin int64, typ int) (status int, err error) {
 	return
 }
 
-func getCallTypeInfos(uin int64) (callInfos []CallTypeInfo, err error) {
+func getCallTypeInfos(uin int64) (retCallInfos []CallTypeInfo, err error) {
 	log.Debugf("start getCallTypeInfos uin:%d", uin)
 
-	callInfos = make([]CallTypeInfo, 0)
+	callInfos := make([]CallTypeInfo, 0)
+	retCallInfos = make([]CallTypeInfo, 0)
+
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
 	if inst == nil {
 		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
@@ -240,7 +242,14 @@ func getCallTypeInfos(uin int64) (callInfos []CallTypeInfo, err error) {
 		}
 	}
 
-	log.Debugf("end getCallTypeInfos callInfos:%+v", callInfos)
+	callInfoMap := make(map[int]CallTypeInfo)
+	for _, info := range callInfos {
+		callInfoMap[info.Type] = info
+	}
+
+	retCallInfos = append(retCallInfos, callInfoMap[1], callInfoMap[2], callInfoMap[3], callInfoMap[4], callInfoMap[5], callInfoMap[6], callInfoMap[7])
+
+	log.Debugf("end getCallTypeInfos retcallInfos:%+v", retCallInfos)
 	return
 }
 

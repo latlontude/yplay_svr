@@ -42,7 +42,7 @@ func main() {
 	panicUnless(ddactivity.Init())
 	panicUnless(httputil.Init())
 
-	http.HandleFunc("/wxvotepage", ddactivity.WxLoadPageHandler)
+	http.HandleFunc("/votepage", ddactivity.WxLoadPageHandler)
 	http.HandleFunc("/appvotepage", ddactivity.AppLoadPageHandler)
 	http.HandleFunc("/getsingersfrompupu", ddactivity.GetSingersFromPupuHandler)
 	http.HandleFunc("/getsingersfromwx", ddactivity.GetSingersFromWxHandler)
@@ -55,8 +55,12 @@ func main() {
 	http.HandleFunc("/singerregister", ddactivity.SingerRegisterHandler)
 	http.HandleFunc("/call", ddactivity.NormalCallForSingerHandler)
 	http.HandleFunc("/getcallinfo", ddactivity.GetCallInfoHandler)
+	http.HandleFunc("/getvotestatus", ddactivity.GetVoteStatusHandler)
 
 	http.HandleFunc("/images/", ddactivity.ImageHandler)
+	http.HandleFunc("/javascript/", ddactivity.JsHandler)
+	http.HandleFunc("/styles/", ddactivity.CssHandler)
+	http.HandleFunc("/html/", ddactivity.HtmlHandler)
 	http.HandleFunc("/", ddactivity.MyHandler)
 
 	log.Errorf("Starting ddactivity_svr...")
