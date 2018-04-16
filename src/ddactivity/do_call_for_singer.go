@@ -7,6 +7,7 @@ import (
 	"common/rest"
 	"fmt"
 	"net/http"
+	"svr/st"
 	"time"
 )
 
@@ -297,7 +298,7 @@ func updateCallTypeInfos(uin int64, callTypes []int) (ret map[int]CallTypeInfo, 
 				info.EffectiveCnt = cnt
 			}
 			info.LeftCnt = 24 - info.EffectiveCnt
-			if info.LeftCnt == 0 {
+			if info.LeftCnt <= 0 {
 				info.Status = 1
 			}
 
@@ -322,7 +323,7 @@ func updateCallTypeInfos(uin int64, callTypes []int) (ret map[int]CallTypeInfo, 
 			}
 			info.LeftCnt = 10 - info.EffectiveCnt
 
-			if info.LeftCnt == 0 {
+			if info.LeftCnt <= 0 {
 				info.Status = 1
 			}
 
@@ -377,7 +378,7 @@ func getSingerInfo(uin int64) (singer SingerInfo, err error) {
 		rows.Scan(&singerId)
 	}
 
-	sql = fmt.Sprintf(`select singerId, uin, nickName, headImgUrl, gender, deptName, grade from ddsingers where status = 0 and singerId = %d`, singerId)
+	sql = fmt.Sprintf(`select singerId, uin,  activeHeadImgUrl, singerDetailInfoImgUrl, deptName  from ddsingers where status = 0 and singerId = %d`, singerId)
 	rows, err = inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -387,7 +388,23 @@ func getSingerInfo(uin int64) (singer SingerInfo, err error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		rows.Scan(&singer.SingerId, &singer.Uin, &singer.NickName, &singer.HeadImgUrl, &singer.Gender, &singer.DeptName, &singer.Grade)
+		rows.Scan(&singer.SingerId, &singer.Uin, &singer.ActiveHeadImgUrl, &singer.SingerDetailInfoImgUrl, &singer.DeptName)
+
+		singer.ActiveHeadImgUrl = fmt.Sprintf("http://yplay-1253229355.cossh.myqcloud.com/banner/%s", singer.ActiveHeadImgUrl)
+		singer.SingerDetailInfoImgUrl = fmt.Sprintf("http://yplay-1253229355.cossh.myqcloud.com/banner/%s", singer.SingerDetailInfoImgUrl)
+
+		ui, err1 := st.GetUserProfileInfo(singer.Uin)
+		if err1 != nil {
+			err = err1
+			log.Errorf(err1.Error())
+			return
+		}
+
+		singer.UserName = ui.UserName
+		singer.NickName = ui.NickName
+		singer.HeadImgUrl = ui.HeadImgUrl
+		singer.Gender = ui.Gender
+		singer.Grade = ui.Grade
 	}
 
 	log.Debugf("end getSingerInfo singer:%+v", singer)

@@ -7,17 +7,21 @@ import (
 	"common/util"
 	"fmt"
 	"net/http"
+	"svr/st"
 )
 
 type SingerWithVoteInfo struct {
-	SingerId   int    `json:"singerId"`
-	Uin        int    `json:"uin"`
-	NickName   string `json:"nickName"`
-	HeadImgUrl string `json:"headImgUrl"`
-	Gender     int    `json:"gender"`
-	DeptName   string `json:"deptName"`
-	Grade      int    `json:"grade"`
-	VoteCnt    int    `json:"voteCnt"`
+	SingerId               int    `json:"singerId"`
+	Uin                    int64  `json:"uin"`
+	UserName               string `json:"userName"`
+	NickName               string `json:"nickName"`
+	HeadImgUrl             string `json:"headImgUrl"`
+	Gender                 int    `json:"gender"`
+	DeptName               string `json:"deptName"`
+	Grade                  int    `json:"grade"`
+	VoteCnt                int    `json:"voteCnt"`
+	RankActiveHeadImgUrl   string `json:"rankActiveHeadImgUrl"`
+	SingerDetailInfoImgUrl string `json:"singerDetailInfoImgUrl"`
 }
 
 type GetSingerWithVoteFromPupuReq struct {
@@ -63,7 +67,7 @@ func GetSingersRankingListFromPupu(uin int64) (retSingersWithVotes []SingerWithV
 		return
 	}
 
-	sql := fmt.Sprintf(`select singerId, uin, nickName, headImgUrl, gender, deptName, grade from ddsingers where status = 0`)
+	sql := fmt.Sprintf(`select singerId, uin, rankActiveHeadImgUrl, singerDetailInfoImgUrl, deptName from ddsingers where status = 0`)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -74,7 +78,23 @@ func GetSingersRankingListFromPupu(uin int64) (retSingersWithVotes []SingerWithV
 
 	for rows.Next() {
 		var singerWithVote SingerWithVoteInfo
-		rows.Scan(&singerWithVote.SingerId, &singerWithVote.Uin, &singerWithVote.NickName, &singerWithVote.HeadImgUrl, &singerWithVote.Gender, &singerWithVote.DeptName, &singerWithVote.Grade)
+		rows.Scan(&singerWithVote.SingerId, &singerWithVote.Uin, &singerWithVote.RankActiveHeadImgUrl, &singerWithVote.SingerDetailInfoImgUrl, &singerWithVote.DeptName)
+
+		singerWithVote.RankActiveHeadImgUrl = fmt.Sprintf("http://yplay-1253229355.cossh.myqcloud.com/banner/%s", singerWithVote.RankActiveHeadImgUrl)
+		singerWithVote.SingerDetailInfoImgUrl = fmt.Sprintf("http://yplay-1253229355.cossh.myqcloud.com/banner/%s", singerWithVote.SingerDetailInfoImgUrl)
+
+		ui, err1 := st.GetUserProfileInfo(singerWithVote.Uin)
+		if err1 != nil {
+			err = err1
+			log.Errorf(err1.Error())
+			return
+		}
+
+		singerWithVote.UserName = ui.UserName
+		singerWithVote.NickName = ui.NickName
+		singerWithVote.HeadImgUrl = ui.HeadImgUrl
+		singerWithVote.Gender = ui.Gender
+		singerWithVote.Grade = ui.Grade
 		singersWithVotes = append(singersWithVotes, singerWithVote)
 	}
 

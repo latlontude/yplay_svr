@@ -6,6 +6,7 @@ import (
 	"common/rest"
 	"fmt"
 	"net/http"
+	"svr/st"
 	"time"
 )
 
@@ -32,6 +33,12 @@ type GetCallInfoRsp struct {
 
 func doGetCallInfo(req *GetCallInfoReq, r *http.Request) (rsp *GetCallInfoRsp, err error) {
 	log.Debugf("start doGetCallInfo uin:%d", req.Uin)
+	_, err = updateCallTypeInfos(req.Uin, []int{5, 6, 7})
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+
 	ret, err := GetCallInfo(req.Uin)
 	if err != nil {
 		log.Errorf(err.Error())
@@ -56,7 +63,7 @@ func GetCallInfo(uin int64) (ret GetCallInfoRsp, err error) {
 	}
 
 	// 获取得到打call次数最多的歌手及其得到的打call数
-	sql := fmt.Sprintf(`select singerId, count(id) as cnt from ddcallForSingers group by singerId order by cnt desc`)
+	sql := fmt.Sprintf(`select singerId, count(id) as cnt from ddcallForSingers where type = 8 group by singerId order by cnt desc`)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -107,7 +114,7 @@ func GetCallInfo(uin int64) (ret GetCallInfoRsp, err error) {
 	singerIdsStr += fmt.Sprintf("%d", mySingerId)
 
 	//查找我的爱豆和获取得到打call次数最多的歌手的信息
-	sql = fmt.Sprintf(`select singerId, uin, nickName, headImgUrl, gender, deptName, grade from ddsingers where singerId in (%s) and  status = 0`, singerIdsStr)
+	sql = fmt.Sprintf(`select singerId, uin,  activeHeadImgUrl, singerDetailInfoImgUrl, deptName  from ddsingers where singerId in (%s) and  status = 0`, singerIdsStr)
 	rows, err = inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -118,7 +125,23 @@ func GetCallInfo(uin int64) (ret GetCallInfoRsp, err error) {
 
 	for rows.Next() {
 		var singer SingerInfo
-		rows.Scan(&singer.SingerId, &singer.Uin, &singer.NickName, &singer.HeadImgUrl, &singer.Gender, &singer.DeptName, &singer.Grade)
+		rows.Scan(&singer.SingerId, &singer.Uin, &singer.ActiveHeadImgUrl, &singer.SingerDetailInfoImgUrl, &singer.DeptName)
+
+		singer.ActiveHeadImgUrl = fmt.Sprintf("http://yplay-1253229355.cossh.myqcloud.com/banner/%s", singer.ActiveHeadImgUrl)
+		singer.SingerDetailInfoImgUrl = fmt.Sprintf("http://yplay-1253229355.cossh.myqcloud.com/banner/%s", singer.SingerDetailInfoImgUrl)
+
+		ui, err1 := st.GetUserProfileInfo(singer.Uin)
+		if err1 != nil {
+			err = err1
+			log.Errorf(err1.Error())
+			return
+		}
+
+		singer.UserName = ui.UserName
+		singer.NickName = ui.NickName
+		singer.HeadImgUrl = ui.HeadImgUrl
+		singer.Gender = ui.Gender
+		singer.Grade = ui.Grade
 
 		if singer.SingerId == mySingerId {
 			ret.Info.MySinger = singer
@@ -134,7 +157,7 @@ func GetCallInfo(uin int64) (ret GetCallInfoRsp, err error) {
 	}
 
 	//获取我的爱豆得到的打call数
-	sql = fmt.Sprintf(`select count(id) as cnt from ddcallForSingers where singerId = %d and status = 0`, mySingerId)
+	sql = fmt.Sprintf(`select count(id) as cnt from ddcallForSingers where singerId = %d and type = 8 and status = 0`, mySingerId)
 	rows, err = inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -179,10 +202,30 @@ func GetCallInfo(uin int64) (ret GetCallInfoRsp, err error) {
 	}
 	defer rows.Close()
 
+	totalCnt := 0
 	for rows.Next() {
-		var cnt int
+		rows.Scan(&totalCnt)
+	}
+
+	sql = fmt.Sprintf(`select count(id) as cnt from ddcallForSingers where uin = %d and type in (1,2,3,4,5,6,7)  and ts >= %d and ts <= %d`, uin, minTs, maxTs) //type = 8 为非任务打call
+	rows, err = inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Errorf(err.Error())
+		return
+	}
+	defer rows.Close()
+
+	cnt := 0
+	for rows.Next() {
 		rows.Scan(&cnt)
-		ret.Info.LeftCallCnt = Config.NormalCall.Cnt - cnt
+	}
+
+	effictiveCnt := totalCnt - cnt
+
+	ret.Info.LeftCallCnt = Config.NormalCall.Cnt - effictiveCnt
+	if ret.Info.LeftCallCnt < 0 {
+		ret.Info.LeftCallCnt = 0
 	}
 
 	//获取今日任务剩余数

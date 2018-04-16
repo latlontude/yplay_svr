@@ -6,6 +6,7 @@ import (
 	"common/rest"
 	"fmt"
 	"net/http"
+	"svr/st"
 )
 
 type GetSingerFromWxReq struct {
@@ -48,18 +49,33 @@ func GetSingersFromWx(openId string) (singers []SingerInfo, err error) {
 		return
 	}
 
-	sql := fmt.Sprintf(`select singerId, uin, nickName, headImgUrl, gender, deptName, grade from ddsingers where status = 0`)
+	sql := fmt.Sprintf(`select singerId, uin, activeHeadImgUrl, singerDetailInfoImgUrl, deptName  from ddsingers where status = 0`)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
 		log.Errorf(err.Error())
 		return
 	}
-	defer rows.Close()
 
 	for rows.Next() {
 		var singer SingerInfo
-		rows.Scan(&singer.SingerId, &singer.Uin, &singer.NickName, &singer.HeadImgUrl, &singer.Gender, &singer.DeptName, &singer.Grade)
+		rows.Scan(&singer.SingerId, &singer.Uin, &singer.ActiveHeadImgUrl, &singer.SingerDetailInfoImgUrl, &singer.DeptName)
+		singer.ActiveHeadImgUrl = fmt.Sprintf("http://yplay-1253229355.cossh.myqcloud.com/banner/%s", singer.ActiveHeadImgUrl)
+		singer.SingerDetailInfoImgUrl = fmt.Sprintf("http://yplay-1253229355.cossh.myqcloud.com/banner/%s", singer.SingerDetailInfoImgUrl)
+
+		ui, err1 := st.GetUserProfileInfo(singer.Uin)
+		if err1 != nil {
+			err = err1
+			log.Errorf(err1.Error())
+			return
+		}
+
+		singer.UserName = ui.UserName
+		singer.NickName = ui.NickName
+		singer.HeadImgUrl = ui.HeadImgUrl
+		singer.Gender = ui.Gender
+		singer.Grade = ui.Grade
+
 		singers = append(singers, singer)
 	}
 

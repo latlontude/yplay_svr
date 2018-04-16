@@ -103,7 +103,7 @@ func GeneStoryShareMsg(uin, uid, storyId int64) (err error) {
 		}
 	}
 
-	status, err := getFriendsStatus(story.Uin, uid)
+	status, err := getFriendsStatus(uid, story.Uin)
 	if err != nil {
 		log.Errorf(err.Error())
 		return

@@ -57,14 +57,33 @@ func NormalCallForSinger(uin int64) (status int, err error) {
 	}
 	defer rows.Close()
 
-	overrun := false
+	totalCnt := 0
 	for rows.Next() {
-		var cnt int
-		rows.Scan(&cnt)
-		if cnt >= Config.NormalCall.Cnt {
-			overrun = true
-		}
+		rows.Scan(&totalCnt)
 	}
+
+	sql = fmt.Sprintf(`select count(id) as cnt from ddcallForSingers where uin = %d and type in (1,2,3,4,5,6,7)  and ts >= %d and ts <= %d`, uin, minTs, maxTs) //type = 8 为非任务打call
+	rows, err = inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Errorf(err.Error())
+		return
+	}
+	defer rows.Close()
+
+	cnt := 0
+	for rows.Next() {
+		rows.Scan(&cnt)
+	}
+
+	effticeCnt := totalCnt - cnt
+
+	overrun := false
+
+	if effticeCnt >= Config.NormalCall.Cnt {
+		overrun = true
+	}
+
 	if overrun {
 		status = 2
 		log.Debugf("uin:%d nomal call cnt > %d", uin, Config.NormalCall.Cnt)

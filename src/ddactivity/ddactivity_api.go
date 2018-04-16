@@ -172,6 +172,14 @@ func AppLoadPageHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		shareSwitchStr := r.PostFormValue("shareswitch")
+		if len(shareSwitchStr) == 0 {
+			log.Errorf("no shareswitch param")
+		} else if len(shareSwitchStr) > 0 && shareSwitchStr != "1" {
+			log.Errorf("err shareswitch :%s", shareSwitchStr)
+			return
+		}
+
 		pass, err := checkBaseParams(uin, token, int(ver))
 		if err != nil {
 			log.Errorf(err.Error())
@@ -185,10 +193,12 @@ func AppLoadPageHandler(w http.ResponseWriter, r *http.Request) {
 		ck1 := http.Cookie{Name: "uin", Value: uinStr, Path: "/"}
 		ck2 := http.Cookie{Name: "token", Value: token, Path: "/"}
 		ck3 := http.Cookie{Name: "ver", Value: verStr, Path: "/"}
+		ck4 := http.Cookie{Name: "shareswitch", Value: "1", Path: "/"}
 
 		http.SetCookie(w, &ck1)
 		http.SetCookie(w, &ck2)
 		http.SetCookie(w, &ck3)
+		http.SetCookie(w, &ck4)
 
 		w.Header().Add("Cache-Control", "no-cache, no-store, must-revalidate")
 		w.Header().Add("Pragma", "no-cache")
@@ -196,6 +206,79 @@ func AppLoadPageHandler(w http.ResponseWriter, r *http.Request) {
 
 		htmlPath := "../download/html/entry.html"
 		http.ServeFile(w, r, htmlPath)
+	} else if r.Method == "GET" {
+		r.ParseForm()
+
+		uinStr := ""
+		token := ""
+		verStr := ""
+		shareSwitchStr := ""
+
+		log.Debugf("r.Form:%+v", r.Form)
+
+		if _, ok := r.Form["uin"]; ok {
+			uinStr = r.Form["uin"][0]
+		}
+		if _, ok := r.Form["token"]; ok {
+			token = r.Form["token"][0]
+		}
+		if _, ok := r.Form["ver"]; ok {
+			verStr = r.Form["ver"][0]
+		}
+
+		if _, ok := r.Form["shareswitch"]; ok {
+			shareSwitchStr = r.Form["shareswitch"][0]
+		}
+
+		if len(shareSwitchStr) > 0 && shareSwitchStr != "1" {
+			log.Errorf("error shareswitch :%s", shareSwitchStr)
+			return
+		}
+
+		if len(uinStr) == 0 || len(token) == 0 || len(verStr) == 0 {
+			log.Errorf("no uin or token or ver param")
+			return
+		}
+
+		uin, err := strconv.ParseInt(uinStr, 10, 64)
+		if err != nil {
+			log.Errorf(err.Error())
+			return
+		}
+
+		ver, err := strconv.ParseInt(verStr, 10, 64)
+		if err != nil {
+			log.Errorf(err.Error())
+			return
+		}
+
+		pass, err := checkBaseParams(uin, token, int(ver))
+		if err != nil {
+			log.Errorf(err.Error())
+			return
+		}
+		if !pass {
+			log.Errorf("auth failed")
+			return
+		}
+
+		ck1 := http.Cookie{Name: "uin", Value: uinStr, Path: "/"}
+		ck2 := http.Cookie{Name: "token", Value: token, Path: "/"}
+		ck3 := http.Cookie{Name: "ver", Value: verStr, Path: "/"}
+		ck4 := http.Cookie{Name: "shareswitch", Value: "1", Path: "/"}
+
+		http.SetCookie(w, &ck1)
+		http.SetCookie(w, &ck2)
+		http.SetCookie(w, &ck3)
+		http.SetCookie(w, &ck4)
+
+		w.Header().Add("Cache-Control", "no-cache, no-store, must-revalidate")
+		w.Header().Add("Pragma", "no-cache")
+		w.Header().Add("Expires", "0")
+
+		htmlPath := "../download/html/entry.html"
+		http.ServeFile(w, r, htmlPath)
+
 	}
 
 	log.Debugf("end AppLoadPageHandler")
@@ -600,6 +683,132 @@ func GetSingersRankingListFromWxHandler(w http.ResponseWriter, r *http.Request) 
 	return
 }
 
+func GetMySingerRankFromPupuHandler(w http.ResponseWriter, r *http.Request) {
+	log.Debugf("start GetMySingerRankFromPupuHandler r:%+v", r)
+	if r.Method == "POST" {
+		uinStr := r.PostFormValue("uin")
+		if len(uinStr) == 0 {
+			log.Errorf("no uin param")
+			return
+		}
+
+		uin, err := strconv.ParseInt(uinStr, 10, 64)
+		if err != nil {
+			log.Errorf(err.Error())
+			return
+		}
+
+		token := r.PostFormValue("token")
+		if len(token) == 0 {
+			log.Errorf("no token param")
+			return
+		}
+
+		verStr := r.PostFormValue("ver")
+		if len(verStr) == 0 {
+			log.Errorf("no ver param")
+			return
+		}
+
+		ver, err := strconv.ParseInt(verStr, 10, 64)
+		if err != nil {
+			log.Errorf(err.Error())
+			return
+		}
+
+		pass, err := checkBaseParams(uin, token, int(ver))
+		if err != nil {
+			log.Errorf(err.Error())
+			return
+		}
+		if !pass {
+			log.Errorf("auth failed")
+			return
+		}
+
+		req := &GetMySingerRankFromPupuReq{uin, token, int(ver)}
+		rsp, err := doGetMySingerRankFromPupu(req, nil)
+		if err != nil {
+			log.Errorf(err.Error())
+			return
+		}
+
+		d, err := json.Marshal(&rsp)
+		if err != nil {
+			log.Errorf("json marshal error", err.Error())
+			return
+		}
+
+		io.WriteString(w, string(d))
+	}
+
+	log.Debugf("end GetMySingerRankFromPupuHandler")
+	return
+}
+
+func GetSingerDetailInfoFromPupuHandler(w http.ResponseWriter, r *http.Request) {
+	log.Debugf("start GetSingerDetailInfoFromPupuHandler r:%+v", r)
+	if r.Method == "POST" {
+		uinStr := r.PostFormValue("uin")
+		if len(uinStr) == 0 {
+			log.Errorf("no uin param")
+			return
+		}
+
+		uin, err := strconv.ParseInt(uinStr, 10, 64)
+		if err != nil {
+			log.Errorf(err.Error())
+			return
+		}
+
+		token := r.PostFormValue("token")
+		if len(token) == 0 {
+			log.Errorf("no token param")
+			return
+		}
+
+		verStr := r.PostFormValue("ver")
+		if len(verStr) == 0 {
+			log.Errorf("no ver param")
+			return
+		}
+
+		ver, err := strconv.ParseInt(verStr, 10, 64)
+		if err != nil {
+			log.Errorf(err.Error())
+			return
+		}
+
+		pass, err := checkBaseParams(uin, token, int(ver))
+		if err != nil {
+			log.Errorf(err.Error())
+			return
+		}
+		if !pass {
+			log.Errorf("auth failed")
+			return
+		}
+
+		req := &GetMySingerRankFromPupuReq{uin, token, int(ver)}
+		rsp, err := doGetMySingerRankFromPupu(req, nil)
+		if err != nil {
+			log.Errorf(err.Error())
+			return
+		}
+
+		d, err := json.Marshal(&rsp)
+		if err != nil {
+			log.Errorf("json marshal error", err.Error())
+			return
+		}
+
+		io.WriteString(w, string(d))
+	}
+
+	log.Debugf("end GetSingerDetailInfoFromPupuHandler")
+	return
+}
+
 func CallForSingerHandler(w http.ResponseWriter, r *http.Request) {
 	log.Debugf("start CallForSingerHandler r:%+v", r)
 	if r.Method == "POST" {
@@ -653,6 +862,11 @@ func CallForSingerHandler(w http.ResponseWriter, r *http.Request) {
 		typ, err := strconv.ParseInt(typStr, 10, 64)
 		if err != nil {
 			log.Errorf(err.Error())
+			return
+		}
+
+		if typ < 1 || typ > 4 {
+			log.Errorf("wrong call type :%d", typ)
 			return
 		}
 
@@ -784,7 +998,43 @@ func SingerRegisterHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		req := &SingerRegisterReq{uin, token, int(ver)}
+		personalName := r.PostFormValue("personalName")
+		if len(personalName) == 0 {
+			log.Errorf("no personalName")
+			return
+		}
+
+		activeHeadImgUrl := r.PostFormValue("activeHeadImgUrl")
+		if len(activeHeadImgUrl) == 0 {
+			log.Errorf("no activeHeadImgUrl")
+			return
+		}
+
+		rankActiveHeadImgUrl := r.PostFormValue("rankActiveHeadImgUrl")
+		if len(rankActiveHeadImgUrl) == 0 {
+			log.Errorf("no rankActiveHeadImgUrl")
+			return
+		}
+
+		singerDetailInfoImgUrl := r.PostFormValue("singerDetailInfoImgUrl")
+		if len(singerDetailInfoImgUrl) == 0 {
+			log.Errorf("no singerDetailInfoImgUrl")
+			return
+		}
+
+		deptName := r.PostFormValue("deptName")
+		if len(deptName) == 0 {
+			log.Errorf("no deptName")
+			return
+		}
+
+		declaration := r.PostFormValue("declaration")
+		if len(declaration) == 0 {
+			log.Errorf("no declaration")
+			return
+		}
+
+		req := &SingerRegisterReq{uin, token, int(ver), personalName, activeHeadImgUrl, rankActiveHeadImgUrl, singerDetailInfoImgUrl, deptName, declaration}
 		rsp, err := doSingerRegister(req, nil)
 		if err != nil {
 			log.Errorf(err.Error())
@@ -948,11 +1198,11 @@ func HtmlHandler(w http.ResponseWriter, r *http.Request) {
 
 func ImageHandler(w http.ResponseWriter, r *http.Request) {
 	log.Debugf("start ImageHandler r:%+v", r)
-
-	w.Header().Add("Cache-Control", "no-cache, no-store, must-revalidate")
-	w.Header().Add("Pragma", "no-cache")
-	w.Header().Add("Expires", "0")
-
+	/*
+		w.Header().Add("Cache-Control", "no-cache, no-store, must-revalidate")
+		w.Header().Add("Pragma", "no-cache")
+		w.Header().Add("Expires", "0")
+	*/
 	imagePath := "../download/" + r.URL.Path[1:]
 	log.Debugf("imagePath:%s", imagePath)
 	http.ServeFile(w, r, imagePath)
@@ -962,11 +1212,11 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 
 func JsHandler(w http.ResponseWriter, r *http.Request) {
 	log.Debugf("start JsHandler r:%+v", r)
-
-	w.Header().Add("Cache-Control", "no-cache, no-store, must-revalidate")
-	w.Header().Add("Pragma", "no-cache")
-	w.Header().Add("Expires", "0")
-
+	/*
+		w.Header().Add("Cache-Control", "no-cache, no-store, must-revalidate")
+		w.Header().Add("Pragma", "no-cache")
+		w.Header().Add("Expires", "0")
+	*/
 	jsPath := "../download/" + r.URL.Path[1:]
 	log.Debugf("JsPath:%s", jsPath)
 	http.ServeFile(w, r, jsPath)
@@ -976,11 +1226,11 @@ func JsHandler(w http.ResponseWriter, r *http.Request) {
 
 func CssHandler(w http.ResponseWriter, r *http.Request) {
 	log.Debugf("start CssHandler r:%+v", r)
-
-	w.Header().Add("Cache-Control", "no-cache, no-store, must-revalidate")
-	w.Header().Add("Pragma", "no-cache")
-	w.Header().Add("Expires", "0")
-
+	/*
+		w.Header().Add("Cache-Control", "no-cache, no-store, must-revalidate")
+		w.Header().Add("Pragma", "no-cache")
+		w.Header().Add("Expires", "0")
+	*/
 	cssPath := "../download/" + r.URL.Path[1:]
 	log.Debugf("cssPath:%s", cssPath)
 	http.ServeFile(w, r, cssPath)
@@ -991,6 +1241,13 @@ func CssHandler(w http.ResponseWriter, r *http.Request) {
 func checkBaseParams(uin int64, tokenStr string, ver int) (pass bool, err error) {
 	//不开启验证
 	if Config.Auth.Open == 0 {
+		/*	pass, err = uinExist(uin)
+			if err != nil {
+				log.Errorf(err.Error())
+				pass = false
+				return
+			}
+		*/
 		pass = true
 		return
 	}

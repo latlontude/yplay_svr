@@ -6,16 +6,20 @@ import (
 	"common/rest"
 	"fmt"
 	"net/http"
+	"svr/st"
 )
 
 type SingerInfo struct {
-	SingerId   int    `json:"singerId"`
-	Uin        int    `json:"uin"`
-	NickName   string `json:"nickName"`
-	HeadImgUrl string `json:"headImgUrl"`
-	Gender     int    `json:"gender"`
-	DeptName   string `json:"deptName"`
-	Grade      int    `json:"grade"`
+	SingerId               int    `json:"singerId"`
+	Uin                    int64  `json:"uin"`
+	UserName               string `json:"userName"`
+	NickName               string `json:"nickName"`
+	HeadImgUrl             string `json:"headImgUrl"`
+	Gender                 int    `json:"gender"`
+	DeptName               string `json:"deptName"`
+	Grade                  int    `json:"grade"`
+	ActiveHeadImgUrl       string `json:"activeHeadImgUrl"`
+	SingerDetailInfoImgUrl string `json:"singerDetailInfoImgUrl"`
 }
 
 type GetSingerFromPupuReq struct {
@@ -60,7 +64,7 @@ func GetSingersFromPupu(uin int64) (singers []SingerInfo, err error) {
 		return
 	}
 
-	sql := fmt.Sprintf(`select singerId, uin, nickName, headImgUrl, gender, deptName, grade from ddsingers where status = 0`)
+	sql := fmt.Sprintf(`select singerId, uin, activeHeadImgUrl, singerDetailInfoImgUrl, deptName  from ddsingers where status = 0`)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -71,7 +75,23 @@ func GetSingersFromPupu(uin int64) (singers []SingerInfo, err error) {
 
 	for rows.Next() {
 		var singer SingerInfo
-		rows.Scan(&singer.SingerId, &singer.Uin, &singer.NickName, &singer.HeadImgUrl, &singer.Gender, &singer.DeptName, &singer.Grade)
+		rows.Scan(&singer.SingerId, &singer.Uin, &singer.ActiveHeadImgUrl, &singer.SingerDetailInfoImgUrl, &singer.DeptName)
+		singer.ActiveHeadImgUrl = fmt.Sprintf("http://yplay-1253229355.cossh.myqcloud.com/banner/%s", singer.ActiveHeadImgUrl)
+		singer.SingerDetailInfoImgUrl = fmt.Sprintf("http://yplay-1253229355.cossh.myqcloud.com/banner/%s", singer.SingerDetailInfoImgUrl)
+
+		ui, err1 := st.GetUserProfileInfo(singer.Uin)
+		if err1 != nil {
+			err = err1
+			log.Errorf(err1.Error())
+			return
+		}
+
+		singer.UserName = ui.UserName
+		singer.NickName = ui.NickName
+		singer.HeadImgUrl = ui.HeadImgUrl
+		singer.Gender = ui.Gender
+		singer.Grade = ui.Grade
+
 		singers = append(singers, singer)
 	}
 
@@ -103,5 +123,45 @@ func GetMyVotedSingerIdFromPupu(uin int64) (singerId int, err error) {
 	}
 
 	log.Debugf("end GetMyVotedSingerIdFromPupu singerId:%d", singerId)
+	return
+}
+
+func uinExist(uin int64) (pass bool, err error) {
+	log.Debugf("start uinExist uin:%d", uin)
+
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		log.Error(err.Error())
+		return
+	}
+
+	ui, err := st.GetUserProfileInfo(uin)
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+
+	//看看是否在配置的学校列表中
+	log.Debugf("openSchools:%+v", OpenSchools)
+	log.Debugf("ui schoolId:%d", ui.SchoolId)
+
+	find := false
+	for sid, _ := range OpenSchools {
+		if ui.SchoolId == sid {
+			find = true
+			break
+		}
+	}
+
+	//没有参加活动的权限
+	if !find {
+		pass = false
+		log.Debugf("user:%d school does not fit", uin)
+		return
+	}
+
+	pass = true
+	log.Debugf("end uinExist pass : %+t", pass)
 	return
 }

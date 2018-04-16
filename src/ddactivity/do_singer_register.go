@@ -14,6 +14,23 @@ type SingerRegisterReq struct {
 	Uin   int64  `schema:"uin"`
 	Token string `schema:"token"`
 	Ver   int    `schema:"ver"`
+
+	PersonalName           string `schema:"personalName"`
+	ActiveHeadImgUrl       string `schema:"activeHeadImgUrl"`
+	RankActiveHeadImgUrl   string `schema:"rankActiveHeadImgUrl"`
+	SingerDetailInfoImgUrl string `schema:"singerDetailInfoImgUrl"`
+	DeptName               string `schema:"deptName"`
+	Declaration            string `schema:"declaration"`
+}
+
+type Singer struct {
+	Uin                    int64  `json:"uin"`
+	PersonalName           string `json:"personalName"`
+	ActiveHeadImgUrl       string `json:"activeHeadImgUrl"`
+	RankActiveHeadImgUrl   string `json:"rankActiveHeadImgUrl"`
+	SingerDetailInfoImgUrl string `json:"singerDetailInfoImgUrl"`
+	DeptName               string `json:"deptName"`
+	Declaration            string `json:"declaration"`
 }
 
 type SingerRegisterRsp struct {
@@ -21,7 +38,8 @@ type SingerRegisterRsp struct {
 
 func doSingerRegister(req *SingerRegisterReq, r *http.Request) (rsp *SingerRegisterRsp, err error) {
 	log.Debugf("start doRegisterSinger uin:%d", req.Uin)
-	err = SingerRegister(req.Uin)
+
+	err = SingerRegister(Singer{req.Uin, req.PersonalName, req.ActiveHeadImgUrl, req.RankActiveHeadImgUrl, req.SingerDetailInfoImgUrl, req.DeptName, req.Declaration})
 	if err != nil {
 		log.Errorf(err.Error())
 		return
@@ -32,8 +50,8 @@ func doSingerRegister(req *SingerRegisterReq, r *http.Request) (rsp *SingerRegis
 	return
 }
 
-func SingerRegister(uin int64) (err error) {
-	log.Debugf("start SingerRegister uin:%d", uin)
+func SingerRegister(singer Singer) (err error) {
+	log.Debugf("start SingerRegister uin:%d,")
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
 	if inst == nil {
 		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
@@ -41,7 +59,7 @@ func SingerRegister(uin int64) (err error) {
 		return
 	}
 
-	ui, err := st.GetUserProfileInfo(uin)
+	ui, err := st.GetUserProfileInfo(singer.Uin)
 	if err != nil {
 		log.Errorf(err.Error())
 		return
@@ -62,16 +80,11 @@ func SingerRegister(uin int64) (err error) {
 	//没有参加活动的权限
 	if !find {
 		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
-		log.Debugf("user:%d school does not fit", uin)
+		log.Debugf("user:%d school does not fit", singer.Uin)
 		return
 	}
 
-	if ui.Uin == 0 || len(ui.NickName) == 0 || len(ui.DeptName) == 0 || len(ui.HeadImgUrl) == 0 || ui.Grade == 0 || ui.Gender == 0 {
-		log.Debugf("ui:%+v register info is incomplete")
-		return
-	}
-
-	sql := fmt.Sprintf(`select uin from ddsingers where uin = %d`, uin)
+	sql := fmt.Sprintf(`select uin from ddsingers where uin = %d`, singer.Uin)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -86,11 +99,11 @@ func SingerRegister(uin int64) (err error) {
 		break
 	}
 	if hasRegistered {
-		log.Debugf("uin:%d has register", uin)
+		log.Debugf("uin:%d has register", singer.Uin)
 		return
 	}
 
-	stmt, err := inst.Prepare(`insert into ddsingers values(?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+	stmt, err := inst.Prepare(`insert into ddsingers values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_PREPARE, err.Error())
 		log.Error(err.Error())
@@ -100,7 +113,7 @@ func SingerRegister(uin int64) (err error) {
 
 	ts := time.Now().Unix()
 	status := 0
-	_, err = stmt.Exec(0, ui.Uin, ui.NickName, ui.HeadImgUrl, ui.Gender, ui.DeptName, ui.Grade, status, ts)
+	_, err = stmt.Exec(0, singer.Uin, singer.PersonalName, singer.ActiveHeadImgUrl, singer.RankActiveHeadImgUrl, singer.SingerDetailInfoImgUrl, singer.DeptName, singer.Declaration, status, ts)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
 		log.Error(err.Error())
