@@ -62,6 +62,7 @@ func main() {
 	http.HandleFunc("/images/", ddactivity.ImageHandler)
 	http.HandleFunc("/javascript/", ddactivity.JsHandler)
 	http.HandleFunc("/styles/", ddactivity.CssHandler)
+	http.HandleFunc("/music/", ddactivity.MusicHandler)
 	http.HandleFunc("/html/", ddactivity.HtmlHandler)
 	http.HandleFunc("/", ddactivity.MyHandler)
 

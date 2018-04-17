@@ -20,6 +20,9 @@ type SingerInfo struct {
 	Grade                  int    `json:"grade"`
 	ActiveHeadImgUrl       string `json:"activeHeadImgUrl"`
 	SingerDetailInfoImgUrl string `json:"singerDetailInfoImgUrl"`
+	SingerSongUrl          string `json:"songUrl"`
+	SingerSongName         string `json:"songName"`
+	SingerSongDuration     string `json:"songDuration"`
 }
 
 type GetSingerFromPupuReq struct {
@@ -64,7 +67,7 @@ func GetSingersFromPupu(uin int64) (singers []SingerInfo, err error) {
 		return
 	}
 
-	sql := fmt.Sprintf(`select singerId, uin, activeHeadImgUrl, singerDetailInfoImgUrl, deptName  from ddsingers where status = 0`)
+	sql := fmt.Sprintf(`select singerId, uin, activeHeadImgUrl, singerDetailInfoImgUrl, deptName, songName, songStoreName, songDuration  from ddsingers where status = 0`)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -75,9 +78,11 @@ func GetSingersFromPupu(uin int64) (singers []SingerInfo, err error) {
 
 	for rows.Next() {
 		var singer SingerInfo
-		rows.Scan(&singer.SingerId, &singer.Uin, &singer.ActiveHeadImgUrl, &singer.SingerDetailInfoImgUrl, &singer.DeptName)
+		var songStoreName string
+		rows.Scan(&singer.SingerId, &singer.Uin, &singer.ActiveHeadImgUrl, &singer.SingerDetailInfoImgUrl, &singer.DeptName, &singer.SingerSongName, &songStoreName, &singer.SingerSongDuration)
 		singer.ActiveHeadImgUrl = fmt.Sprintf("http://yplay-1253229355.cossh.myqcloud.com/banner/%s", singer.ActiveHeadImgUrl)
 		singer.SingerDetailInfoImgUrl = fmt.Sprintf("http://yplay-1253229355.cossh.myqcloud.com/banner/%s", singer.SingerDetailInfoImgUrl)
+		singer.SingerSongUrl = "https://ddactive.yeejay.com/music/" + songStoreName
 
 		ui, err1 := st.GetUserProfileInfo(singer.Uin)
 		if err1 != nil {

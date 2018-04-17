@@ -51,7 +51,7 @@ func GetSingersRankingListFromWx(openId string) (retSingersWithVotes []SingerWit
 		return
 	}
 
-	sql := fmt.Sprintf(`select singerId, uin, rankActiveHeadImgUrl,  deptName from ddsingers where status = 0`)
+	sql := fmt.Sprintf(`select singerId, uin, rankActiveHeadImgUrl,  deptNamem, songName, songStoreName, songDuration from ddsingers where status = 0`)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())

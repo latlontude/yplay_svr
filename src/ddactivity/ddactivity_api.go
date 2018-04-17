@@ -1213,9 +1213,9 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 func JsHandler(w http.ResponseWriter, r *http.Request) {
 	log.Debugf("start JsHandler r:%+v", r)
 	/*
-		w.Header().Add("Cache-Control", "no-cache, no-store, must-revalidate")
-		w.Header().Add("Pragma", "no-cache")
-		w.Header().Add("Expires", "0")
+			w.Header().Add("Cache-Control", "no-cache, no-store, must-revalidate")
+			w.Header().Add("Pragma", "no-cache")
+		    w.Header().Add("Expires", "0")
 	*/
 	jsPath := "../download/" + r.URL.Path[1:]
 	log.Debugf("JsPath:%s", jsPath)
@@ -1238,16 +1238,30 @@ func CssHandler(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+func MusicHandler(w http.ResponseWriter, r *http.Request) {
+	log.Debugf("start MusicHandler r:%+v", r)
+	/*
+		w.Header().Add("Cache-Control", "no-cache, no-store, must-revalidate")
+		w.Header().Add("Pragma", "no-cache")
+		w.Header().Add("Expires", "0")
+	*/
+	musicPath := "../download/" + r.URL.Path[1:]
+	log.Debugf("musicPath:%s", musicPath)
+	http.ServeFile(w, r, musicPath)
+	log.Debugf("end MusicHandler")
+	return
+}
+
 func checkBaseParams(uin int64, tokenStr string, ver int) (pass bool, err error) {
 	//不开启验证
 	if Config.Auth.Open == 0 {
-		/*	pass, err = uinExist(uin)
-			if err != nil {
-				log.Errorf(err.Error())
-				pass = false
-				return
-			}
-		*/
+		pass, err = uinExist(uin)
+		if err != nil {
+			log.Errorf(err.Error())
+			pass = false
+			return
+		}
+
 		pass = true
 		return
 	}
