@@ -115,7 +115,15 @@ func AddFriend(uin int64, srcType int, toUin int64) (msgId int64, err error) {
 		return
 	}
 
-	go SendAddFriendPush(uin, toUin)
+	yes, err := IsInUserBlackList(toUin, uin)
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+
+	if !yes {
+		go SendAddFriendPush(uin, toUin)
+	}
 
 	return
 }
@@ -171,5 +179,34 @@ func SendAddFriendPush(uin int64, toUin int64) (err error) {
 
 	log.Debugf("SendAddFriendPush succ (%d->%d)", uin, toUin)
 
+	return
+}
+
+func IsInUserBlackList(uin, uid int64) (yes bool, err error) {
+	log.Debugf("start IsInUserBlackList uin:%d, uid:%d", uin, uid)
+
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		log.Error(err.Error())
+		return
+	}
+
+	sql := fmt.Sprintf(`select id from pullBlackUser where uin = %d and uid = %d and status = 0`, uin, uid)
+	rows, err := inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Error(err)
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var id int
+		rows.Scan(&id)
+		yes = true
+	}
+
+	log.Debugf("end IsInUserBlackList yes:%t", yes)
 	return
 }

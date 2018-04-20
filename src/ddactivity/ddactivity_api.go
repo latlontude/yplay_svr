@@ -49,7 +49,7 @@ type DDActivitySvrConfig struct {
 	}
 
 	BonusPool struct {
-		Money int
+		Money string
 	}
 
 	NormalCall struct {

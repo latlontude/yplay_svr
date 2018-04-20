@@ -72,15 +72,6 @@ func StoryReport(uin, storyId int64, typ int, desc string) (err error) {
 		return
 	}
 
-	ts := time.Now().Unix()
-	status := 0
-	stmt, err := inst.Prepare(`insert into report values(?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-	if err != nil {
-		err = rest.NewAPIError(constant.E_DB_PREPARE, err.Error())
-		log.Error(err.Error())
-		return
-	}
-	defer stmt.Close()
 	app, err := myredis.GetApp(constant.ENUM_REDIS_APP_STORY_MSG)
 	if err != nil {
 		log.Errorf(err.Error())
@@ -103,6 +94,16 @@ func StoryReport(uin, storyId int64, typ int, desc string) (err error) {
 		return
 	}
 
+	ts := time.Now().Unix()
+	status := 0
+	stmt, err := inst.Prepare(`insert into report values(?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_PREPARE, err.Error())
+		log.Error(err.Error())
+		return
+	}
+	defer stmt.Close()
+
 	_, err = stmt.Exec(0, uin, si.Uin, storyId, storyMsg, typ, desc, status, ts)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
@@ -110,5 +111,36 @@ func StoryReport(uin, storyId int64, typ int, desc string) (err error) {
 		return
 	}
 	log.Debugf("end StoryReport")
+	return
+}
+
+func RecordStory(uin, storyId int64, typ int, data, text, thumbnailImgUrl string) (err error) {
+	log.Debugf("start RecordStory uin:%d, storyId:%d, typ:%d, data:%s, text:%s, humbnailImgUrl:%s", uin, storyId, typ, data, text, thumbnailImgUrl)
+
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		log.Errorf(err.Error())
+		return
+	}
+
+	ts := time.Now().Unix()
+	status := 0
+	stmt, err := inst.Prepare(`insert into story values(?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_PREPARE, err.Error())
+		log.Error(err.Error())
+		return
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(0, uin, storyId, typ, data, text, thumbnailImgUrl, status, ts)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
+		log.Error(err.Error())
+		return
+	}
+
+	log.Debugf("end RecordStory")
 	return
 }

@@ -129,6 +129,37 @@ func GetMyFriends(uin int64, pageNum, pageSize int) (total int, friends []*Frien
 	return
 }
 
+func GetMyFriendsCnt(uin int64) (total int, err error) {
+	log.Debugf("start GetMyFriendsCnt uin:%d", uin)
+
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		log.Error(err)
+		return
+	}
+
+	sql := fmt.Sprintf(`select count(friendUin) from friends where uin = %d`, uin)
+	rows, err := inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Error(err)
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		rows.Scan(&total)
+	}
+
+	if total == 0 {
+		return
+	}
+
+	log.Debugf("end GetMyFriendsCnt total:%d")
+	return
+}
+
 func GetAllMyFriends(uin int64) (friends map[int64]*FriendInfo, err error) {
 
 	friends = make(map[int64]*FriendInfo)

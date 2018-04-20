@@ -48,6 +48,22 @@ func doGetMyProfile(req *GetMyProfileReq, r *http.Request) (rsp *GetMyProfileRsp
 
 	info.NewsCnt = newsCnt
 
+	friendsCnt, err := st.GetMyFriendsCnt(req.Uin)
+	if err != nil {
+		log.Errorf("faied to get friends count")
+		return
+	}
+
+	info.FriendCnt = friendsCnt
+
+	userGemCnt, err := GetUserGemCnt(req.Uin)
+	if err != nil {
+		log.Errorf("faied to get user gem cnt")
+		return
+	}
+
+	info.GemCnt = userGemCnt
+
 	rsp = &GetMyProfileRsp{info, modInfos, ver}
 
 	log.Debugf("uin %d, GetMyProfileRsp succ, %+v", req.Uin, rsp)

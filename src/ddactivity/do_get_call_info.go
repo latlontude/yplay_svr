@@ -17,7 +17,7 @@ type GetCallInfoReq struct {
 }
 
 type CallInfo struct {
-	Money                  int          `json:"money"`
+	Money                  string       `json:"money"`
 	NeedCallCntToBeatFirst int          `json:"needCallCntToBeatFirst"`
 	FirstSingers           []SingerInfo `json:"firstSingers"`
 	MySinger               SingerInfo   `json:"mySinger"`

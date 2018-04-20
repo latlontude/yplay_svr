@@ -81,6 +81,8 @@ func AddStory(uin int64, typ int, data, text, thumbnailImgUrl string) (sid int64
 		}
 	}
 
+	go RecordStory(uin, sid, typ, data, text, thumbnailImgUrl)
+
 	var si st.StoryInfo
 	si.StoryId = sid
 	si.Text = text
