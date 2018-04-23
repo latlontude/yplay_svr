@@ -182,6 +182,10 @@ func AcceptAddFriend(uin int64, msgId int64, act int) (err error) {
 
 	go JudgeNeedGeneQids(fromUin, toUin)
 
+	//自动从黑名单删除
+	go removeUserFromMyBlacklist(fromUin, toUin)
+	go removeUserFromMyBlacklist(toUin, fromUin)
+
 	return
 }
 
@@ -340,5 +344,28 @@ func CreateNewSnapSession(uin, uid int64) (groupId string, err error) {
 
 	log.Debugf("uin1 %d, uin2 %d, create snap chat session success, groupId %s", uin, uid, groupId)
 
+	return
+}
+
+func removeUserFromMyBlacklist(uin, uid int64) (err error) {
+	log.Debugf("start removeUserFromMyBlacklist uin:%d ", uin)
+
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		log.Errorf(err.Error())
+		return
+	}
+
+	sql := fmt.Sprintf(`delete from pullBlackUser where uin = %d and uid = %d`, uin, uid)
+
+	_, err = inst.Exec(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
+		log.Error(err.Error())
+		return
+	}
+
+	log.Debugf("end removeUserFromMyBlacklist")
 	return
 }

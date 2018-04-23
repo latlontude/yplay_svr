@@ -98,8 +98,18 @@ func AddFriend(uin int64, srcType int, toUin int64) (msgId int64, err error) {
 		return
 	}
 
+	yes, err := IsInUserBlackList(toUin, uin)
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+
 	ts := time.Now().Unix()
 	sql = fmt.Sprintf(`insert into addFriendMsg values(%d, %d, %d, %d, %d, %d, %d)`, 0, uin, toUin, srcType, constant.ENUM_ADD_FRIEND_STATUS_INIT, ts, 0)
+
+	if yes {
+		sql = fmt.Sprintf(`insert into addFriendMsg values(%d, %d, %d, %d, %d, %d, %d)`, 0, uin, toUin, srcType, constant.ENUM_ADD_FRIEND_STATUS_IGNORE, ts, ts)
+	}
 
 	res, err := inst.Exec(sql)
 	if err != nil {
@@ -112,12 +122,6 @@ func AddFriend(uin int64, srcType int, toUin int64) (msgId int64, err error) {
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
 		log.Error(err.Error())
-		return
-	}
-
-	yes, err := IsInUserBlackList(toUin, uin)
-	if err != nil {
-		log.Errorf(err.Error())
 		return
 	}
 

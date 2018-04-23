@@ -82,7 +82,7 @@ func GetAddFriendNewMsgCnt(uin int64) (cnt int, err error) {
 		return
 	}
 
-	sql := fmt.Sprintf(`select count(msgId) from addFriendMsg where toUin = %d and msgId > %d`, uin, lastMsgId)
+	sql := fmt.Sprintf(`select count(msgId) from addFriendMsg where toUin = %d and msgId > %d and status = 0`, uin, lastMsgId)
 	rows, err := inst2.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
