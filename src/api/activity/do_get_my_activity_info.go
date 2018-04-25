@@ -85,7 +85,7 @@ func GetMyActivityInfo(uin int64) (open int, banners []*BannerInfo, err error) {
 		return
 	}
 
-	sql := fmt.Sprintf(`select imgUrl, imgWidth, imgHeight, h5Url, tsStart, tsEnd from banner`)
+	sql := fmt.Sprintf(`select imgUrl, imgWidth, imgHeight, h5Url, tsStart, tsEnd from banner where status = 0`)
 
 	rows, err := inst.Query(sql)
 	if err != nil {

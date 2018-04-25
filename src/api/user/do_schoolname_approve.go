@@ -63,7 +63,7 @@ func ApproveSchoolName(user int64, schoolId int) (err error) {
 		return
 	}
 
-	sql := fmt.Sprintf(`select id from pendingSchool where uin = %d and status = 0 and schoolId >= 9999997 and schoolId <= 9999999`, user)
+	sql := fmt.Sprintf(`select id from pendingSchool where uin = %d  and schoolId >= 9999997 and schoolId <= 9999999`, user)
 
 	rows, err := inst.Query(sql)
 	if err != nil {

@@ -45,14 +45,14 @@ const ENUM_REDIS_APP_SUBMIT_LAST_READ_ONLINE_TS = "submitlastreadonline" //上�
 const ENUM_REDIS_APP_USER_PV_CNT = "userpvcnt"
 const ENUM_REDIS_APP_PRE_GENE_QIDS = "pregeneqids"
 const ENUM_REDIS_APP_SNAPCHAT_SESSION = "snapchatsession"
-
+const ENUM_REDIS_APP_VOTECHAT_SESSION = "votechatsession"
 const ENUM_REDIS_APP_STORY_MSG = "storymsg"                       //存储每条story的信息
 const ENUM_REDIS_APP_STORY_STAT = "storystat"                     //存储每条story的观看记录
 const ENUM_REDIS_APP_FRIEND_STORY_LIST = "friendstorymsg"         //每个人的朋友圈story列表
 const ENUM_REDIS_APP_MY_STORY_LIST = "mystorymsg"                 //自己的story列表
 const ENUM_REDIS_APP_LAST_READ_STORY_MS = "lastreadstoryms"       //最近一次读story的时间
 const ENUM_REDIS_APP_USER_LOOKED_OPTION_UINS = "lookedoptionuins" //用户答题中看到的选项UIN列表用于优化选项
-const ENUM_REDIS_APP_INVITE_FRIEND_BY_VOTE = "invitedcnt"         //记录该未注册好友因被投票注册的次数
+const ENUM_REDIS_APP_INVITE_FRIEND_BY_VOTE = "invitedcnt"         //记录投票给未注册好友每日发送短信的次数
 
 const ENUM_VOTE_STATUS_INIT = 0
 const ENUM_VOTE_STATUS_REPLY = 1

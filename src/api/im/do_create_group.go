@@ -3,15 +3,16 @@ package im
 import (
 	"bytes"
 	"common/constant"
+	"common/mydb"
+	//"common/myredis"
 	"common/rest"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"time"
 	//"strings"
-	"common/mydb"
 	"svr/st"
+	"time"
 )
 
 //IM后台的创建群组请求
@@ -99,90 +100,50 @@ func CreateGroup(uin int64, voteToUin int64, voteRecordId int64, groupName strin
 	if uin == voteToUin {
 		return
 	}
-
 	/*
-	   app, err := myredis.GetApp(constant.ENUM_REDIS_APP_IMGROUP)
-	   if err != nil{
-	       log.Error(err.Error())
-	       return
-	   }
+		app, err := myredis.GetApp(constant.ENUM_REDIS_APP_VOTECHAT_SESSION)
+		if err != nil {
+			log.Error(err.Error())
+			return
+		}
 
+		keyStr := fmt.Sprintf("%d_%d", uin, voteToUin)
+		if uin > voteToUin {
+			keyStr = fmt.Sprintf("%d_%d", voteToUin, uin)
+		}
 
-	   keyStr := fmt.Sprintf("%d", voteRecordId)
-	   valStr, err := app.Get(keyStr)
+		valStr, err := app.Get(keyStr)
 
-	   if err != nil{
+		if err != nil {
 
-	       //如果KEY不存在
-	       e, ok := err.(*rest.APIError)
+			//如果KEY不存在
+			e, ok := err.(*rest.APIError)
 
-	       if !ok{
-	           log.Error(err.Error())
-	           return
-	       }
+			if !ok {
+				log.Error(err.Error())
+				return
+			}
 
-	       if e.Code != constant.E_REDIS_KEY_NO_EXIST{
-	           log.Error(err.Error())
-	           return
-	       }
+			if e.Code != constant.E_REDIS_KEY_NO_EXIST {
+				log.Error(err.Error())
+				return
+			}
 
-	   }else{
+		} else {
 
-	       groupId = strings.TrimSpace(valStr)
+			groupId = strings.TrimSpace(valStr)
 
-	       if len(groupId) > 0{
-	           return
-	       }
-	   }
+			if len(groupId) > 0 {
+				log.Errorf("uin %d, voteToUin %d, CreateGroup, return groupId from redis %s", uin, voteToUin, groupId)
+				return
+			}
+		}
 	*/
-
-	/*
-	   q := fmt.Sprintf(`select imSessionId from voteRecords where id = %d`, voteRecordId)
-	   rows, err := inst.Query(q)
-	   if err != nil {
-	       err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
-	       log.Error(err)
-	       return
-	   }
-	   defer rows.Close()
-
-	   find := false
-
-	   for rows.Next() {
-	       rows.Scan(&groupId)
-	       find = true
-	   }
-
-	   //如果找到
-	   if find {
-	       return
-	   }
-	*/
-
 	sig, err := GetAdminSig()
 	if err != nil {
 		log.Errorf(err.Error())
 		return
 	}
-
-	/*
-	   newName := groupName
-
-	   if len([]byte(groupName)) > 30 {
-
-	       newName = ""
-
-	       for _, s := range groupName{
-	           newName += string(s)
-
-	           if len([]byte(newName)) > 27{
-	               break;
-	           }
-	       }
-
-	       newName = newName[:len(newName)-1] + "..."
-	   }
-	*/
 
 	newName := "噗噗"
 
@@ -234,15 +195,19 @@ func CreateGroup(uin int64, voteToUin int64, voteRecordId int64, groupName strin
 	}
 
 	groupId = rsp.GroupId
-
 	/*
-	   //设置redis失败不认为是失败
-	   err1 := app.Set(keyStr, groupId)
-	   if err1 != nil{
-	       log.Error(err1.Error())
-	       return
-	   }
+		//设置redis失败不认为是失败
+		err1 := app.Set(keyStr, groupId)
+		if err1 != nil {
+			log.Error(err1.Error())
+			return
+		}
 	*/
+	if uin > voteToUin {
+		go storeVoteSessionId(voteToUin, uin, groupId)
+	} else {
+		go storeVoteSessionId(uin, voteToUin, groupId)
+	}
 
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
 	if inst == nil {
@@ -259,5 +224,40 @@ func CreateGroup(uin int64, voteToUin int64, voteRecordId int64, groupName strin
 		return
 	}
 
+	return
+}
+
+func storeVoteSessionId(uin, uid int64, sessionId string) (err error) {
+	log.Debugf("start storeVoteSessionId uin:%d uid:%d sessionId:%s", uin, uid, sessionId)
+
+	if uin == uid {
+		log.Errorf("err uin equel uid")
+		return
+	}
+
+	ts := time.Now().Unix()
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		log.Error(err)
+		return
+	}
+
+	stmt, err := inst.Prepare(`insert into voteSession values(?, ?, ?, ?, ?)`)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_PREPARE, err.Error())
+		log.Error(err)
+		return
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(0, uin, uid, sessionId, ts)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
+		log.Error(err.Error())
+		return
+	}
+
+	log.Debugf("end storeVoteSessionId uin:%d uid:%d sessionId:%s", uin, uid, sessionId)
 	return
 }
