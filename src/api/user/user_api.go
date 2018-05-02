@@ -17,6 +17,8 @@ var (
 		"/updateuserprofile":         auth.Apify2(doUpdateUserProfile),        //更新用户基础信息 头像/昵称/用户名称/性别
 		"/updateschoolinfo":          auth.Apify2(doUpdateSchoolInfo),         //更新用户的学校信息
 		"/schoolnameapprove":         auth.Apify(doApproveSchoolName),         //用户输入的学校名审核通过 方便运维处理 不加权限校验
+		"/addschool":                 auth.Apify(doAddSchool),                 //在schools数据库表中增加新的学校,并将学校信息同步到mgo和es 中
+		"/updateschoolfromdbtb":      auth.Apify(doUpdateSchool),              //将schools 数据库表中的学校信息同步到mgo和es 中
 		"/reportuser":                auth.Apify(doReportUser),                //举报用户
 		"/pullblackuser":             auth.Apify(doPullBlackUser),             //拉黑用户
 		"/getmyblacklist":            auth.Apify(doGetMyBlacklist),            //获取我的黑名单用户
