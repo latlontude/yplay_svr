@@ -217,7 +217,7 @@ func SendPhoneCode(phone string, text string) (err error) {
 
 	const SMS_SDK_APPID = 1400031527
 	const SMS_APPKEY = "a0a26597a1d8c60ac486b1b33359345a"
-	const SMS_TPL_ID = 20545
+	const SMS_TPL_ID = 134476
 
 	ts := uint32(time.Now().Unix())
 
@@ -243,7 +243,8 @@ func SendPhoneCode(phone string, text string) (err error) {
 	req.Ext = ""
 
 	//req.Params = []string{"[YPLAY]您的验证码", text, "1"}
-	req.Params = []string{"【噗噗】登录验证码", text, "3"}
+	//req.Params = []string{"【噗噗】登录验证码", text, "3"}
+	req.Params = []string{"", text, "3"}
 
 	d, err := json.Marshal(req)
 	if err != nil {

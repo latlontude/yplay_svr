@@ -81,12 +81,20 @@ func Login2(phone string, code string, uuid int64, device, os, appVer string) (r
 	log.Debugf("innerTestPhones:%+v", innerTestPhones)
 
 	find := false
+
 	for _, value := range innerTestPhones {
 		if value == phone {
 			find = true
 			break
 		}
 	}
+
+	log.Debugf("phone[:7]:%s", phone[:7])
+
+	if phone[:7] == "1406666" {
+		find = true
+	}
+
 	if phone != env.Config.Service.Phone && !find {
 		if !sms.IsValidPhone(phone) {
 			err = rest.NewAPIError(constant.E_INVALID_PHONE, "phone number invalid")

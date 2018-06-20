@@ -4,13 +4,18 @@ import (
 	"api/account"
 	"api/activity"
 	"api/addr"
+	"api/answer"
+	"api/board"
+	"api/comment"
 	"api/feed"
 	"api/geneqids"
 	"api/helper"
 	"api/im"
+	"api/like"
 	"api/msg"
 	"api/notify"
 	"api/push"
+	"api/question"
 	"api/sns"
 	"api/story"
 	"api/submit"
@@ -59,6 +64,11 @@ func main() {
 	panicUnless(activity.Init())
 
 	httputil.HandleAPIMap("/api/account/", account.APIMap)
+	httputil.HandleAPIMap("/api/answer/", answer.APIMap)
+	httputil.HandleAPIMap("/api/board/", board.APIMap)
+	httputil.HandleAPIMap("/api/like/", like.APIMap)
+	httputil.HandleAPIMap("/api/comment/", comment.APIMap)
+	httputil.HandleAPIMap("/api/question/", question.APIMap)
 	httputil.HandleAPIMap("/api/feed/", feed.APIMap)
 	httputil.HandleAPIMap("/api/msg/", msg.APIMap)
 	httputil.HandleAPIMap("/api/sns/", sns.APIMap)

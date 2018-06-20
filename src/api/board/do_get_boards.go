@@ -39,6 +39,8 @@ func doGetBoards(req *GetBoardsReq, r *http.Request) (rsp *GetBoardsRsp, err err
 
 func GetBoards(uin int64) (boards []*st.BoardInfo, err error) {
 
+	log.Debugf("start GetBoards uin:%d", uin)
+
 	boards = make([]*st.BoardInfo, 0)
 
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
@@ -47,7 +49,14 @@ func GetBoards(uin int64) (boards []*st.BoardInfo, err error) {
 		log.Error(err)
 		return
 	}
-	sql := fmt.Sprintf(`select boardId, boardName, boardIntro, boardIconUrl, boardStatus, schoolId, ownerUid, createTs from v2boards`)
+
+	uInfo, err := st.GetUserProfileInfo(uin)
+	if err != nil {
+		log.Error(err.Error())
+		return
+	}
+
+	sql := fmt.Sprintf(`select boardId, boardName, boardIntro, boardIconUrl, boardStatus, schoolId, ownerUid, createTs from v2boards where schoolId = %d`, uInfo.SchoolId)
 
 	rows, err := inst.Query(sql)
 	if err != nil {
@@ -91,8 +100,40 @@ func GetBoards(uin int64) (boards []*st.BoardInfo, err error) {
 			info.SchoolType = si.SchoolType
 		}
 
+		follwCnt, _ := getFollowCnt(info.BoardId)
+		info.FollowCnt = follwCnt
+
 		boards = append(boards, &info)
 	}
 
+	log.Debugf("end GetBoards boards:%+v", boards)
+	return
+}
+
+func getFollowCnt(boardId int64) (cnt int, err error) {
+	log.Debugf("start getFollowCnt boardId:%d", boardId)
+
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		log.Error(err)
+		return
+	}
+
+	sql := fmt.Sprintf(`select count(id) as cnt from v2follow where boardId = %d`, boardId)
+
+	rows, err := inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Error(err)
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		rows.Scan(&cnt)
+	}
+
+	log.Debugf("end getFollowCnt boardId:%d cnt:%d", boardId, cnt)
 	return
 }

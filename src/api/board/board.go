@@ -8,7 +8,9 @@ import (
 
 var (
 	APIMap = httputil.APIMap{
-		"/getboards": auth.Apify2(doGetBoards), //投票操作
+		"/getboards": auth.Apify2(doGetBoards),
+		"/follow":    auth.Apify2(doFollow),
+		"/unfollow":  auth.Apify2(doUnfollow),
 	}
 
 	log = env.NewLogger("board")

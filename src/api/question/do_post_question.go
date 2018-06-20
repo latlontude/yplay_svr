@@ -17,11 +17,11 @@ type PostQuestionReq struct {
 	QTitle      string `schema:"qTitle"`
 	QContent    string `schema:"qContent"`
 	QImgUrls    string `schema:"qImgUrls"`
-	IsAnonymous int    `schema:"isAnonymous"`
+	IsAnonymous bool   `schema:"isAnonymous"`
 }
 
 type PostQuestionRsp struct {
-	Qid int `schema:"qid"`
+	Qid int `json:"qid"`
 }
 
 func doPostQuestion(req *PostQuestionReq, r *http.Request) (rsp *PostQuestionRsp, err error) {
@@ -31,7 +31,7 @@ func doPostQuestion(req *PostQuestionReq, r *http.Request) (rsp *PostQuestionRsp
 	qid, err := PostQuestion(req.Uin, req.BoardId, req.QTitle, req.QContent, req.QImgUrls, req.IsAnonymous)
 
 	if err != nil {
-		log.Errorf("uin %d, PostQuestionReq error, %s", req.Uin, err.Error())
+		log.Errorf("uin %d, PostQuestion error, %s", req.Uin, err.Error())
 		return
 	}
 
@@ -42,9 +42,9 @@ func doPostQuestion(req *PostQuestionReq, r *http.Request) (rsp *PostQuestionRsp
 	return
 }
 
-func PostQuestion(uin int64, boardId int, title, content, imgUrls string, isAnonymous int) (qid int64, err error) {
+func PostQuestion(uin int64, boardId int, title, content, imgUrls string, isAnonymous bool) (qid int64, err error) {
 
-	if len(title) == 0 || len(content) == 0 || len(imgUrls) == 0 {
+	if boardId == 0 {
 		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid params")
 		log.Error(err)
 		return

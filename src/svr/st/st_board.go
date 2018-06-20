@@ -17,11 +17,13 @@ type BoardInfo struct {
 
 	OwnerInfo *UserProfileInfo `json:"ownerInfo"`
 
+	FollowCnt int `json:"followCnt"`
+
 	CreateTs int `json:"createTs"`
 }
 
 func (this *BoardInfo) String() string {
 
-	return fmt.Sprintf(`BoardInfo{BoardId:%d BoardName:%s BoardIntro:%s BoardIconUrl:%s BoardStatus:%d SchoolId:%d SchoolName:%s  SchoolType:%d, CreateTs:%s, OwnerInfo:%+v}`,
-		this.BoardId, this.BoardName, this.BoardIntro, this.BoardIconUrl, this.BoardStatus, this.SchoolId, this.SchoolName, this.SchoolType, this.CreateTs, this.OwnerInfo)
+	return fmt.Sprintf(`BoardInfo{BoardId:%d BoardName:%s BoardIntro:%s BoardIconUrl:%s BoardStatus:%d SchoolId:%d SchoolName:%s  SchoolType:%d, CreateTs:%d, OwnerInfo:%+v, FollowCnt:%d}`,
+		this.BoardId, this.BoardName, this.BoardIntro, this.BoardIconUrl, this.BoardStatus, this.SchoolId, this.SchoolName, this.SchoolType, this.CreateTs, this.OwnerInfo, this.FollowCnt)
 }

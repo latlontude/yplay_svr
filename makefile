@@ -17,6 +17,9 @@ yplay_svr:
 	@GOPATH=$(GOPATH) $(GO) install -v wxpublic_svr
 	@GOPATH=$(GOPATH) $(GO) install -v dizhidaxuePush
 	@GOPATH=$(GOPATH) $(GO) install -v ddactivity_svr
+	@GOPATH=$(GOPATH) $(GO) install -v ddsinger_svr
+	@GOPATH=$(GOPATH) $(GO) install -v chengyuan_svr
+	@GOPATH=$(GOPATH) $(GO) install -v om_svr
 	mv bin/main bin/yplay_svr
 	#cp bin/yplay_svr /home/work/yplay_svr/bin/yplay_svr
 
