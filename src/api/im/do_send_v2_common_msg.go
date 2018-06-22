@@ -63,7 +63,7 @@ func MakeV2CommonMsg(fromUin int64, dataType int, groupId, data, descStr string)
 
 func SendV2CommonMsg(fromUin, toUin int64, dataType int, notifyData, descStr string) (err error) {
 
-	log.Debugf("start SendStoryShareMsg fromUin:%d, toUin:%d", fromUin, toUin)
+	log.Debugf("start SendV2CommonMsg fromUin:%d, toUin:%d", fromUin, toUin)
 	if fromUin == 0 || toUin == 0 {
 		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid params")
 		log.Errorf(err.Error())
