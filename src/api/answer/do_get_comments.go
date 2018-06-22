@@ -71,7 +71,7 @@ func GetComments(uin int64, answerId, pageNum, pageSize int) (comments []*st.Com
 		return
 	}
 
-	sql := fmt.Sprintf(`select count(commentId) as cnt from  v2comments where answerId = %d`, answerId)
+	sql := fmt.Sprintf(`select count(commentId) as cnt from  v2comments where answerId = %d and commentStatus = 0`, answerId)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -161,7 +161,7 @@ func getCommentLikeCnt(commentId int) (cnt int, err error) {
 		return
 	}
 
-	sql := fmt.Sprintf(`select count(id) as cnt from v2likes where type = 2 and likeId = %d`, commentId)
+	sql := fmt.Sprintf(`select count(id) as cnt from v2likes where type = 2 and likeId = %d and likeStatus = 0`, commentId)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -190,7 +190,7 @@ func getReplyArray(uin int64, commentId int) (Replys []st.ReplyInfo, err error) 
 		return
 	}
 
-	sql := fmt.Sprintf(`select replyId, replyContent, fromUid, toUid, replyTs from v2replys where commentId = %d`, commentId)
+	sql := fmt.Sprintf(`select replyId, replyContent, fromUid, toUid, replyTs from v2replys where commentId = %d and replyStatus = 0`, commentId)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -264,7 +264,7 @@ func getReplyLikeCnt(replyId int) (cnt int, err error) {
 		return
 	}
 
-	sql := fmt.Sprintf(`select count(id) as cnt from v2likes where type = 3 and likeId = %d`, replyId)
+	sql := fmt.Sprintf(`select count(id) as cnt from v2likes where type = 3 and likeId = %d and likeStatus = 0`, replyId)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -291,7 +291,7 @@ func checkIsILikeComment(uin int64, commentId int) (ret bool, err error) {
 		return
 	}
 
-	sql := fmt.Sprintf(`select id from v2likes where type = 2 and likeId = %d and ownerUid = %d`, commentId, uin)
+	sql := fmt.Sprintf(`select id from v2likes where type = 2 and likeId = %d and ownerUid = %d and likeStatus = 0`, commentId, uin)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -320,7 +320,7 @@ func checkIsILikeReply(uin int64, replyId int) (ret bool, err error) {
 		return
 	}
 
-	sql := fmt.Sprintf(`select id from v2likes where type = 3 and likeId = %d and ownerUid = %d`, replyId, uin)
+	sql := fmt.Sprintf(`select id from v2likes where type = 3 and likeId = %d and ownerUid = %d likeStatus = 0`, replyId, uin)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())

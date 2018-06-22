@@ -72,7 +72,7 @@ func GetAnswers(uin int64, qid, pageNum, pageSize int) (answers []*st.AnswersInf
 		return
 	}
 
-	sql := fmt.Sprintf(`select count(answerId) as cnt from v2answers where qid = %d`, qid)
+	sql := fmt.Sprintf(`select count(answerId) as cnt from v2answers where qid = %d and  answerStatus = 0`, qid)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -211,7 +211,7 @@ func getCommentCnt(answerId int) (cnt int, err error) {
 	}
 
 	// 评论数
-	sql := fmt.Sprintf(`select count(commentId) as cnt from v2comments where answerId = %d`, answerId)
+	sql := fmt.Sprintf(`select count(commentId) as cnt from v2comments where answerId = %d and commentStatus = 0`, answerId)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -239,7 +239,7 @@ func getAnswerLikeCnt(answerId int) (cnt int, err error) {
 	}
 
 	// 点赞数
-	sql := fmt.Sprintf(`select count(id) as cnt from v2likes where type = 1 and likeId = %d`, answerId)
+	sql := fmt.Sprintf(`select count(id) as cnt from v2likes where type = 1 and likeId = %d and likeStatus = 0`, answerId)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -266,7 +266,7 @@ func checkIsILikeAnswer(uin int64, answerId int) (ret bool, err error) {
 		return
 	}
 
-	sql := fmt.Sprintf(`select id from v2likes where type = 1 and likeId = %d and ownerUid = %d`, answerId, uin)
+	sql := fmt.Sprintf(`select id from v2likes where type = 1 and likeId = %d and ownerUid = %d and likeStatus = 0`, answerId, uin)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())

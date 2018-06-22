@@ -71,7 +71,7 @@ func GetQuestions(uin int64, boardId, pageNum, pageSize int) (questions []*st.V2
 		return
 	}
 
-	sql := fmt.Sprintf(`select count(qid) as cnt from  v2questions where boardId = %d`, boardId)
+	sql := fmt.Sprintf(`select count(qid) as cnt from  v2questions where boardId = %d and qStatus = 0`, boardId)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -88,7 +88,7 @@ func GetQuestions(uin int64, boardId, pageNum, pageSize int) (questions []*st.V2
 		return
 	}
 
-	sql = fmt.Sprintf(`select qid, ownerUid, qTitle, qContent, qImgUrls, isAnonymous, createTs, modTs from v2questions where qStatus = 0 and qContent != "" and qImgUrls != "" and boardId = %d order by createTs desc limit %d, %d`, boardId, s, e)
+	sql = fmt.Sprintf(`select qid, ownerUid, qTitle, qContent, qImgUrls, isAnonymous, createTs, modTs from v2questions where qStatus = 0 and (qContent != "" or qImgUrls != "") and boardId = %d order by createTs desc limit %d, %d`, boardId, s, e)
 
 	rows, err = inst.Query(sql)
 	if err != nil {
@@ -151,7 +151,7 @@ func getAnswerCnt(qid int) (cnt int, err error) {
 		return
 	}
 
-	sql := fmt.Sprintf(`select count(answerId) as cnt from v2answers where qid = %d`, qid)
+	sql := fmt.Sprintf(`select count(answerId) as cnt from v2answers where qid = %d and answerStatus = 0`, qid)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -178,7 +178,7 @@ func getBestAnswer(uin int64, qid int) (answer *st.AnswersInfo, err error) {
 		return
 	}
 
-	sql := fmt.Sprintf(`select count(answerId) as cnt from v2answers where qid = %d`, qid)
+	sql := fmt.Sprintf(`select count(answerId) as cnt from v2answers where qid = %d and answerStatus = 0`, qid)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -289,7 +289,7 @@ func getQidNewResponders(qid int) (responders []*st.UserProfileInfo, err error) 
 	}
 
 	//查找本道题目最新回答的两个人
-	sql := fmt.Sprintf(`select ownerUid from v2answers where qid = %d order by answerTs desc limit 2`, qid)
+	sql := fmt.Sprintf(`select ownerUid from v2answers where qid = %d and answerStatus = 0 order by answerTs desc limit 2`, qid)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())

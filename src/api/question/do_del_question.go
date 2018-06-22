@@ -76,7 +76,7 @@ func DelQuestion(uin int64, qid int,reason string) (code int, err error) {
 
 	if !permit {
 		err = rest.NewAPIError(constant.E_INVALID_PARAM, "no permissions")
-		log.Errorf("uin:%d has no permissions to delete question:%d", qid)
+		log.Errorf("uin:%d has no permissions to delete question:%d", uin, qid)
 		return
 	}
 
@@ -102,6 +102,7 @@ func DelQuestion(uin int64, qid int,reason string) (code int, err error) {
 
 func getDelQidPermitOperators(qid int) (operators []int64,owner int64, err error) {
 
+	log.Debugf("start getDelQidPermitOperators qid:%d", qid)
 	if qid == 0 {
 		log.Errorf("qid is zero")
 		return
@@ -168,5 +169,6 @@ func getDelQidPermitOperators(qid int) (operators []int64,owner int64, err error
 	serviceAccountUin = 100001 //客服号
 
 	operators = append(operators, serviceAccountUin)
+	log.Debugf("end getDelQidPermitOperators qid:%d uids:%+v", qid, operators)
 	return
 }

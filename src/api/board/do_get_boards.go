@@ -56,7 +56,7 @@ func GetBoards(uin int64) (boards []*st.BoardInfo, err error) {
 		return
 	}
 
-	sql := fmt.Sprintf(`select boardId, boardName, boardIntro, boardIconUrl, boardStatus, schoolId, ownerUid, createTs from v2boards where schoolId = %d`, uInfo.SchoolId)
+	sql := fmt.Sprintf(`select boardId, boardName, boardIntro, boardIconUrl, boardStatus, schoolId, ownerUid, createTs from v2boards where schoolId = %d and boardStatus = 0`, uInfo.SchoolId)
 
 	rows, err := inst.Query(sql)
 	if err != nil {
@@ -120,7 +120,7 @@ func getFollowCnt(boardId int64) (cnt int, err error) {
 		return
 	}
 
-	sql := fmt.Sprintf(`select count(id) as cnt from v2follow where boardId = %d`, boardId)
+	sql := fmt.Sprintf(`select count(id) as cnt from v2follow where boardId = %d and status = 0`, boardId)
 
 	rows, err := inst.Query(sql)
 	if err != nil {
