@@ -166,7 +166,7 @@ func SendBeLikePush(uid int64, qid, likeId int) {
 /**
 删除提问发推送
  */
-func SendBeDeletePush(operatorUid int , uid int64 , reason string, deleteType int) {
+func SendBeDeletePush(operatorUid int64 , uid int64 , reason string, deleteType int) {
 
 	type BeDeleteMsg struct {
 		Type 		int  					`json:"type"`		// type: 1:提问被删除 2：回答被删除 3：评论被删除
@@ -182,7 +182,7 @@ func SendBeDeletePush(operatorUid int , uid int64 , reason string, deleteType in
 		if err1 != nil {
 			log.Error(err1.Error())
 		}
-		deleteMsg.Operater = *ui
+		deleteMsg.Operator = *ui
 	}
 
 	deleteMsg.Type 		 = deleteType
