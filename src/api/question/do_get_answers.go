@@ -27,7 +27,7 @@ type GetAnswersRsp struct {
 
 func doGetAnswers(req *GetAnswersReq, r *http.Request) (rsp *GetAnswersRsp, err error) {
 
-	log.Debugf("uin %d, GetAnswersReq %+v", req.Uin, req)
+	//log.Debugf("uin %d, GetAnswersReq %+v", req.Uin, req)
 
 	answers, totalCnt, err := GetAnswers(req.Uin, req.Qid, req.PageNum, req.PageSize)
 
@@ -38,14 +38,14 @@ func doGetAnswers(req *GetAnswersReq, r *http.Request) (rsp *GetAnswersRsp, err 
 
 	rsp = &GetAnswersRsp{answers, totalCnt}
 
-	log.Debugf("uin %d, GetQuestionsRsp succ, %+v", req.Uin, rsp)
+	//log.Debugf("uin %d, GetQuestionsRsp succ, %+v", req.Uin, rsp)
 
 	return
 }
 
 func GetAnswers(uin int64, qid, pageNum, pageSize int) (answers []*st.AnswersInfo, totalCnt int, err error) {
 
-	log.Debugf("start GetAnswers uin:%d", uin)
+	//log.Debugf("start GetAnswers uin:%d", uin)
 
 	if qid <= 0 || pageNum < 0 || pageSize < 0 {
 		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid params")
@@ -166,13 +166,13 @@ func GetAnswers(uin int64, qid, pageNum, pageSize int) (answers []*st.AnswersInf
 		}
 	}
 
-	log.Debugf("end GetAnswers uin:%d totalCnt:%d", uin, totalCnt)
+	//log.Debugf("end GetAnswers uin:%d totalCnt:%d", uin, totalCnt)
 	return
 }
 
 func sortQuestionAnswer(answers []*st.AnswersInfo) (sortedAnswers []*st.AnswersInfo, err error) {
 
-	log.Debugf("start sortQuestionAnswer")
+	//log.Debugf("start sortQuestionAnswer")
 
 	likeCntAnswerMap := make(map[int][]*st.AnswersInfo)
 
@@ -196,12 +196,12 @@ func sortQuestionAnswer(answers []*st.AnswersInfo) (sortedAnswers []*st.AnswersI
 		}
 	}
 
-	log.Debugf("end sortQuestionAnswer sortedAnswers:%+v", sortedAnswers)
+	//log.Debugf("end sortQuestionAnswer sortedAnswers:%+v", sortedAnswers)
 	return
 }
 
 func getCommentCnt(answerId int) (cnt int, err error) {
-	log.Debugf("start getCommentCnt answerId:%d", answerId)
+	//log.Debugf("start getCommentCnt answerId:%d", answerId)
 
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
 	if inst == nil {
@@ -224,12 +224,12 @@ func getCommentCnt(answerId int) (cnt int, err error) {
 		rows.Scan(&cnt)
 	}
 
-	log.Debugf("end getCommentCnt answerId:%d cnt:%d", answerId, cnt)
+	//log.Debugf("end getCommentCnt answerId:%d cnt:%d", answerId, cnt)
 	return
 }
 
 func getAnswerLikeCnt(answerId int) (cnt int, err error) {
-	log.Debugf("start getAnswerLikeCnt answerId:%d", answerId)
+	//log.Debugf("start getAnswerLikeCnt answerId:%d", answerId)
 
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
 	if inst == nil {
@@ -252,12 +252,12 @@ func getAnswerLikeCnt(answerId int) (cnt int, err error) {
 		rows.Scan(&cnt)
 	}
 
-	log.Debugf("end getAnswerLikeCnt answerId:%d cnt:%d", answerId, cnt)
+	//log.Debugf("end getAnswerLikeCnt answerId:%d cnt:%d", answerId, cnt)
 	return
 }
 
 func checkIsILikeAnswer(uin int64, answerId int) (ret bool, err error) {
-	log.Debugf("start checkIsILikeAnswer uin:%d answerId:%d", uin, answerId)
+	//log.Debugf("start checkIsILikeAnswer uin:%d answerId:%d", uin, answerId)
 
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
 	if inst == nil {
@@ -281,6 +281,6 @@ func checkIsILikeAnswer(uin int64, answerId int) (ret bool, err error) {
 		ret = true
 	}
 
-	log.Debugf("end checkIsILikeAnswer uin:%d answerId:%d ret:%t", uin, answerId, ret)
+	//log.Debugf("end checkIsILikeAnswer uin:%d answerId:%d ret:%t", uin, answerId, ret)
 	return
 }
