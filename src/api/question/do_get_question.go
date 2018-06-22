@@ -289,7 +289,7 @@ func getQidNewResponders(qid int) (responders []*st.UserProfileInfo, err error) 
 	}
 
 	//查找本道题目最新回答的两个人
-	sql := fmt.Sprintf(`select ownerUid from v2answers where qid = %d order by answerTs desc limit 2`, qid)
+	sql := fmt.Sprintf(`select ownerUid from v2answers where qid = %d and answerStatus = 0 order by answerTs desc limit 2`, qid)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())

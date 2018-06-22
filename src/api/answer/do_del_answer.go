@@ -72,7 +72,7 @@ func DelAnswer(uin int64, qid, answerId int) (code int, err error) {
 
 	if !permit {
 		err = rest.NewAPIError(constant.E_INVALID_PARAM, "no permissions")
-		log.Errorf("uin:%d has no permissions to delete answer:%d", answerId)
+		log.Errorf("uin:%d has no permissions to delete answer:%d", uin, answerId)
 		return
 	}
 
