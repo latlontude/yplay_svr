@@ -1,10 +1,12 @@
 package comment
 
 import (
+	"api/v2push"
 	"common/constant"
 	"common/mydb"
 	"common/rest"
 	"net/http"
+	"svr/st"
 	"time"
 )
 
@@ -82,6 +84,21 @@ func PostComment(uin int64, answerId int, commentText string) (commentId int64, 
 		log.Error(err.Error())
 		return
 	}
+
+	var newComment st.CommentInfo
+	newComment.AnswerId = answerId
+	newComment.CommentId = int(commentId)
+	newComment.CommentContent = commentText
+	newComment.CommentTs = int(ts)
+	ui, err := st.GetUserProfileInfo(uin)
+	if err != nil {
+		log.Error(err.Error())
+		return
+	}
+	newComment.OwnerInfo = ui
+
+	//给回答者发送push，告诉ta，ta的回答收到了新评论 dataType:16
+	go v2push.SendBeCommentPush(answerId, newComment)
 
 	log.Debugf("end PostComment uin:%d commentId:%d", uin, commentId)
 	return

@@ -5,16 +5,17 @@ import (
 )
 
 type V2QuestionInfo struct {
-	Qid         int              `json:"qid"`
-	QTitle      string           `json:"qTitle"`
-	QContent    string           `json:"qContent"`
-	QImgUrls    string           `json:"qImgUrls"`
-	OwnerInfo   *UserProfileInfo `json:"ownerInfo"`
-	IsAnonymous bool             `json:"isAnonymous"`
-	CreateTs    int              `json:"createTs"`
-	ModTs       int              `json:"modTs"`
-	AnswerCnt   int              `json:"answerCnt"`
-	BestAnswer  *AnswersInfo     `json:"bestAnswer"`
+	Qid           int                `json:"qid"`
+	QTitle        string             `json:"qTitle"`
+	QContent      string             `json:"qContent"`
+	QImgUrls      string             `json:"qImgUrls"`
+	OwnerInfo     *UserProfileInfo   `json:"ownerInfo"`
+	IsAnonymous   bool               `json:"isAnonymous"`
+	CreateTs      int                `json:"createTs"`
+	ModTs         int                `json:"modTs"`
+	AnswerCnt     int                `json:"answerCnt"`
+	BestAnswer    *AnswersInfo       `json:"bestAnswer"`
+	NewResponders []*UserProfileInfo `json:"newResponders"`
 }
 
 func (this *V2QuestionInfo) String() string {

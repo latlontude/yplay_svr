@@ -2,6 +2,7 @@ package user
 
 import (
 	"api/geneqids"
+	"api/sns"
 	"common/constant"
 	"common/env"
 	"common/mydb"
@@ -243,10 +244,13 @@ func UpdateUserProfileInfo(uin int64, nickName, headImgId string, gender, age in
 
 	//表示资料注册完成了，这时再更新通讯录里面的状态
 	if len(nickName) > 0 && flag == 0 {
-		go UpdateAddrBookInfo(uin)
+		UpdateAddrBookInfo(uin)
 
 		//预先生成答题列表
-		go geneqids.Gene(uin)
+		geneqids.Gene(uin)
+
+		//添加客服号
+		sns.AddCustomServiceAccount(uin)
 	}
 
 	//修改性别重新生成答题列表

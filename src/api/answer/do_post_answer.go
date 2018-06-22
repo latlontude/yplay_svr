@@ -1,10 +1,12 @@
 package answer
 
 import (
+	"api/v2push"
 	"common/constant"
 	"common/mydb"
 	"common/rest"
 	"net/http"
+	"svr/st"
 	"time"
 )
 
@@ -83,5 +85,20 @@ func PostAnswer(uin int64, qid int, answerContent, answerImgUrls string) (answer
 		return
 	}
 
+	var newAnswer st.AnswersInfo
+	newAnswer.Qid = qid
+	newAnswer.AnswerId = int(answerId)
+	newAnswer.AnswerContent = answerContent
+	newAnswer.AnswerImgUrls = answerImgUrls
+	newAnswer.AnswerTs = int(ts)
+	ui, err := st.GetUserProfileInfo(uin)
+	if err != nil {
+		log.Error(err.Error())
+		return
+	}
+	newAnswer.OwnerInfo = ui
+
+	//给提问者和回答过这道题目的人发送新增回答通知
+	go v2push.SendNewAddAnswerPush(qid, newAnswer)
 	return
 }

@@ -1,6 +1,7 @@
 package like
 
 import (
+	"api/v2push"
 	"common/constant"
 	"common/mydb"
 	"common/rest"
@@ -16,7 +17,7 @@ type PostLikeReq struct {
 
 	Qid    int `schema:"qid"`
 	LikeId int `schema:"likeId"`
-	Typ    int `schema:"type"`
+	Typ    int `schema:"type"` //1 给回答点赞，2给评论点赞，3给回应点赞
 }
 
 type PostLikeRsp struct {
@@ -99,5 +100,10 @@ func PostLike(uin int64, qid, likeId, typ int) (code int, err error) {
 	}
 
 	code = 0
+
+	if typ == 1 {
+		go v2push.SendBeLikePush(uin, qid, likeId)
+	}
+
 	return
 }

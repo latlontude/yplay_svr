@@ -88,7 +88,7 @@ func GetQuestions(uin int64, boardId, pageNum, pageSize int) (questions []*st.V2
 		return
 	}
 
-	sql = fmt.Sprintf(`select qid, ownerUid, qTitle, qContent, qImgUrls, isAnonymous, createTs, modTs from v2questions where qStatus = 0 and boardId = %d order by createTs desc limit %d, %d`, boardId, s, e)
+	sql = fmt.Sprintf(`select qid, ownerUid, qTitle, qContent, qImgUrls, isAnonymous, createTs, modTs from v2questions where qStatus = 0 and qContent != "" and qImgUrls != "" and boardId = %d order by createTs desc limit %d, %d`, boardId, s, e)
 
 	rows, err = inst.Query(sql)
 	if err != nil {
@@ -126,12 +126,14 @@ func GetQuestions(uin int64, boardId, pageNum, pageSize int) (questions []*st.V2
 			log.Error(err.Error())
 			continue
 		}
-
 		info.AnswerCnt = answerCnt
 
 		bestAnswer, _ := getBestAnswer(uin, info.Qid)
-
 		info.BestAnswer = bestAnswer
+
+		responders, _ := getQidNewResponders(info.Qid)
+		info.NewResponders = responders
+
 		questions = append(questions, &info)
 	}
 
@@ -269,5 +271,46 @@ func getBestAnswer(uin int64, qid int) (answer *st.AnswersInfo, err error) {
 	}
 
 	log.Debugf("end getBestAnswer answer:%+v", answer)
+	return
+}
+
+func getQidNewResponders(qid int) (responders []*st.UserProfileInfo, err error) {
+
+	if qid == 0 {
+		log.Errorf("qid is zero")
+		return
+	}
+
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		log.Error(err)
+		return
+	}
+
+	//查找本道题目最新回答的两个人
+	sql := fmt.Sprintf(`select ownerUid from v2answers where qid = %d order by answerTs desc limit 2`, qid)
+	rows, err := inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Error(err)
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var uid int64
+		rows.Scan(&uid)
+		if uid > 0 {
+			ui, err1 := st.GetUserProfileInfo(uid)
+			if err1 != nil {
+				log.Error(err1.Error())
+				continue
+			}
+
+			responders = append(responders, ui)
+		}
+	}
+
 	return
 }

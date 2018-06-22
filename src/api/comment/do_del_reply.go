@@ -58,7 +58,26 @@ func DelReply(uin int64, answerId, commentId, replyId int) (code int, err error)
 		return
 	}
 
-	sql := fmt.Sprintf(`delete from v2replys where fromUid = %d and replyId = %d`, uin, replyId)
+	uids, err := getDelReplyPermitOperators(answerId, commentId, replyId)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	permit := false
+	for _, uid := range uids {
+		if uid == uin {
+			permit = true
+		}
+	}
+
+	if !permit {
+		err = rest.NewAPIError(constant.E_INVALID_PARAM, "no permissions")
+		log.Errorf("uin:%d has no permissions to delete replyId:%d", replyId)
+		return
+	}
+
+	sql := fmt.Sprintf(`update v2replys set replyStatus = 1 where replyId = %d and commentId = %d`, replyId, commentId)
 
 	_, err = inst.Exec(sql)
 	if err != nil {
@@ -70,5 +89,89 @@ func DelReply(uin int64, answerId, commentId, replyId int) (code int, err error)
 	code = 0
 
 	log.Debugf("end DelReplay uin = %d code = %d", uin, code)
+	return
+}
+
+func getDelReplyPermitOperators(answerId, commentId, replyId int) (operators []int64, err error) {
+
+	if answerId == 0 || commentId == 0 {
+		log.Errorf("commentId or answerId is zero")
+		return
+	}
+
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		log.Error(err)
+		return
+	}
+
+	qid := 0
+	sql := fmt.Sprintf(`select qid from v2answers where answerId = %d`, answerId)
+	rows, err := inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Error(err)
+		return
+	}
+	for rows.Next() {
+		rows.Scan(&qid)
+	}
+
+	boardId := 0
+	sql = fmt.Sprintf(`select boardId from v2questions where qid = %d`, qid)
+	rows, err = inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Error(err)
+		return
+	}
+	for rows.Next() {
+		rows.Scan(&boardId)
+	}
+
+	//本版块的墙主有权限删除本版块的回应
+	var manager int64
+	sql = fmt.Sprintf(`select ownerUid from v2boards where boardId = %d`, boardId)
+	rows, err = inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Error(err)
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		rows.Scan(&manager)
+	}
+
+	if manager != 0 {
+		operators = append(operators, manager)
+	}
+
+	//回应者本人有权删除自己的回应
+	var owner int64
+	sql = fmt.Sprintf(`select fromUid from v2replys where replyId = %d and commentId = %d`, replyId, commentId)
+	rows, err = inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Error(err)
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		rows.Scan(&owner)
+	}
+
+	if owner != 0 {
+		operators = append(operators, owner)
+	}
+
+	//pupu客服有权删除
+	var serviceAccountUin int64
+	serviceAccountUin = 100001 //客服号
+
+	operators = append(operators, serviceAccountUin)
 	return
 }
