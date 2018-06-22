@@ -14,6 +14,7 @@ type DelQuestionReq struct {
 	Ver   int    `schema:"ver"`
 
 	Qid int `schema:"qid"`
+	Reason string `schema:reason`		//删除原因
 }
 
 type DelQuestionRsp struct {
@@ -24,7 +25,7 @@ func doDelQuestion(req *DelQuestionReq, r *http.Request) (rsp *DelQuestionRsp, e
 
 	log.Debugf("uin %d, DelQuestionReq %+v", req.Uin, req)
 
-	code, err := DelQuestion(req.Uin, req.Qid)
+	code, err := DelQuestion(req.Uin, req.Qid,req.Reason)
 
 	if err != nil {
 		log.Errorf("uin %d, DelQuestion error, %s", req.Uin, err.Error())
@@ -38,7 +39,7 @@ func doDelQuestion(req *DelQuestionReq, r *http.Request) (rsp *DelQuestionRsp, e
 	return
 }
 
-func DelQuestion(uin int64, qid int) (code int, err error) {
+func DelQuestion(uin int64, qid int,reason string) (code int, err error) {
 	log.Debugf("start DelQuestion uin = %d qid = %d", uin, qid)
 
 	code = -1
@@ -56,16 +57,20 @@ func DelQuestion(uin int64, qid int) (code int, err error) {
 		return
 	}
 
-	uids, err := getDelQidPermitOperators(qid)
+	uids, ownerUid ,err := getDelQidPermitOperators(qid)
 	if err != nil {
 		log.Error(err)
 		return
 	}
 
 	permit := false
+	var isMyself bool = false
 	for _, uid := range uids {
 		if uid == uin {
 			permit = true
+		}
+		if ownerUid == uin {
+			isMyself = true
 		}
 	}
 
@@ -84,13 +89,18 @@ func DelQuestion(uin int64, qid int) (code int, err error) {
 		return
 	}
 
+	//不是我自己删的  发推送
+	if !isMyself {
+		SendBeDeletePush(uin, ownerUid ,reason, 1)
+	}
+
 	code = 0
 
 	log.Debugf("end DelQuestion uin = %d qid = %d code = %d", uin, qid, code)
 	return
 }
 
-func getDelQidPermitOperators(qid int) (operators []int64, err error) {
+func getDelQidPermitOperators(qid int) (operators []int64,owner int64, err error) {
 
 	if qid == 0 {
 		log.Errorf("qid is zero")
@@ -136,7 +146,6 @@ func getDelQidPermitOperators(qid int) (operators []int64, err error) {
 	}
 
 	//这道题目的提问者有权限删除本问题
-	var owner int64
 	sql = fmt.Sprintf(`select ownerUid from v2questions where qid = %d`, qid)
 	rows, err = inst.Query(sql)
 	if err != nil {

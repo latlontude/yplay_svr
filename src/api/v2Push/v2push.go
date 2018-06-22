@@ -13,6 +13,8 @@ import (
 
 var log = env.NewLogger("v2push")
 
+
+
 func SendNewAddAnswerPush(qid int, answer st.AnswersInfo) {
 
 	var serviceAccountUin int64
@@ -159,6 +161,51 @@ func SendBeLikePush(uid int64, qid, likeId int) {
 
 	return
 }
+
+
+/**
+删除提问发推送
+ */
+func SendBeDeletePush(operatorUid int , uid int64 , reason string, deleteType int) {
+
+	type BeDeleteMsg struct {
+		Type 		int  					`json:"type"`		// type: 1:提问被删除 2：回答被删除 3：评论被删除
+		Operator    st.UserProfileInfo 		`json:"operator"`
+		Ts  		int64					`json:"ts"`
+		Reason 		string					`json:"reason"`
+	}
+
+	var deleteMsg BeDeleteMsg;
+
+	if operatorUid > 0 {
+		ui, err1 := st.GetUserProfileInfo(operatorUid)
+		if err1 != nil {
+			log.Error(err1.Error())
+		}
+		deleteMsg.Operater = *ui
+	}
+
+	deleteMsg.Type 		 = deleteType
+	deleteMsg.Ts         = 0
+	deleteMsg.Reason 	 = reason
+
+	data, err := json.Marshal(&deleteMsg)
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+	dataStr := string(data)
+
+	log.Debugf("dataStr:%s", dataStr)
+
+	descStr := "收到新消息"
+
+	//给question 所属着发推送
+	go im.SendV2CommonMsg(operatorUid, uid, 18, dataStr, descStr)
+
+	return
+}
+
 
 func getV2Question(qid int) (question st.V2QuestionInfo, err error) {
 	if qid == 0 {

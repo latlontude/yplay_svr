@@ -15,6 +15,7 @@ type DelAnswerReq struct {
 
 	Qid      int `schema:"qid"`
 	AnswerId int `schema:"answerId"`
+	Reason   string 	`schema:"reason"`
 }
 
 type DelAnswerRsp struct {
@@ -25,7 +26,7 @@ func doDelAnswer(req *DelAnswerReq, r *http.Request) (rsp *DelAnswerRsp, err err
 
 	log.Debugf("uin %d, DelAnswerReq %+v", req.Uin, req)
 
-	code, err := DelAnswer(req.Uin, req.Qid, req.AnswerId)
+	code, err := DelAnswer(req.Uin, req.Qid, req.AnswerId,req.Reason)
 
 	if err != nil {
 		log.Errorf("uin %d, DelAnswer error, %s", req.Uin, err.Error())
@@ -39,7 +40,7 @@ func doDelAnswer(req *DelAnswerReq, r *http.Request) (rsp *DelAnswerRsp, err err
 	return
 }
 
-func DelAnswer(uin int64, qid, answerId int) (code int, err error) {
+func DelAnswer(uin int64, qid, answerId int,reason string) (code int, err error) {
 	log.Debugf("start DelAnswer uin = %d qid = %d answerId = %d", uin, qid, answerId)
 
 	code = -1
@@ -57,16 +58,21 @@ func DelAnswer(uin int64, qid, answerId int) (code int, err error) {
 		return
 	}
 
-	uids, err := getDelAnswerPermitOperators(answerId, qid)
+	uids, ownerUid,err := getDelAnswerPermitOperators(answerId, qid)
 	if err != nil {
 		log.Error(err)
 		return
 	}
 
 	permit := false
+	isMyself := false
 	for _, uid := range uids {
 		if uid == uin {
 			permit = true
+		}
+
+		if uin == ownerUid {
+			isMyself = true
 		}
 	}
 
@@ -85,13 +91,17 @@ func DelAnswer(uin int64, qid, answerId int) (code int, err error) {
 		return
 	}
 
+	if !isMyself {
+		SendBeDeletePush(uin, ownerUid ,reason, 2)
+	}
+
 	code = 0
 
 	log.Debugf("end DelAnswer uin = %d qid = %d answerId = %d code = %d", uin, qid, answerId, code)
 	return
 }
 
-func getDelAnswerPermitOperators(answerId, qid int) (operators []int64, err error) {
+func getDelAnswerPermitOperators(answerId, qid int) (operators []int64, owner int64 ,err error) {
 
 	if answerId == 0 || qid == 0 {
 		log.Errorf("qid or answerId is zero")
@@ -137,7 +147,7 @@ func getDelAnswerPermitOperators(answerId, qid int) (operators []int64, err erro
 	}
 
 	//回答者本人有权删除自己的回答
-	var owner int64
+	//var owner int64
 	sql = fmt.Sprintf(`select ownerUid from v2answers where qid = %d and answerId = %d`, qid, answerId)
 	rows, err = inst.Query(sql)
 	if err != nil {

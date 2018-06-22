@@ -15,6 +15,7 @@ type DelCommentReq struct {
 
 	AnswerId  int `schema:"answerId"`
 	CommentId int `schema:"commentId"`
+	Reason    string `schema:"reason"`
 }
 
 type DelCommentRsp struct {
@@ -25,7 +26,7 @@ func doDelComment(req *DelCommentReq, r *http.Request) (rsp *DelCommentRsp, err 
 
 	log.Debugf("uin %d, DelCommentReq %+v", req.Uin, req)
 
-	code, err := DelComment(req.Uin, req.AnswerId, req.CommentId)
+	code, err := DelComment(req.Uin, req.AnswerId, req.CommentId ,req.Reason)
 
 	if err != nil {
 		log.Errorf("uin %d, DelAnswer error, %s", req.Uin, err.Error())
@@ -39,7 +40,7 @@ func doDelComment(req *DelCommentReq, r *http.Request) (rsp *DelCommentRsp, err 
 	return
 }
 
-func DelComment(uin int64, answerId, commentId int) (code int, err error) {
+func DelComment(uin int64, answerId, commentId int, reason string) (code int, err error) {
 	log.Debugf("start DelComment uin = %d answerId = %d commentId = %d", uin, answerId, commentId)
 
 	code = -1
@@ -57,16 +58,20 @@ func DelComment(uin int64, answerId, commentId int) (code int, err error) {
 		return
 	}
 
-	uids, err := getDelCommentPermitOperators(answerId, commentId)
+	uids, ownerUid,err := getDelCommentPermitOperators(answerId, commentId)
 	if err != nil {
 		log.Error(err)
 		return
 	}
 
 	permit := false
+	isMyself := false
 	for _, uid := range uids {
 		if uid == uin {
 			permit = true
+		}
+		if ownerUid == uin {
+			isMyself = true
 		}
 	}
 
@@ -85,13 +90,18 @@ func DelComment(uin int64, answerId, commentId int) (code int, err error) {
 		return
 	}
 
+	//不是我自己删的 发推送
+	if !isMyself {
+		SendBeDeletePush(uin, ownerUid ,reason, 3)
+	}
+
 	code = 0
 
 	log.Debugf("end DelComment uin = %d  code = %d", uin, code)
 	return
 }
 
-func getDelCommentPermitOperators(answerId, commentId int) (operators []int64, err error) {
+func getDelCommentPermitOperators(answerId, commentId int) (operators []int64, owner int64, err error) {
 
 	if answerId == 0 || commentId == 0 {
 		log.Errorf("commentId or answerId is zero")
@@ -149,7 +159,7 @@ func getDelCommentPermitOperators(answerId, commentId int) (operators []int64, e
 	}
 
 	//评论者本人有权删除自己的评论
-	var owner int64
+	//var owner int64
 	sql = fmt.Sprintf(`select ownerUid from v2comments where commentId = %d and answerId = %d`, commentId, answerId)
 	rows, err = inst.Query(sql)
 	if err != nil {
