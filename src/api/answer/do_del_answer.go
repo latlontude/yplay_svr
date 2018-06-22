@@ -93,7 +93,7 @@ func DelAnswer(uin int64, qid, answerId int,reason string) (code int, err error)
 	}
 
 	if !isMyself {
-		SendBeDeletePush(uin, ownerUid ,reason, 2)
+		v2push.SendBeDeletePush(uin, ownerUid ,reason, 2)
 	}
 
 	code = 0

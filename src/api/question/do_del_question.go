@@ -92,7 +92,7 @@ func DelQuestion(uin int64, qid int,reason string) (code int, err error) {
 
 	//不是我自己删的  发推送
 	if !isMyself {
-		SendBeDeletePush(uin, ownerUid ,reason, 1)
+		v2push.SendBeDeletePush(uin, ownerUid ,reason, 1)
 	}
 
 	code = 0

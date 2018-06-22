@@ -93,7 +93,7 @@ func DelComment(uin int64, answerId, commentId int, reason string) (code int, er
 
 	//不是我自己删的 发推送
 	if !isMyself {
-		SendBeDeletePush(uin, ownerUid ,reason, 3)
+		v2push.SendBeDeletePush(uin, ownerUid ,reason, 3)
 	}
 
 	code = 0
