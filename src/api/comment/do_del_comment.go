@@ -1,6 +1,7 @@
 package comment
 
 import (
+	"api/v2push"
 	"common/constant"
 	"common/mydb"
 	"common/rest"
