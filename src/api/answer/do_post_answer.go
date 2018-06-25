@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"svr/st"
 	"time"
+	"strings"
 )
 
 type PostAnswerReq struct {
@@ -29,7 +30,7 @@ func doPostAnswer(req *PostAnswerReq, r *http.Request) (rsp *PostAnswerRsp, err 
 
 	log.Debugf("uin %d, PostAnswerReq %+v", req.Uin, req)
 
-	answerId, err := PostAnswer(req.Uin, req.Qid, req.AnswerContent, req.AnswerImgUrls)
+	answerId, err := PostAnswer(req.Uin, req.Qid,strings.Trim(req.AnswerContent," \n\t") , req.AnswerImgUrls)
 
 	if err != nil {
 		log.Errorf("uin %d, PostAnswer error, %s", req.Uin, err.Error())

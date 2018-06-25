@@ -6,19 +6,17 @@ import (
 	"common/rest"
 	"fmt"
 	"net/http"
-	"svr/st"
 	"sort"
+	"svr/st"
 )
 
-
 type GetV2QuestionsformeReq struct {
-	Uin   int64  `schema:"uin"`
-	Token string `schema:"token"`
-	Ver   int    `schema:"ver"`
-	PageNum  int `schema:"pageNum"`
-	PageSize int `schema:"pageSize"`
+	Uin      int64  `schema:"uin"`
+	Token    string `schema:"token"`
+	Ver      int    `schema:"ver"`
+	PageNum  int    `schema:"pageNum"`
+	PageSize int    `schema:"pageSize"`
 }
-
 
 // 自定义排序
 type quest []*st.V2QuestionInfo
@@ -40,7 +38,7 @@ func doGetv2Questionsforme(req *GetV2QuestionsformeReq, r *http.Request) (rsp *G
 	log.Debugf("uin %d, GetQuestionsReq %+v", req.Uin, req)
 
 	//我提出的问题
-	questions, TotalCnt, err := GetV2QuestionsAndAnswer(req.Uin ,req.PageSize,req.PageNum)
+	questions, TotalCnt, err := GetV2QuestionsAndAnswer(req.Uin, req.PageSize, req.PageNum)
 
 	if err != nil {
 		log.Errorf("uin %d, GetV2Questionsforme error, %s", req.Uin, err.Error())
@@ -54,7 +52,7 @@ func doGetv2Questionsforme(req *GetV2QuestionsformeReq, r *http.Request) (rsp *G
 	return
 }
 
-func GetV2QuestionsAndAnswer(uin int64, pageSize int, pageNum int ) (questions []*st.V2QuestionInfo, TotalCnt int, err error) {
+func GetV2QuestionsAndAnswer(uin int64, pageSize int, pageNum int) (questions []*st.V2QuestionInfo, TotalCnt int, err error) {
 
 	questions = make([]*st.V2QuestionInfo, 0)
 
@@ -83,13 +81,13 @@ func GetV2QuestionsAndAnswer(uin int64, pageSize int, pageNum int ) (questions [
 	for rows.Next() {
 		var qid int
 		var answerTs int
-		rows.Scan(&qid,&answerTs)
+		rows.Scan(&qid, &answerTs)
 		mapAnswer[qid] = answerTs
 	}
 
 	sql = fmt.Sprintf(`select count(qid) as cnt from  v2questions where qStatus = 0 and ownerUid = %d 
 								or  qid in (select qid from v2answers where ownerUid = %d) 
-								order by createTs desc`, uin,uin)
+								order by createTs desc`, uin, uin)
 
 	rows, err = inst.Query(sql)
 
@@ -109,7 +107,7 @@ func GetV2QuestionsAndAnswer(uin int64, pageSize int, pageNum int ) (questions [
 
 	sql = fmt.Sprintf(`select qid, ownerUid, qTitle, qContent, qImgUrls, isAnonymous, createTs, modTs 
 								from v2questions where qStatus = 0 and ownerUid = %d 
-								or  qid in (select qid from v2answers where ownerUid = %d) order by createTs desc `, uin,uin)
+								or  qid in (select qid from v2answers where ownerUid = %d) order by createTs desc `, uin, uin)
 
 	rows, err = inst.Query(sql)
 
@@ -118,12 +116,11 @@ func GetV2QuestionsAndAnswer(uin int64, pageSize int, pageNum int ) (questions [
 		return
 	}
 
-
 	for rows.Next() {
 		var info st.V2QuestionInfo
 		var uid int64
 
-		rows.Scan(&info.Qid,&uid,&info.QTitle,&info.QContent,&info.QImgUrls,&info.IsAnonymous,&info.CreateTs,&info.ModTs)
+		rows.Scan(&info.Qid, &uid, &info.QTitle, &info.QContent, &info.QImgUrls, &info.IsAnonymous, &info.CreateTs, &info.ModTs)
 
 		if v, ok := mapAnswer[info.Qid]; ok {
 			//如果answerTs比createTs大 更新createTs
@@ -169,10 +166,8 @@ func GetV2QuestionsAndAnswer(uin int64, pageSize int, pageNum int ) (questions [
 
 	s := (pageNum - 1) * pageSize
 	e := pageSize
-	questions = questions[s:s+e]
-
+	questions = questions[s : s+e]
 
 	log.Debugf("end GetV2Questionsforme uin:%d TotalCnt:%d", uin, TotalCnt)
 	return
 }
-

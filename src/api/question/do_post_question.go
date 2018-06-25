@@ -6,6 +6,7 @@ import (
 	"common/rest"
 	"net/http"
 	"time"
+	"strings"
 )
 
 type PostQuestionReq struct {
@@ -28,8 +29,9 @@ func doPostQuestion(req *PostQuestionReq, r *http.Request) (rsp *PostQuestionRsp
 
 	log.Debugf("uin %d, PostQuestionReq %+v", req.Uin, req)
 
-	qid, err := PostQuestion(req.Uin, req.BoardId, req.QTitle, req.QContent, req.QImgUrls, req.IsAnonymous)
-
+	//去除首位空白字符
+	qid, err := PostQuestion(req.Uin, req.BoardId, req.QTitle, strings.Trim(req.QContent," \n\t"), req.QImgUrls, req.IsAnonymous)
+	log.Debugf("uin %d, trim question %s", req.Uin, strings.Trim(req.QContent," \n\t"))
 	if err != nil {
 		log.Errorf("uin %d, PostQuestion error, %s", req.Uin, err.Error())
 		return
@@ -70,6 +72,8 @@ func PostQuestion(uin int64, boardId int, title, content, imgUrls string, isAnon
 	ts := time.Now().Unix()
 
 	status := 0 //0 默认
+
+
 	res, err := stmt.Exec(0, boardId, uin, title, content, imgUrls, isAnonymous, status, ts, 0)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())

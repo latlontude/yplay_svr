@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"svr/st"
 	"time"
+	"strings"
 )
 
 type PostCommentReq struct {
@@ -27,7 +28,7 @@ func doPostComment(req *PostCommentReq, r *http.Request) (rsp *PostCommentRsp, e
 
 	log.Debugf("uin %d, PostCommentReq %+v", req.Uin, req)
 
-	commentId, err := PostComment(req.Uin, req.AnswerId, req.CommentText)
+	commentId, err := PostComment(req.Uin, req.AnswerId, strings.Trim(req.CommentText," \n\t"))
 
 	if err != nil {
 		log.Errorf("uin %d, PostComment error, %s", req.Uin, err.Error())

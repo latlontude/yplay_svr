@@ -320,7 +320,7 @@ func checkIsILikeReply(uin int64, replyId int) (ret bool, err error) {
 		return
 	}
 
-	sql := fmt.Sprintf(`select id from v2likes where type = 3 and likeId = %d and ownerUid = %d likeStatus = 0`, replyId, uin)
+	sql := fmt.Sprintf(`select id from v2likes where type = 3 and likeId = %d and ownerUid = %d and likeStatus = 0`, replyId, uin)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
