@@ -64,12 +64,14 @@ func GetV2QuestionsAndAnswer(uin int64, pageSize int, pageNum int) (questions []
 		return
 	}
 
-	//查询answers表 找到回答问题的qid  answerTs
-	//mapAnswer := make(map[int]int)
-	//var sql = fmt.Sprintf(`select qid, answerTs from  v2answers where ownerUid = %d order by answerTs desc`, uin)
 
-	//直接查我回答的所有问题
-	var sql = fmt.Sprintf(`select * from  v2answers ,v2questions where v2answers.ownerUid=v2questions.ownerUid and v2answers.qid=v2questions.qid and  v2questions.ownerUid =%d`, uin)
+	//直接查我回答的所有问题  answerStatus=1 代表删除
+	var sql = fmt.Sprintf(`select * from  v2answers ,v2questions ,v2boards
+		where v2answers.answerStatus = 0 
+		and v2questions.qStatus = 0 
+		and v2answers.qid=v2questions.qid 
+		and v2questions.boardId = v2boards.boardId
+		and v2answers.ownerUid = %d`,uin)
 
 	rows, err := inst.Query(sql)
 
@@ -80,10 +82,18 @@ func GetV2QuestionsAndAnswer(uin int64, pageSize int, pageNum int) (questions []
 	}
 
 	for rows.Next() {
-		var info st.V2QuestionInfo
-		var answerInfo st.AnswersInfo
+		var info st.V2QuestionInfo		//问题
+		var answerInfo st.AnswersInfo	//回答
+		var boardInfo  st.BoardInfo		//墙信息
 		var uid int64
-		var temp string
+
+
+		var OwnerInfo st.UserProfileInfo	//墙主info
+		var answerStatus string
+		var boardId int64
+		var qStatus int64
+
+		var temp string					//暂时不需要给前段的字段 用temp接收
 
 		rows.Scan(
 			&answerInfo.AnswerId,
@@ -91,19 +101,30 @@ func GetV2QuestionsAndAnswer(uin int64, pageSize int, pageNum int) (questions []
 			&answerInfo.AnswerContent,
 			&answerInfo.AnswerImgUrls,
 			&uid,
-			&temp,
+			&answerStatus,
 			&answerInfo.AnswerTs,
 			&info.Qid,
-			&temp,
+			&boardId,
 			&uid,
 			&info.QTitle,
 			&info.QContent,
 			&info.QImgUrls,
 			&info.IsAnonymous,
-			&temp,
+			&qStatus,
 			&info.CreateTs,
-			&info.ModTs)
+			&info.ModTs,
+			&boardInfo.BoardId,
+			&temp,
+			&temp,
+			&temp,
+			&temp,
+			&temp,
+			&OwnerInfo.Uin,			//取墙主uid
+			&temp,
+			)
 
+		boardInfo.OwnerInfo = &OwnerInfo
+		info.Board = &boardInfo
 		info.CreateTs = answerInfo.AnswerTs
 		if uid > 0 {
 			ui, err1 := st.GetUserProfileInfo(uid)
@@ -140,8 +161,12 @@ func GetV2QuestionsAndAnswer(uin int64, pageSize int, pageNum int) (questions []
 		questions = append(questions, &info)
 	}
 
-	sql = fmt.Sprintf(`select qid, ownerUid, qTitle, qContent, qImgUrls, isAnonymous, createTs, modTs 
-								from v2questions where qStatus = 0 and ownerUid = %d`, uin)
+
+	//查询所有我提出的问题
+	sql = fmt.Sprintf(`select * from v2questions ,v2boards where v2questions.qStatus = 0 
+				and v2questions.boardId=v2boards.boardId 
+				and v2questions.ownerUid = %d`, uin)
+
 	rows, err = inst.Query(sql)
 
 	if err != nil {
@@ -153,8 +178,37 @@ func GetV2QuestionsAndAnswer(uin int64, pageSize int, pageNum int) (questions []
 		var info st.V2QuestionInfo
 		var uid int64
 
-		rows.Scan(&info.Qid, &uid, &info.QTitle, &info.QContent, &info.QImgUrls, &info.IsAnonymous, &info.CreateTs, &info.ModTs)
+		var boardInfo  st.BoardInfo
 
+		var boardId int64
+		var qStatus int64
+
+		var temp string
+		var OwnerInfo st.UserProfileInfo
+
+		rows.Scan(
+			&info.Qid,
+			&boardId,
+			&uid,
+			&info.QTitle,
+			&info.QContent,
+			&info.QImgUrls,
+			&info.IsAnonymous,
+			&qStatus,
+			&info.CreateTs,
+			&info.ModTs,
+			&boardInfo.BoardId,
+			&temp,
+			&temp,
+			&temp,
+			&temp,
+			&temp,
+			&OwnerInfo.Uin,
+			&temp,
+			)
+
+		boardInfo.OwnerInfo = &OwnerInfo
+		info.Board = &boardInfo
 		if uid > 0 {
 			ui, err1 := st.GetUserProfileInfo(uid)
 			if err1 != nil {
@@ -191,11 +245,12 @@ func GetV2QuestionsAndAnswer(uin int64, pageSize int, pageNum int) (questions []
 
 	// 超过最大长度  等于slice长度
 	TotalCnt = len(questions)
-
 	if e > TotalCnt {
 		e = TotalCnt
 	}
-	questions = questions[s : s+e]
-	log.Debugf("end GetV2Questionsforme uin:%d TotalCnt:%d", uin, TotalCnt)
+
+	//s - e
+	questions = questions[s : e]
+	log.Debugf("end GetV2QuestionsForMe uin:%d TotalCnt:%d", uin, TotalCnt)
 	return
 }

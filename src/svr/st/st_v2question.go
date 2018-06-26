@@ -16,6 +16,7 @@ type V2QuestionInfo struct {
 	AnswerCnt     int                `json:"answerCnt"`
 	BestAnswer    *AnswersInfo       `json:"bestAnswer"`
 	NewResponders []*UserProfileInfo `json:"newResponders"`
+	Board         *BoardInfo		 `json:"board"`					//墙信息
 }
 
 func (this *V2QuestionInfo) String() string {
