@@ -14,9 +14,9 @@ type DelAnswerReq struct {
 	Token string `schema:"token"`
 	Ver   int    `schema:"ver"`
 
-	Qid      int `schema:"qid"`
-	AnswerId int `schema:"answerId"`
-	Reason   string 	`schema:"reason"`
+	Qid      int    `schema:"qid"`
+	AnswerId int    `schema:"answerId"`
+	Reason   string `schema:"reason"`
 }
 
 type DelAnswerRsp struct {
@@ -27,7 +27,7 @@ func doDelAnswer(req *DelAnswerReq, r *http.Request) (rsp *DelAnswerRsp, err err
 
 	log.Debugf("uin %d, DelAnswerReq %+v", req.Uin, req)
 
-	code, err := DelAnswer(req.Uin, req.Qid, req.AnswerId,req.Reason)
+	code, err := DelAnswer(req.Uin, req.Qid, req.AnswerId, req.Reason)
 
 	if err != nil {
 		log.Errorf("uin %d, DelAnswer error, %s", req.Uin, err.Error())
@@ -41,7 +41,7 @@ func doDelAnswer(req *DelAnswerReq, r *http.Request) (rsp *DelAnswerRsp, err err
 	return
 }
 
-func DelAnswer(uin int64, qid, answerId int,reason string) (code int, err error) {
+func DelAnswer(uin int64, qid, answerId int, reason string) (code int, err error) {
 	log.Debugf("start DelAnswer uin = %d qid = %d answerId = %d", uin, qid, answerId)
 
 	code = -1
@@ -59,7 +59,7 @@ func DelAnswer(uin int64, qid, answerId int,reason string) (code int, err error)
 		return
 	}
 
-	uids, ownerUid,err := getDelAnswerPermitOperators(answerId, qid)
+	uids, ownerUid, err := getDelAnswerPermitOperators(answerId, qid)
 	if err != nil {
 		log.Error(err)
 		return
@@ -93,7 +93,7 @@ func DelAnswer(uin int64, qid, answerId int,reason string) (code int, err error)
 	}
 
 	if !isMyself {
-		v2push.SendBeDeletePush(uin, ownerUid ,reason, 2)
+		v2push.SendBeDeletePush(uin, ownerUid, reason, 2)
 	}
 
 	code = 0
@@ -102,7 +102,7 @@ func DelAnswer(uin int64, qid, answerId int,reason string) (code int, err error)
 	return
 }
 
-func getDelAnswerPermitOperators(answerId, qid int) (operators []int64, owner int64 ,err error) {
+func getDelAnswerPermitOperators(answerId, qid int) (operators []int64, owner int64, err error) {
 
 	if answerId == 0 || qid == 0 {
 		log.Errorf("qid or answerId is zero")

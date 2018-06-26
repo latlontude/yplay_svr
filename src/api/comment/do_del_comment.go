@@ -14,8 +14,8 @@ type DelCommentReq struct {
 	Token string `schema:"token"`
 	Ver   int    `schema:"ver"`
 
-	AnswerId  int `schema:"answerId"`
-	CommentId int `schema:"commentId"`
+	AnswerId  int    `schema:"answerId"`
+	CommentId int    `schema:"commentId"`
 	Reason    string `schema:"reason"`
 }
 
@@ -27,7 +27,7 @@ func doDelComment(req *DelCommentReq, r *http.Request) (rsp *DelCommentRsp, err 
 
 	log.Debugf("uin %d, DelCommentReq %+v", req.Uin, req)
 
-	code, err := DelComment(req.Uin, req.AnswerId, req.CommentId ,req.Reason)
+	code, err := DelComment(req.Uin, req.AnswerId, req.CommentId, req.Reason)
 
 	if err != nil {
 		log.Errorf("uin %d, DelAnswer error, %s", req.Uin, err.Error())
@@ -59,7 +59,7 @@ func DelComment(uin int64, answerId, commentId int, reason string) (code int, er
 		return
 	}
 
-	uids, ownerUid,err := getDelCommentPermitOperators(answerId, commentId)
+	uids, ownerUid, err := getDelCommentPermitOperators(answerId, commentId)
 	if err != nil {
 		log.Error(err)
 		return
@@ -93,7 +93,7 @@ func DelComment(uin int64, answerId, commentId int, reason string) (code int, er
 
 	//不是我自己删的 发推送
 	if !isMyself {
-		v2push.SendBeDeletePush(uin, ownerUid ,reason, 3)
+		v2push.SendBeDeletePush(uin, ownerUid, reason, 3)
 	}
 
 	code = 0

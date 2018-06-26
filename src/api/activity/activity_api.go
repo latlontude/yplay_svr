@@ -10,7 +10,7 @@ import (
 
 var (
 	APIMap = httputil.APIMap{
-		"/getmyactivityinfo":             auth.Apify2(doGetMyActivityInfo),             //拉取好友混排消息列表
+		"/getmyactivityinfo": auth.Apify2(doGetMyActivityInfo), //拉取好友混排消息列表
 	}
 
 	log = env.NewLogger("activity")

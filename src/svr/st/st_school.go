@@ -41,9 +41,10 @@ type DeptInfo struct {
 	DeptId   int    `json:"deptId"`
 	DeptName string `json:"deptName"`
 }
+
 func (this *DeptInfo) String() string {
 
-	return fmt.Sprintf(`DeptInfo{DeptId:%d DeptName:%s}`,  this.DeptId,this.DeptName)
+	return fmt.Sprintf(`DeptInfo{DeptId:%d DeptName:%s}`, this.DeptId, this.DeptName)
 }
 
 func GetGradeDescBySchool(schoolType int, grade int) (desc string) {

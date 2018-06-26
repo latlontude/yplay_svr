@@ -65,31 +65,13 @@ func GetV2QuestionsAndAnswer(uin int64, pageSize int, pageNum int) (questions []
 	}
 
 	//查询answers表 找到回答问题的qid  answerTs
-	mapAnswer := make(map[int]int)
-	var sql = fmt.Sprintf(`select qid, answerTs from  v2answers where ownerUid = %d order by answerTs desc`, uin)
+	//mapAnswer := make(map[int]int)
+	//var sql = fmt.Sprintf(`select qid, answerTs from  v2answers where ownerUid = %d order by answerTs desc`, uin)
+
+	//直接查我回答的所有问题
+	var sql = fmt.Sprintf(`select * from  v2answers ,v2questions where v2answers.ownerUid=v2questions.ownerUid and v2answers.qid=v2questions.qid and  v2questions.ownerUid =%d`, uin)
 
 	rows, err := inst.Query(sql)
-	defer rows.Close()
-
-	if err != nil {
-		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
-		log.Error(err)
-		return
-	}
-
-	//映射  qid ---> ansewrTs
-	for rows.Next() {
-		var qid int
-		var answerTs int
-		rows.Scan(&qid, &answerTs)
-		mapAnswer[qid] = answerTs
-	}
-
-	sql = fmt.Sprintf(`select count(qid) as cnt from  v2questions where qStatus = 0 and ownerUid = %d 
-								or  qid in (select qid from v2answers where ownerUid = %d) 
-								order by createTs desc`, uin, uin)
-
-	rows, err = inst.Query(sql)
 
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -98,17 +80,68 @@ func GetV2QuestionsAndAnswer(uin int64, pageSize int, pageNum int) (questions []
 	}
 
 	for rows.Next() {
-		rows.Scan(&TotalCnt)
-	}
+		var info st.V2QuestionInfo
+		var answerInfo st.AnswersInfo
+		var uid int64
+		var temp string
 
-	if TotalCnt == 0 {
-		return
+		rows.Scan(
+			&answerInfo.AnswerId,
+			&answerInfo.Qid,
+			&answerInfo.AnswerContent,
+			&answerInfo.AnswerImgUrls,
+			&uid,
+			&temp,
+			&answerInfo.AnswerTs,
+			&info.Qid,
+			&temp,
+			&uid,
+			&info.QTitle,
+			&info.QContent,
+			&info.QImgUrls,
+			&info.IsAnonymous,
+			&temp,
+			&info.CreateTs,
+			&info.ModTs)
+
+		info.CreateTs = answerInfo.AnswerTs
+		if uid > 0 {
+			ui, err1 := st.GetUserProfileInfo(uid)
+			if err1 != nil {
+				log.Error(err1.Error())
+				continue
+			}
+			info.OwnerInfo = ui
+		}
+
+		commentCnt, err1 := getCommentCnt(answerInfo.AnswerId)
+		if err1 != nil {
+			log.Error(err1.Error())
+			continue
+		}
+
+		answerInfo.CommentCnt = commentCnt
+
+		//点赞数
+		likeCnt, err1 := getAnswerLikeCnt(answerInfo.AnswerId)
+		if err1 != nil {
+			log.Error(err1.Error())
+			continue
+		}
+		answerInfo.LikeCnt = likeCnt
+		isILike, err1 := checkIsILikeAnswer(uin, answerInfo.AnswerId)
+		if err1 != nil {
+			log.Error(err1.Error())
+			continue
+		}
+
+		answerInfo.IsILike = isILike
+		info.BestAnswer = &answerInfo
+		questions = append(questions, &info)
 	}
 
 	sql = fmt.Sprintf(`select qid, ownerUid, qTitle, qContent, qImgUrls, isAnonymous, createTs, modTs 
-								from v2questions where qStatus = 0 and ownerUid = %d 
-								or  qid in (select qid from v2answers where ownerUid = %d) order by createTs desc `, uin, uin)
-
+								from v2questions where qStatus = 0 and ownerUid = %d`, uin)
 	rows, err = inst.Query(sql)
 
 	if err != nil {
@@ -121,13 +154,6 @@ func GetV2QuestionsAndAnswer(uin int64, pageSize int, pageNum int) (questions []
 		var uid int64
 
 		rows.Scan(&info.Qid, &uid, &info.QTitle, &info.QContent, &info.QImgUrls, &info.IsAnonymous, &info.CreateTs, &info.ModTs)
-
-		if v, ok := mapAnswer[info.Qid]; ok {
-			//如果answerTs比createTs大 更新createTs
-			if v > info.CreateTs {
-				info.CreateTs = v
-			}
-		}
 
 		if uid > 0 {
 			ui, err1 := st.GetUserProfileInfo(uid)
@@ -146,10 +172,6 @@ func GetV2QuestionsAndAnswer(uin int64, pageSize int, pageNum int) (questions []
 		}
 
 		info.AnswerCnt = answerCnt
-
-		bestAnswer, _ := getBestAnswer(uin, info.Qid)
-
-		info.BestAnswer = bestAnswer
 		questions = append(questions, &info)
 	}
 
@@ -164,16 +186,16 @@ func GetV2QuestionsAndAnswer(uin int64, pageSize int, pageNum int) (questions []
 		pageSize = constant.DEFAULT_PAGE_SIZE
 	}
 
-
 	s := (pageNum - 1) * pageSize
 	e := s + pageSize
 
 	// 超过最大长度  等于slice长度
-	if e > 	len(questions) {
-		e = len(questions)
+	TotalCnt = len(questions)
+
+	if e > TotalCnt {
+		e = TotalCnt
 	}
 	questions = questions[s : s+e]
-
 	log.Debugf("end GetV2Questionsforme uin:%d TotalCnt:%d", uin, TotalCnt)
 	return
 }

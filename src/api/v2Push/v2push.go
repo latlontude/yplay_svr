@@ -13,8 +13,6 @@ import (
 
 var log = env.NewLogger("v2push")
 
-
-
 func SendNewAddAnswerPush(qid int, answer st.AnswersInfo) {
 
 	var serviceAccountUin int64
@@ -162,20 +160,19 @@ func SendBeLikePush(uid int64, qid, likeId int) {
 	return
 }
 
-
 /**
 删除提问发推送
- */
-func SendBeDeletePush(operatorUid int64 , uid int64 , reason string, deleteType int) {
+*/
+func SendBeDeletePush(operatorUid int64, uid int64, reason string, deleteType int) {
 
 	type BeDeleteMsg struct {
-		Type 		int  					`json:"type"`		// type: 1:提问被删除 2：回答被删除 3：评论被删除
-		Operator    st.UserProfileInfo 		`json:"operator"`
-		Ts  		int64					`json:"ts"`
-		Reason 		string					`json:"reason"`
+		Type     int                `json:"type"` // type: 1:提问被删除 2：回答被删除 3：评论被删除
+		Operator st.UserProfileInfo `json:"operator"`
+		Ts       int64              `json:"ts"`
+		Reason   string             `json:"reason"`
 	}
 
-	var deleteMsg BeDeleteMsg;
+	var deleteMsg BeDeleteMsg
 
 	if operatorUid > 0 {
 		ui, err1 := st.GetUserProfileInfo(operatorUid)
@@ -185,9 +182,9 @@ func SendBeDeletePush(operatorUid int64 , uid int64 , reason string, deleteType 
 		deleteMsg.Operator = *ui
 	}
 
-	deleteMsg.Type 		 = deleteType
-	deleteMsg.Ts         = 0
-	deleteMsg.Reason 	 = reason
+	deleteMsg.Type = deleteType
+	deleteMsg.Ts = 0
+	deleteMsg.Reason = reason
 
 	data, err := json.Marshal(&deleteMsg)
 	if err != nil {
@@ -205,7 +202,6 @@ func SendBeDeletePush(operatorUid int64 , uid int64 , reason string, deleteType 
 
 	return
 }
-
 
 func getV2Question(qid int) (question st.V2QuestionInfo, err error) {
 	if qid == 0 {

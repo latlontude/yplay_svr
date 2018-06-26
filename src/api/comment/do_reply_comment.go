@@ -6,8 +6,8 @@ import (
 	"common/rest"
 	"fmt"
 	"net/http"
-	"time"
 	"strings"
+	"time"
 )
 
 type ReplyToCommentReq struct {
@@ -28,7 +28,7 @@ func doReplyToComment(req *ReplyToCommentReq, r *http.Request) (rsp *ReplyToComm
 
 	log.Debugf("uin %d, ReplyToCommentReq %+v", req.Uin, req)
 
-	replyId, err := ReplyToComment(req.Uin, req.AnswerId, req.CommentId, strings.Trim(req.ReplyContent," \n\t"))
+	replyId, err := ReplyToComment(req.Uin, req.AnswerId, req.CommentId, strings.Trim(req.ReplyContent, " \n\t"))
 
 	if err != nil {
 		log.Errorf("uin %d, PostAnswer error, %s", req.Uin, err.Error())

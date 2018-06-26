@@ -18,7 +18,7 @@ type ModifyQuestionReq struct {
 	QTitle      string `schema:"qTitle"`
 	QContent    string `schema:"qContent"`
 	QImgUrls    string `schema:"qImgUrls"`
-	IsAnonymous bool    `schema:"isAnonymous"`		//是否匿名 1 匿名 0 不匿名
+	IsAnonymous bool   `schema:"isAnonymous"` //是否匿名 1 匿名 0 不匿名
 }
 
 type ModifyQuestionRsp struct {

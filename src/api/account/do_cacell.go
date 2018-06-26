@@ -12,7 +12,7 @@ import (
 	"svr/st"
 )
 
-type CancellReq struct {
+type CanCellReq struct {
 	Uin   int64  `schema:"uin"`
 	Token string `schema:"token"`
 	Ver   int    `schema:"ver"`
@@ -20,10 +20,11 @@ type CancellReq struct {
 	UserName string `schema:"userName"`
 }
 
-type CancellRsp struct {
+type CanCellRsp struct {
+
 }
 
-func doCancell3(req *CancellReq, r *http.Request) (rsp *CancellRsp, err error) {
+func doCancell3(req *CanCellReq, r *http.Request) (rsp *CanCellRsp, err error) {
 
 	log.Errorf("uin %d, CancellReq %+v", req.Uin, req)
 
@@ -33,7 +34,7 @@ func doCancell3(req *CancellReq, r *http.Request) (rsp *CancellRsp, err error) {
 		return
 	}
 
-	rsp = &CancellRsp{}
+	rsp = &CanCellRsp{}
 
 	log.Errorf("uin %d, CancellRsp succ, %+v", req.Uin, rsp)
 
