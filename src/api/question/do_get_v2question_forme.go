@@ -164,8 +164,14 @@ func GetV2QuestionsAndAnswer(uin int64, pageSize int, pageNum int) (questions []
 		pageSize = constant.DEFAULT_PAGE_SIZE
 	}
 
+
 	s := (pageNum - 1) * pageSize
-	e := pageSize
+	e := s + pageSize
+
+	// 超过最大长度  等于slice长度
+	if e > 	len(questions) {
+		e = len(questions)
+	}
 	questions = questions[s : s+e]
 
 	log.Debugf("end GetV2Questionsforme uin:%d TotalCnt:%d", uin, TotalCnt)

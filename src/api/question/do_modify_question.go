@@ -18,7 +18,7 @@ type ModifyQuestionReq struct {
 	QTitle      string `schema:"qTitle"`
 	QContent    string `schema:"qContent"`
 	QImgUrls    string `schema:"qImgUrls"`
-	IsAnonymous int    `schema:"isAnonymous"`
+	IsAnonymous bool    `schema:"isAnonymous"`		//是否匿名 1 匿名 0 不匿名
 }
 
 type ModifyQuestionRsp struct {
@@ -43,7 +43,7 @@ func doModifyQuestion(req *ModifyQuestionReq, r *http.Request) (rsp *ModifyQuest
 	return
 }
 
-func ModifyQuestion(uin int64, qid int, qTitle, qContent, qImgUrls string, isAnonymous int) (code int, err error) {
+func ModifyQuestion(uin int64, qid int, qTitle, qContent, qImgUrls string, isAnonymous bool) (code int, err error) {
 	log.Debugf("start ModifyQuestion uin = %d qid = %d", uin, qid)
 
 	code = -1
@@ -65,7 +65,7 @@ func ModifyQuestion(uin int64, qid int, qTitle, qContent, qImgUrls string, isAno
 	sql := fmt.Sprintf(`update v2questions set qTitle = '%s',
                                            qContent = '%s',
                                            qImgUrls = '%s',
-                                           isAnonymous = %d,
+                                           isAnonymous = %t,
                                            modTs = %d
                                            where ownerUid = %d and qid = %d`,
 		qTitle, qContent, qImgUrls, isAnonymous, ts, uin, qid)
