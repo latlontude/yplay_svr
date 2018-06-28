@@ -101,8 +101,14 @@ func PostLike(uin int64, qid, likeId, typ int) (code int, err error) {
 
 	code = 0
 
+
+	//回答 评论 回复被点赞 发推送
 	if typ == 1 {
-		go v2push.SendBeLikePush(uin, qid, likeId)
+		go v2push.SendBeLikedAnswerPush(uin, qid, likeId)
+	}else if typ == 2 {
+		go v2push.SendBeLikedCommentPush(uin,qid,likeId)
+	}else if typ == 3 {
+		go v2push.SendBeLikedReplyPush(uin,qid,likeId)
 	}
 
 	return

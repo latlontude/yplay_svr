@@ -31,7 +31,7 @@ func doPostQuestion(req *PostQuestionReq, r *http.Request) (rsp *PostQuestionRsp
 
 	//去除首位空白字符
 	qid, err := PostQuestion(req.Uin, req.BoardId, req.QTitle, strings.Trim(req.QContent, " \n\t"), req.QImgUrls, req.IsAnonymous)
-	log.Debugf("uin %d, trim question %s", req.Uin, strings.Trim(req.QContent, " \n\t"))
+
 	if err != nil {
 		log.Errorf("uin %d, PostQuestion error, %s", req.Uin, err.Error())
 		return
@@ -59,8 +59,9 @@ func PostQuestion(uin int64, boardId int, title, content, imgUrls string, isAnon
 		return
 	}
 
-	stmt, err := inst.Prepare(`insert into v2questions(qid, boardId, ownerUid, qTitle, qContent, qImgUrls, isAnonymous, qStatus, createTs, modTs) 
-		values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+	//v2question表多加了一个字段  (同问sameAskUid)
+	stmt, err := inst.Prepare(`insert into v2questions(qid, boardId, ownerUid, qTitle, qContent, qImgUrls, isAnonymous, qStatus, createTs, modTs,sameAskUid) 
+		values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
 
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_PREPARE, err.Error())
@@ -73,7 +74,7 @@ func PostQuestion(uin int64, boardId int, title, content, imgUrls string, isAnon
 
 	status := 0 //0 默认
 
-	res, err := stmt.Exec(0, boardId, uin, title, content, imgUrls, isAnonymous, status, ts, 0)
+	res, err := stmt.Exec(0, boardId, uin, title, content, imgUrls, isAnonymous, status, ts, 0,"")
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
 		log.Error(err.Error())

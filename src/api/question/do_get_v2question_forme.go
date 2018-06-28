@@ -10,12 +10,23 @@ import (
 	"svr/st"
 )
 
+
+
 type GetV2QuestionsformeReq struct {
 	Uin      int64  `schema:"uin"`
 	Token    string `schema:"token"`
 	Ver      int    `schema:"ver"`
 	PageNum  int    `schema:"pageNum"`
 	PageSize int    `schema:"pageSize"`
+}
+
+
+//提问总数 回答总数
+type GetV2QuestionsRsp struct {
+	V2Questions []*st.V2QuestionInfo `json:"questions"`
+	TotalCnt        int              `json:"totalCnt"`
+	QuestionCnt     int              `json:"questionCnt"`
+	AnswerCnt       int              `json:"answerCnt"`
 }
 
 // 自定义排序
@@ -33,26 +44,29 @@ func (I quest) Swap(i, j int) {
 	I[i], I[j] = I[j], I[i]
 }
 
-func doGetv2Questionsforme(req *GetV2QuestionsformeReq, r *http.Request) (rsp *GetQuestionsRsp, err error) {
+
+
+func doGetV2QuestionsForMe(req *GetV2QuestionsformeReq, r *http.Request) (rsp *GetV2QuestionsRsp, err error) {
 
 	log.Debugf("uin %d, GetQuestionsReq %+v", req.Uin, req)
 
 	//我提出的问题
-	questions, TotalCnt, err := GetV2QuestionsAndAnswer(req.Uin, req.PageSize, req.PageNum)
+	questions, totalCnt, qstCnt,answerCnt,err := GetV2QuestionsAndAnswer(req.Uin, req.PageSize, req.PageNum)
 
 	if err != nil {
-		log.Errorf("uin %d, GetV2Questionsforme error, %s", req.Uin, err.Error())
+		log.Errorf("uin %d, doGetV2QuestionsForMe error, %s", req.Uin, err.Error())
 		return
 	}
 
-	rsp = &GetQuestionsRsp{questions, TotalCnt}
+	rsp = &GetV2QuestionsRsp{questions, totalCnt,qstCnt,answerCnt}
 
-	log.Debugf("uin %d, doGetv2Questionsforme succ, %+v", req.Uin, rsp)
+	log.Debugf("uin %d, doGetV2QuestionsForMe success", req.Uin)
 
 	return
 }
 
-func GetV2QuestionsAndAnswer(uin int64, pageSize int, pageNum int) (questions []*st.V2QuestionInfo, TotalCnt int, err error) {
+func GetV2QuestionsAndAnswer(uin int64, pageSize int, pageNum int) (
+	questions []*st.V2QuestionInfo, totalCnt int, qstCnt int,answerCnt int,err error) {
 
 	questions = make([]*st.V2QuestionInfo, 0)
 
@@ -74,6 +88,7 @@ func GetV2QuestionsAndAnswer(uin int64, pageSize int, pageNum int) (questions []
 		and v2answers.ownerUid = %d`,uin)
 
 	rows, err := inst.Query(sql)
+	defer rows.Close()
 
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -81,7 +96,10 @@ func GetV2QuestionsAndAnswer(uin int64, pageSize int, pageNum int) (questions []
 		return
 	}
 
+	answerCnt = 0
+
 	for rows.Next() {
+
 		var info st.V2QuestionInfo		//问题
 		var answerInfo st.AnswersInfo	//回答
 		var boardInfo  st.BoardInfo		//墙信息
@@ -93,7 +111,9 @@ func GetV2QuestionsAndAnswer(uin int64, pageSize int, pageNum int) (questions []
 		var boardId int64
 		var qStatus int64
 
-		var temp string					//暂时不需要给前段的字段 用temp接收
+
+		var temp1,temp2,temp3,temp4,temp5,temp6 string					//暂时不需要给前段的字段 用temp接收
+		var sameAskUid string
 
 		rows.Scan(
 			&answerInfo.AnswerId,
@@ -113,19 +133,24 @@ func GetV2QuestionsAndAnswer(uin int64, pageSize int, pageNum int) (questions []
 			&qStatus,
 			&info.CreateTs,
 			&info.ModTs,
+			&sameAskUid,
 			&boardInfo.BoardId,
-			&temp,
-			&temp,
-			&temp,
-			&temp,
-			&temp,
+			&temp1,
+			&temp2,
+			&temp3,
+			&temp4,
+			&temp5,
 			&OwnerInfo.Uin,			//取墙主uid
-			&temp,
+			&temp6,
 			)
 
 		boardInfo.OwnerInfo = &OwnerInfo
 		info.Board = &boardInfo
+
+		//回答问题的时间比问题创建时间更新  统一用createTs排序
 		info.CreateTs = answerInfo.AnswerTs
+
+
 		if uid > 0 {
 			ui, err1 := st.GetUserProfileInfo(uid)
 			if err1 != nil {
@@ -159,6 +184,8 @@ func GetV2QuestionsAndAnswer(uin int64, pageSize int, pageNum int) (questions []
 		answerInfo.IsILike = isILike
 		info.BestAnswer = &answerInfo
 		questions = append(questions, &info)
+
+		answerCnt = answerCnt + 1
 	}
 
 
@@ -174,6 +201,8 @@ func GetV2QuestionsAndAnswer(uin int64, pageSize int, pageNum int) (questions []
 		return
 	}
 
+
+	qstCnt = 0
 	for rows.Next() {
 		var info st.V2QuestionInfo
 		var uid int64
@@ -186,6 +215,8 @@ func GetV2QuestionsAndAnswer(uin int64, pageSize int, pageNum int) (questions []
 		var temp string
 		var OwnerInfo st.UserProfileInfo
 
+		var sameAskUid string
+
 		rows.Scan(
 			&info.Qid,
 			&boardId,
@@ -197,6 +228,7 @@ func GetV2QuestionsAndAnswer(uin int64, pageSize int, pageNum int) (questions []
 			&qStatus,
 			&info.CreateTs,
 			&info.ModTs,
+			&sameAskUid,
 			&boardInfo.BoardId,
 			&temp,
 			&temp,
@@ -227,6 +259,7 @@ func GetV2QuestionsAndAnswer(uin int64, pageSize int, pageNum int) (questions []
 
 		info.AnswerCnt = answerCnt
 		questions = append(questions, &info)
+		qstCnt = qstCnt + 1
 	}
 
 	//排序
@@ -244,13 +277,13 @@ func GetV2QuestionsAndAnswer(uin int64, pageSize int, pageNum int) (questions []
 	e := s + pageSize
 
 	// 超过最大长度  等于slice长度
-	TotalCnt = len(questions)
-	if e > TotalCnt {
-		e = TotalCnt
+	totalCnt = len(questions)
+	if e > totalCnt {
+		e = totalCnt
 	}
 
 	//s - e
 	questions = questions[s : e]
-	log.Debugf("end GetV2QuestionsForMe uin:%d TotalCnt:%d", uin, TotalCnt)
+	log.Debugf("end GetV2QuestionsForMe uin:%d TotalCnt:%d qstCnt:%d,answerCnt:%d", uin, totalCnt,qstCnt,answerCnt)
 	return
 }

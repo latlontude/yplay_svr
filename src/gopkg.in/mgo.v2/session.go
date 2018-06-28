@@ -63,7 +63,7 @@ const (
 	Strong    Mode = 2 // Same as Primary.
 )
 
-// mgo.v3: Drop Strong mode, suffix all modes with "Mode".
+// mgo.v2push: Drop Strong mode, suffix all modes with "Mode".
 
 // When changing the Session type, check if newSession and copySession
 // need to be updated too.
@@ -392,7 +392,7 @@ type DialInfo struct {
 	Dial func(addr net.Addr) (net.Conn, error)
 }
 
-// mgo.v3: Drop DialInfo.Dial.
+// mgo.v2push: Drop DialInfo.Dial.
 
 // ServerAddr represents the address for establishing a connection to an
 // individual MongoDB server.
@@ -1035,7 +1035,7 @@ type Index struct {
 	// Min and Max were improperly typed as int when they should have been
 	// floats.  To preserve backwards compatibility they are still typed as
 	// int and the following two fields enable reading and writing the same
-	// fields as float numbers. In mgo.v3, these fields will be dropped and
+	// fields as float numbers. In mgo.v2push, these fields will be dropped and
 	// Min/Max will become floats.
 	Min, Max   int
 	Minf, Maxf float64
@@ -1101,8 +1101,8 @@ type Collation struct {
 	Backwards bool `bson:"backwards,omitempty"`
 }
 
-// mgo.v3: Drop Minf and Maxf and transform Min and Max to floats.
-// mgo.v3: Drop DropDups as it's unsupported past 2.8.
+// mgo.v2push: Drop Minf and Maxf and transform Min and Max to floats.
+// mgo.v2push: Drop DropDups as it's unsupported past 2.8.
 
 type indexKeyInfo struct {
 	name    string
@@ -2371,7 +2371,7 @@ func (p *Pipe) Batch(n int) *Pipe {
 	return p
 }
 
-// mgo.v3: Use a single user-visible error type.
+// mgo.v2push: Use a single user-visible error type.
 
 type LastError struct {
 	Err             string

@@ -13,7 +13,14 @@ var (
 		"/del":                 auth.Apify2(doDelQuestion),         //删除提问
 		"/getquestions":        auth.Apify2(doGetQuestions),        //根据板块ID来拉取问题列表 后续可能有按用户ID来拉取问题列表
 		"/getanswers":          auth.Apify2(doGetAnswers),          //拉取某个提问的回答列表
-		"/getv2questionsforme": auth.Apify2(doGetv2Questionsforme), //拉取某个提问的回答列表
+		"/getv2questionsforme": auth.Apify2(doGetV2QuestionsForMe), //拉取某个提问的回答列表
+		"/getv2questionsforfriend": auth.Apify2(doGetV2QuestionsForFriend), //拉取某个提问的回答列表
+
+
+		"/sameAsk"            : auth.Apify2(doSameAsk), 			//同问
+
+		//TEST uidArr
+		"/getSameAskUid"      : auth.Apify2(doGetSameAskUid),
 	}
 
 	log = env.NewLogger("question")
