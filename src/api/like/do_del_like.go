@@ -4,7 +4,6 @@ import (
 	"common/constant"
 	"common/mydb"
 	"common/rest"
-	"fmt"
 	"net/http"
 )
 
@@ -58,17 +57,10 @@ func DelLike(uin int64, qid, likeId, typ int) (code int, err error) {
 		return
 	}
 
-	sql := fmt.Sprintf(`delete from v2likes where qid = %d and type = %d and likeId = %d and ownerUid = %d`, qid, typ, likeId, uin)
 
-	_, err = inst.Exec(sql)
-	if err != nil {
-		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
-		log.Error(err.Error())
-		return
-	}
-
+	err =updateV2Like(uin,qid,typ,likeId,2,inst)
 	code = 0
-
 	log.Debugf("end DelLike uin = %d ", uin)
+
 	return
 }

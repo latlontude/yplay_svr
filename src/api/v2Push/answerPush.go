@@ -12,7 +12,7 @@ import (
 )
 
 //新增回答 发推送
-func SendNewAddAnswerPush(qid int, answer st.AnswersInfo) {
+func SendNewAddAnswerPush(uin int64,qid int, answer st.AnswersInfo) {
 
 	var serviceAccountUin int64
 	serviceAccountUin = 100001 //客服号
@@ -43,7 +43,11 @@ func SendNewAddAnswerPush(qid int, answer st.AnswersInfo) {
 
 	//给提问者发送push，告诉ta，ta的提问收到新回答  dataType:17
 	descStr := "收到新消息"
-	go im.SendV2CommonMsg(serviceAccountUin, qidOwner, 17, dataStr, descStr)
+
+	//自己提问自己回答  不需要给自己发通知
+	if qidOwner != uin {
+		go im.SendV2CommonMsg(serviceAccountUin, qidOwner, 17, dataStr, descStr)
+	}
 
 	//给回答过这道题目的人发送push， 告诉ta， ta回答过的题目有了新回答 dataTYpe:14
 	uids, err := getAnswerUidByQid(qid)
@@ -53,8 +57,12 @@ func SendNewAddAnswerPush(qid int, answer st.AnswersInfo) {
 	}
 
 	for _, uid := range uids {
-		go im.SendV2CommonMsg(serviceAccountUin, uid, 14, dataStr, descStr)
+		if uid !=uin{
+			go im.SendV2CommonMsg(serviceAccountUin, uid, 14, dataStr, descStr)
+		}
 	}
+
+
 
 	//同问该问题的人 发推送
 	sameAskUidArr, err := GetSameAskUidArr(qid)
@@ -63,6 +71,11 @@ func SendNewAddAnswerPush(qid int, answer st.AnswersInfo) {
 			continue
 		}
 		sameAskUin, err := strconv.ParseInt(uid, 10, 64)
+
+		if sameAskUin == uin {
+			continue
+		}
+
 		if err != nil {
 			log.Errorf(err.Error())
 			continue
@@ -152,7 +165,10 @@ func SendBeLikedAnswerPush(uid int64, qid, likeId int) {
 	descStr := "收到新消息"
 
 	//给回答者发送push，告诉ta，ta的回答被点赞 dataType:15
-	go im.SendV2CommonMsg(serviceAccountUin, answerUid, 15, dataStr, descStr)
+	//自己赞自己 就不要发通知了
+	if answerUid != uid {
+		go im.SendV2CommonMsg(serviceAccountUin, answerUid, 15, dataStr, descStr)
+	}
 
 	return
 }

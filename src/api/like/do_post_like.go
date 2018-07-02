@@ -7,7 +7,6 @@ import (
 	"common/rest"
 	"fmt"
 	"net/http"
-	"time"
 )
 
 type PostLikeReq struct {
@@ -59,7 +58,7 @@ func PostLike(uin int64, qid, likeId, typ int) (code int, err error) {
 		return
 	}
 
-	sql := fmt.Sprintf(`select id from v2likes where qid = %d and type = %d and likeId = %d and ownerUid = %d `, qid, typ, likeId, uin)
+	sql := fmt.Sprintf(`select id ,likeStatus from v2likes where qid = %d and type = %d and likeId = %d and ownerUid = %d `, qid, typ, likeId, uin)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -68,48 +67,51 @@ func PostLike(uin int64, qid, likeId, typ int) (code int, err error) {
 	}
 	defer rows.Close()
 
+
+
 	id := 0
+	likeStatus := 0
 	for rows.Next() {
-		rows.Scan(&id)
+		rows.Scan(&id,&likeStatus)
 	}
 
-	if id != 0 {
+	pushAble := false
+	log.Debugf("sql:%s  id =%d, likeStatus = %d",sql,id,likeStatus)
+
+	if id == 0 && likeStatus == 0 {
+		//insert
+		err = insertV2Like(uin,likeId,qid,typ,inst)
+
+		//新增的点赞可以发推送
+		pushAble = true
+		log.Debugf("insert like id:%d , likeStatus : %d",id,likeStatus)
+	}else if id != 0 &&likeStatus == 2 {
+		//delete -> update
+		err = updateV2LikeById(id,1,inst)
+		log.Debugf("update like id:%d , likeStatus : %d",id,likeStatus)
+
+		//取消赞后再点赞 不发推送
+
+	}else {
 		code = 0
 		log.Debugf("repeat like!")
 		return
 	}
 
-	stmt, err := inst.Prepare(`insert into v2likes(id, qid, type, likeId, ownerUid, likeStatus, likeTs) 
-		values(?, ?, ?, ?, ?, ?, ?)`)
-
-	if err != nil {
-		err = rest.NewAPIError(constant.E_DB_PREPARE, err.Error())
-		log.Error(err.Error())
-		return
-	}
-	defer stmt.Close()
-
-	ts := time.Now().Unix()
-
-	status := 0 //0 默认
-	_, err = stmt.Exec(0, qid, typ, likeId, uin, status, ts)
-	if err != nil {
-		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
-		log.Error(err.Error())
-		return
-	}
 
 	code = 0
 
-
-	//回答 评论 回复被点赞 发推送
-	if typ == 1 {
-		go v2push.SendBeLikedAnswerPush(uin, qid, likeId)
-	}else if typ == 2 {
-		go v2push.SendBeLikedCommentPush(uin,qid,likeId)
-	}else if typ == 3 {
-		go v2push.SendBeLikedReplyPush(uin,qid,likeId)
+	if pushAble {
+		//回答 评论 回复被点赞 发推送
+		if typ == 1 {
+			go v2push.SendBeLikedAnswerPush(uin, qid, likeId)
+		}else if typ == 2 {
+			go v2push.SendBeLikedCommentPush(uin,qid,likeId)
+		}else if typ == 3 {
+			go v2push.SendBeLikedReplyPush(uin,qid,likeId)
+		}
 	}
+
 
 	return
 }

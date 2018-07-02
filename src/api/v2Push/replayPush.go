@@ -61,7 +61,9 @@ func SendBeLikedReplyPush(uid int64, qid, likeId int) {
 	descStr := "收到新消息"
 
 	//给回复者发送push，告诉ta，ta的回复被点赞 dataType:20
-	go im.SendV2CommonMsg(serviceAccountUin, replyOwnerUid, 20, dataStr, descStr)
+	if replyOwnerUid != uid {
+		go im.SendV2CommonMsg(serviceAccountUin, replyOwnerUid, 20, dataStr, descStr)
+	}
 
 	return
 }

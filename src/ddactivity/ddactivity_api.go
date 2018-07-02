@@ -1275,7 +1275,7 @@ func checkBaseParams(uin int64, tokenStr string, ver int) (pass bool, err error)
 	}
 
 	if t.Uin != int64(uin) || t.Ver != ver || t.Uuid < constant.ENUM_DEVICE_UUID_MIN {
-		err = rest.NewAPIError(constant.E_INVALID_SESSION, "uin|ver|uuid invalid")
+		err = rest.NewAPIError(constant.E_INVALID_PARAM, "uin|ver|uuid invalid")
 		return
 	}
 

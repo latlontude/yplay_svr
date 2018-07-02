@@ -19,7 +19,7 @@ type AddFriendReq struct {
 	Ver   int    `schema:"ver"`
 
 	ToUin   int64 `schema:"toUin"`
-	SrcType int   `schema:"srcType"`
+	SrcType int   `schema:"srcType"`        //好友来源  9:app_commend
 }
 
 type AddFriendRsp struct {

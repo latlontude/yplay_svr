@@ -31,17 +31,17 @@ func (f t_AUTH) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	var err error
 
 	if !rest.GetQueryParam(req, "uin", &uin) {
-		err = rest.NewAPIError(constant.E_INVALID_SESSION, "uin param not exist")
+		err = rest.NewAPIError(constant.E_INVALID_PARAM, "uin param not exist")
 		panic(err)
 	}
 
 	if !rest.GetQueryParam(req, "token", &tokenStr) {
-		err = rest.NewAPIError(constant.E_INVALID_SESSION, "token param not exist")
+		err = rest.NewAPIError(constant.E_INVALID_PARAM, "token param not exist")
 		panic(err)
 	}
 
 	if !rest.GetQueryParam(req, "ver", &ver) {
-		err = rest.NewAPIError(constant.E_INVALID_SESSION, "ver param not exist")
+		err = rest.NewAPIError(constant.E_INVALID_PARAM, "ver param not exist")
 		panic(err)
 	}
 
@@ -52,7 +52,7 @@ func (f t_AUTH) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if t.Uin != int64(uin) || t.Ver != ver || t.Uuid < constant.ENUM_DEVICE_UUID_MIN {
-		err = rest.NewAPIError(constant.E_INVALID_SESSION, "uin|ver|uuid invalid")
+		err = rest.NewAPIError(constant.E_INVALID_PARAM, "uin|ver|uuid invalid")
 		panic(err)
 	}
 

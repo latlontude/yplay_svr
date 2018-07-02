@@ -31,6 +31,7 @@ var (
 		"/getheadimguploadsig": auth.Apify2(doGetHeadImgUploadSig), //拉取用户自己基础资料的修改配额（还能修改的次数）
 
 		"/clearmods": auth.Apify(doClearMods), //清理历史修改的记录
+		"/userextra": auth.Apify(doExUserInfo), //用户其他信息
 	}
 
 	log = env.NewLogger("user")

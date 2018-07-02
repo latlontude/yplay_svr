@@ -51,7 +51,7 @@ func doGetV2QuestionsForMe(req *GetV2QuestionsformeReq, r *http.Request) (rsp *G
 	log.Debugf("uin %d, GetQuestionsReq %+v", req.Uin, req)
 
 	//我提出的问题
-	questions, totalCnt, qstCnt,answerCnt,err := GetV2QuestionsAndAnswer(req.Uin, req.PageSize, req.PageNum)
+	questions, totalCnt, qstCnt,answerCnt,err := GetV2QuestionsAndAnswer(req.Uin, 0,req.PageSize, req.PageNum)
 
 	if err != nil {
 		log.Errorf("uin %d, doGetV2QuestionsForMe error, %s", req.Uin, err.Error())
@@ -65,7 +65,13 @@ func doGetV2QuestionsForMe(req *GetV2QuestionsformeReq, r *http.Request) (rsp *G
 	return
 }
 
-func GetV2QuestionsAndAnswer(uin int64, pageSize int, pageNum int) (
+/**
+	uin         自己uin
+	fuin        好友uin
+	pageSize    分页大小
+	pageNum     第几页
+ */
+func GetV2QuestionsAndAnswer(uin int64, fUin int64,pageSize int, pageNum int) (
 	questions []*st.V2QuestionInfo, totalCnt int, qstCnt int,answerCnt int,err error) {
 
 	questions = make([]*st.V2QuestionInfo, 0)
@@ -80,12 +86,28 @@ func GetV2QuestionsAndAnswer(uin int64, pageSize int, pageNum int) (
 
 
 	//直接查我回答的所有问题  answerStatus=1 代表删除
-	var sql = fmt.Sprintf(`select * from  v2answers ,v2questions ,v2boards
-		where v2answers.answerStatus = 0 
-		and v2questions.qStatus = 0 
-		and v2answers.qid=v2questions.qid 
-		and v2questions.boardId = v2boards.boardId
-		and v2answers.ownerUid = %d`,uin)
+
+	var sql string
+
+	//查询好友的个人主页 看不到匿名问题
+	if fUin > 0  {
+		sql = fmt.Sprintf(`select * from  v2answers ,v2questions ,v2boards
+			where v2answers.answerStatus = 0 
+			and v2questions.isAnonymous = 0
+			and v2questions.qStatus = 0 
+			and v2answers.qid=v2questions.qid 
+			and v2questions.boardId = v2boards.boardId
+			and v2answers.ownerUid = %d`,fUin)
+	}else {
+		//自己看自己主页 可以看到匿名问题
+		sql = fmt.Sprintf(`select * from  v2answers ,v2questions ,v2boards
+			where v2answers.answerStatus = 0 
+			and v2questions.qStatus = 0 
+			and v2answers.qid=v2questions.qid 
+			and v2questions.boardId = v2boards.boardId
+			and v2answers.ownerUid = %d`,uin)
+	}
+
 
 	rows, err := inst.Query(sql)
 	defer rows.Close()
@@ -190,9 +212,20 @@ func GetV2QuestionsAndAnswer(uin int64, pageSize int, pageNum int) (
 
 
 	//查询所有我提出的问题
-	sql = fmt.Sprintf(`select * from v2questions ,v2boards where v2questions.qStatus = 0 
+
+	if fUin > 0 {
+		sql = fmt.Sprintf(`select * from v2questions ,v2boards 
+				where v2questions.qStatus = 0 
+				and v2questions.isAnonymous = 0
+				and v2questions.boardId=v2boards.boardId 
+				and v2questions.ownerUid = %d`, fUin)
+	}else {
+		sql = fmt.Sprintf(`select * from v2questions ,v2boards 
+				where v2questions.qStatus = 0 
 				and v2questions.boardId=v2boards.boardId 
 				and v2questions.ownerUid = %d`, uin)
+	}
+
 
 	rows, err = inst.Query(sql)
 
@@ -284,6 +317,7 @@ func GetV2QuestionsAndAnswer(uin int64, pageSize int, pageNum int) (
 
 	//s - e
 	questions = questions[s : e]
-	log.Debugf("end GetV2QuestionsForMe uin:%d TotalCnt:%d qstCnt:%d,answerCnt:%d", uin, totalCnt,qstCnt,answerCnt)
+	log.Debugf("end GetV2QuestionsAndAnswer uin:%d,fuid:%d,TotalCnt:%d qstCnt:%d,answerCnt:%d",
+		uin, fUin,totalCnt,qstCnt,answerCnt)
 	return
 }

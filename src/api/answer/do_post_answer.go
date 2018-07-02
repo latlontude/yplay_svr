@@ -99,7 +99,7 @@ func PostAnswer(uin int64, qid int, answerContent, answerImgUrls string) (answer
 	}
 	newAnswer.OwnerInfo = ui
 
-	//给提问者和回答过这道题目的人发送新增回答通知
-	go v2push.SendNewAddAnswerPush(qid, newAnswer)
+	//给提问者和回答过这道题目的人发送新增回答通知,把回答者uin带过去
+	go v2push.SendNewAddAnswerPush(uin,qid, newAnswer)
 	return
 }

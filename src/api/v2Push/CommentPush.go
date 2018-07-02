@@ -138,7 +138,12 @@ func SendBeLikedCommentPush(uid int64, qid, likeId int) {
 	descStr := "收到新消息"
 
 	//给评论者发送push，告诉ta，ta的评论被点赞 dataType:19
-	go im.SendV2CommonMsg(serviceAccountUin, commentOwnerUid, 19, dataStr, descStr)
+	//自己赞自己 就不要发通知了
+	if commentOwnerUid != uid {
+		go im.SendV2CommonMsg(serviceAccountUin, commentOwnerUid, 19, dataStr, descStr)
+	}else {
+		log.Debugf("commentOwnerUid:u%  uid=%d", commentOwnerUid,uid)
+	}
 
 	return
 }
