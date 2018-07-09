@@ -24,6 +24,7 @@ var (
 		"/sendvotereplyreplymsg":             auth.Apify2(doSendVoteReplyReplyMsg),             //回复的回复
 		"/batchgetsnapsessionsfroupgradeapp": auth.Apify2(doBatchGetSnapSessionsForUpgradeApp), //APP升级 批量拉取snapsessions
 		"/sendtextmsg":                       auth.Apify2(doSendTextMsg),                       //模拟其中的一个用户发送文本消息 线上不会调用这个借口，仅调试用
+		"/getsessionid":                      auth.Apify2(doGetSessionId),                      //获取sessionid
 	}
 
 	IM_SIG_ADMIN         string
