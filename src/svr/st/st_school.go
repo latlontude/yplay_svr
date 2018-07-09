@@ -52,41 +52,41 @@ func GetGradeDescBySchool(schoolType int, grade int) (desc string) {
 	if schoolType == constant.ENUM_SCHOOL_TYPE_UNIVERSITY {
 
 		if grade == 1 {
-			desc = "大一"
+			desc = "2017"
 		} else if grade == 2 {
-			desc = "大二"
+			desc = "2016"
 		} else if grade == 3 {
-			desc = "大三"
+			desc = "2015"
 		} else if grade == 4 {
-			desc = "大四"
+			desc = "2014"
 		} else if grade == 5 {
-			desc = "大五"
+			desc = "2013"
 		} else if grade == 100 {
-			desc = "大学毕业"
+			desc = "2018"
 		}
 
 	} else if schoolType == constant.ENUM_SHOOL_TYPE_HIGH {
 
 		if grade == 1 {
-			desc = "高一"
+			desc = "2017"
 		} else if grade == 2 {
-			desc = "高二"
+			desc = "2016"
 		} else if grade == 3 {
-			desc = "高三"
+			desc = "2015"
 		} else if grade == 100 {
-			desc = "高中毕业"
+			desc = "2018"
 		}
 
 	} else if schoolType == constant.ENUM_SHOOL_TYPE_JUNIOR {
 
 		if grade == 1 {
-			desc = "初一"
+			desc = "2017"
 		} else if grade == 2 {
-			desc = "初二"
+			desc = "2016"
 		} else if grade == 3 {
-			desc = "初三"
+			desc = "2015"
 		} else if grade == 100 {
-			desc = "初中毕业"
+			desc = "2018"
 		}
 	}
 
