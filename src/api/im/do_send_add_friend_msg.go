@@ -128,7 +128,7 @@ func SendAddFriendMsg(uin1 int64, uin2 int64) (err error) {
 		return
 	}
 
-	log.Errorf("SendAddFriendMsgReq uin1 %d, uin2 %d, req %+v", uin1, uin2, msg)
+	log.Debugf("SendAddFriendMsgReq uin1 %d, uin2 %d, req %+v", uin1, uin2, msg)
 
 	data, err := json.Marshal(&msg)
 	if err != nil {
@@ -163,7 +163,7 @@ func SendAddFriendMsg(uin1 int64, uin2 int64) (err error) {
 		return
 	}
 
-	log.Errorf("SendAddFriendMsgRsp uin1 %d, uin2 %d, rsp %+v", uin1, uin2, rsp)
+	log.Debugf("SendAddFriendMsgRsp uin1 %d, uin2 %d, rsp %+v", uin1, uin2, rsp)
 
 	if rsp.ErrorCode != 0 {
 		err = rest.NewAPIError(constant.E_IM_REQ_SEND_VOTE_MSG, rsp.ErrorInfo)

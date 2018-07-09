@@ -201,7 +201,7 @@ func sortQuestionAnswer(answers []*st.AnswersInfo) (sortedAnswers []*st.AnswersI
 }
 
 func getCommentCnt(answerId int) (cnt int, err error) {
-	//log.Debugf("start getCommentCnt answerId:%d", answerId)
+	log.Debugf("start getCommentCnt answerId:%d", answerId)
 
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
 	if inst == nil {
@@ -210,21 +210,56 @@ func getCommentCnt(answerId int) (cnt int, err error) {
 		return
 	}
 
-	// 评论数
-	sql := fmt.Sprintf(`select count(commentId) as cnt from v2comments where answerId = %d and commentStatus = 0`, answerId)
+	//2018-07-05 评论数 = 评论数 + 回复数
+	sql := fmt.Sprintf(`select commentId  from v2comments where answerId = %d and commentStatus = 0`, answerId)
 	rows, err := inst.Query(sql)
+	defer rows.Close()
+
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
 		log.Error(err)
 		return
 	}
-	defer rows.Close()
 
+	commentIdArr := make([]int, 0)
+	commentCnt := 0
 	for rows.Next() {
-		rows.Scan(&cnt)
+		var commentId int
+		rows.Scan(&commentId)
+		commentCnt++
+		commentIdArr = append(commentIdArr, commentId)
+	}
+	commentStr := ""
+	for i, commentId := range commentIdArr {
+		if i != len(commentIdArr)-1 {
+			commentStr += fmt.Sprintf(`%d,`, commentId)
+		} else {
+			commentStr += fmt.Sprintf(`%d`, commentId)
+		}
 	}
 
-	//log.Debugf("end getCommentCnt answerId:%d cnt:%d", answerId, cnt)
+	//找到每一条评论的回复数
+	sql = fmt.Sprintf(`select count(*) as cnt from v2replys where commentId in ('%s') and replyStatus = 0 `, commentStr)
+
+	rows, err = inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Error(err)
+		return
+	}
+
+	replyCnt := 0
+	for rows.Next() {
+		rows.Scan(&replyCnt)
+	}
+	cnt = replyCnt + commentCnt
+
+	/*
+		// 评论数
+		sql := fmt.Sprintf(`select count(commentId) as cnt from v2comments where answerId = %d and commentStatus = 0`, answerId)
+	*/
+
+	log.Debugf("end getCommentCnt answerId:%d commentCnt:%d,replyCnt:%d,cnt:%d", answerId, commentCnt, replyCnt, cnt)
 	return
 }
 
