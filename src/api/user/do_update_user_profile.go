@@ -22,6 +22,13 @@ type UpdateUserProfileReq struct {
 	Gender    int    `schema:"gender"`
 	UserName  string `schema:"userName"`
 	Age       int    `schema:"age"`
+
+	//没有省 市 家乡
+	Country         string `json:"country"`
+	Province        string `json:"province"`
+	City            string `json:"city"`
+	Hometown        string `json:"hometown"`        //家乡
+
 	Flag      int    `schema:"flag"` //是否记入修改次数限制
 }
 
@@ -32,7 +39,7 @@ func doUpdateUserProfile(req *UpdateUserProfileReq, r *http.Request) (rsp *Updat
 
 	log.Errorf("uin %d, UpdateUserProfileReq %+v", req.Uin, req)
 
-	err = UpdateUserProfileInfo(req.Uin, req.NickName, req.HeadImgId, req.Gender, req.Age, req.UserName, req.Flag)
+	err = UpdateUserProfileInfo(req.Uin, req.NickName, req.HeadImgId, req.Gender, req.Age, req.UserName, req.Country,req.Province,req.City,req.Hometown,req.Flag)
 	if err != nil {
 		log.Errorf("uin %d, UpdateUserProfileRsp error, %s", req.Uin, err.Error())
 		return
@@ -46,13 +53,15 @@ func doUpdateUserProfile(req *UpdateUserProfileReq, r *http.Request) (rsp *Updat
 }
 
 //限制修改各个字段的修改次数
-func UpdateUserProfileInfo(uin int64, nickName, headImgId string, gender, age int, userName string, flag int) (err error) {
+func UpdateUserProfileInfo(uin int64, nickName, headImgId string, gender, age int, userName ,country ,province ,city , hometown string, flag int) (err error) {
 
+	log.Debugf("args %s,%s,%s,%s",country,province,city,hometown)
 	if uin == 0 {
 		return
 	}
 
-	if len(nickName) == 0 && len(headImgId) == 0 && (gender <= 0 || gender > 2) && len(userName) == 0 && (age == 0) {
+	if len(nickName) == 0 && len(headImgId) == 0 && (gender <= 0 || gender > 2) && len(userName) == 0 &&
+		(age == 0) && len(country) == 0 && len(province) == 0 && len(city) == 0 &&len(hometown) == 0 {
 		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid param")
 		log.Error(err.Error())
 		return
@@ -109,6 +118,13 @@ func UpdateUserProfileInfo(uin int64, nickName, headImgId string, gender, age in
 	args := make([]interface{}, 0)
 
 	sql = fmt.Sprintf(`update profiles set `)
+
+	//nick太长
+	if len(nickName) > 50 {
+		err = rest.NewAPIError(constant.E_INVALID_PARAM, "nick name too long")
+		log.Debugf("nick len = %d",len(nickName))
+		return
+	}
 
 	if len(nickName) > 0 && len(nickName) < 50 {
 
@@ -177,6 +193,25 @@ func UpdateUserProfileInfo(uin int64, nickName, headImgId string, gender, age in
 		}
 	}
 
+	if len(userName) > 0 {
+		sql += fmt.Sprintf(` userName = ?,`)
+		args = append(args, userName)
+
+		if flag > 0 {
+			//检查修改次数是否超限制
+			for _, qi := range modQutoaInfos {
+
+				if qi.Field == constant.ENUM_PROFILE_MOD_FIELD_USERNAME && qi.LeftCnt <= 0 {
+					err = rest.NewAPIError(constant.E_PERMI_DENY, "modify cnt over limit!")
+					log.Error(err.Error())
+					return
+				}
+			}
+
+			modsM[constant.ENUM_PROFILE_MOD_FIELD_USERNAME] = fmt.Sprintf("userName:%s", userName)
+		}
+	}
+
 	//只记录头像ID，下发的时候拼接域名
 	if len(headImgId) > 0 {
 		headImgUrl := fmt.Sprintf("%s", headImgId)
@@ -222,11 +257,88 @@ func UpdateUserProfileInfo(uin int64, nickName, headImgId string, gender, age in
 		}
 	}
 
+	if len(country) > 0 {
+		sql += fmt.Sprintf(` country = ?,`)
+		args = append(args, country)
+
+		if flag > 0 {
+			//检查修改次数是否超限制
+			for _, qi := range modQutoaInfos {
+				if qi.Field == constant.ENUM_PROFILE_MOD_FIELD_COUNTRY && qi.LeftCnt <= 0 {
+					err = rest.NewAPIError(constant.E_PERMI_DENY, "modify cnt over limit!")
+					log.Error(err.Error())
+					return
+				}
+			}
+			modsM[constant.ENUM_PROFILE_MOD_FIELD_COUNTRY] = fmt.Sprintf("country:%s", country)
+		}
+	}
+
+	if len(province) > 0 {
+		sql += fmt.Sprintf(` province = ?,`)
+		args = append(args, province)
+
+		if flag > 0 {
+			//检查修改次数是否超限制
+			for _, qi := range modQutoaInfos {
+				if qi.Field == constant.ENUM_PROFILE_MOD_FIELD_PROVINCE && qi.LeftCnt <= 0 {
+					err = rest.NewAPIError(constant.E_PERMI_DENY, "modify cnt over limit!")
+					log.Error(err.Error())
+					return
+				}
+			}
+			modsM[constant.ENUM_PROFILE_MOD_FIELD_PROVINCE] = fmt.Sprintf("province:%s", province)
+		}
+	}
+
+	if len(city) > 0 {
+		sql += fmt.Sprintf(` city = ?,`)
+		args = append(args, city)
+
+		if flag > 0 {
+			//检查修改次数是否超限制
+			for _, qi := range modQutoaInfos {
+				if qi.Field == constant.ENUM_PROFILE_MOD_FIELD_CITY && qi.LeftCnt <= 0 {
+					err = rest.NewAPIError(constant.E_PERMI_DENY, "modify cnt over limit!")
+					log.Error(err.Error())
+					return
+				}
+			}
+			modsM[constant.ENUM_PROFILE_MOD_FIELD_CITY] = fmt.Sprintf("city:%s", city)
+		}
+	}
+
+	if len(hometown) > 0 {
+		sql += fmt.Sprintf(` hometown = ?,`)
+		args = append(args, hometown)
+
+		if flag > 0 {
+			//检查修改次数是否超限制
+			for _, qi := range modQutoaInfos {
+				if qi.Field == constant.ENUM_PROFILE_MOD_FIELD_HOMETOWN && qi.LeftCnt <= 0 {
+					err = rest.NewAPIError(constant.E_PERMI_DENY, "modify cnt over limit!")
+					log.Error(err.Error())
+					return
+				}
+			}
+			modsM[constant.ENUM_PROFILE_MOD_FIELD_HOMETOWN] = fmt.Sprintf("hometown:%s", hometown)
+		}
+	}
+
+
 	sql = sql[:len(sql)-1]
 
 	sql += fmt.Sprintf(` where uin = ?`)
 	args = append(args, uin)
 
+
+	//如果args为空 mysql报错
+	if len(args) == 0 {
+		return
+	}
+
+
+	log.Debugf("update file sql = %s",sql)
 	_, err = inst.Exec(sql, args...)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())

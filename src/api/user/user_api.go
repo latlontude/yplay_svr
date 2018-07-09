@@ -32,6 +32,10 @@ var (
 
 		"/clearmods": auth.Apify(doClearMods), //清理历史修改的记录
 		"/userextra": auth.Apify(doExUserInfo), //用户其他信息
+
+
+
+		"/searchfriends" : auth.Apify(doSearchFriends),     //通过学校所在城市找好友
 	}
 
 	log = env.NewLogger("user")

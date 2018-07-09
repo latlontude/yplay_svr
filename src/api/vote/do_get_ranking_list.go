@@ -45,7 +45,7 @@ func doGetRankingList(req *GetRankingListReq, r *http.Request) (rsp *GetRankingL
 
 	rsp = &info
 
-	log.Debugf("uin %d, GetRankigListRsp succ, %+v", req.Uin, rsp)
+	log.Debugf("uin %d, GetRankigListRsp succ", req.Uin)
 
 	return
 
@@ -336,7 +336,7 @@ func BatchGetRankingList(uin int64, qids []int) (retInfosMap map[int]GetRankingL
 		retInfosMap[qid] = tmpRetInfo1
 	}
 
-	log.Debugf("end BatchGetRankingList uin:%d, retInfosMap:%+v", uin, retInfosMap)
+	//log.Debugf("end BatchGetRankingList uin:%d, retInfosMap:%+v", uin, retInfosMap)
 	return
 }
 

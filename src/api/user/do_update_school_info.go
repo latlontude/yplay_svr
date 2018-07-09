@@ -23,6 +23,7 @@ type UpdateSchoolInfoReq struct {
 
 	DeptId   int    `schema:"deptId"`
 	DeptName string `schema:"deptName"`
+	EnrollmentYear  int `schema:"enrollmentYear"`
 
 	Flag int `schema:"flag"` //1表示要记入修改次数限制中
 }
@@ -34,7 +35,7 @@ func doUpdateSchoolInfo(req *UpdateSchoolInfoReq, r *http.Request) (rsp *UpdateS
 
 	log.Errorf("uin %d, UpdateSchoolInfoReq %+v", req.Uin, req)
 
-	err = UpdateUserSchoolInfo(req.Uin, req.SchoolId, req.SchoolName, req.Grade, req.DeptId, req.DeptName, req.Flag)
+	err = UpdateUserSchoolInfo(req.Uin, req.SchoolId, req.SchoolName, req.Grade, req.DeptId, req.DeptName, req.EnrollmentYear,req.Flag)
 	if err != nil {
 		log.Errorf("uin %d, UpdateSchoolInfoRsp error, %s", req.Uin, err.Error())
 		return
@@ -46,7 +47,7 @@ func doUpdateSchoolInfo(req *UpdateSchoolInfoReq, r *http.Request) (rsp *UpdateS
 }
 
 //正常情况学校 学校 + 年级 + 院系 是一起修改不会只修改年级
-func UpdateUserSchoolInfo(uin int64, schoolId int, schoolName string, grade int, deptId int, deptName string, flag int) (err error) {
+func UpdateUserSchoolInfo(uin int64, schoolId int, schoolName string, grade int, deptId int, deptName string, enrollmentYear int ,flag int) (err error) {
 
 	log.Errorf("start UpdateUserSchoolInfo uin:%d, schoolId:%d, schoolName:%s, grade:%d, deptId:%d, deptName:%s flag:%d", uin, schoolId, schoolName, grade, deptId, deptName, flag)
 
@@ -96,7 +97,7 @@ func UpdateUserSchoolInfo(uin int64, schoolId int, schoolName string, grade int,
 		}
 
 	}
-
+	log.Errorf("uin:%d, pending schoolName:%s ", uin, schoolName)
 	var modQutoaInfo *st.ProfileModQuotaInfo
 
 	//账号注册后的修改 要记入修改次数
@@ -124,63 +125,32 @@ func UpdateUserSchoolInfo(uin int64, schoolId int, schoolName string, grade int,
 		if info.SchoolType != constant.ENUM_SCHOOL_TYPE_UNIVERSITY || deptId == 0 {
 
 			//更新学校信息
-			sql = fmt.Sprintf(`update profiles set 
-							grade = %d, 
-							schoolId = %d, 
-							schoolType = %d, 
-							schoolName = "%s", 
-							country = "%s", 
-							province = "%s", 
-							city = "%s" 
-							where uin = %d`,
-				grade, info.SchoolId, info.SchoolType, info.SchoolName, info.Country, info.Province, info.City, uin)
+			sql = fmt.Sprintf(`update profiles set grade = %d,schoolId = %d,schoolType = %d,schoolName = "%s",
+							country = "%s",province = "%s",city = "%s",enrollmentYear = %d where uin = %d`,
+				grade, info.SchoolId, info.SchoolType, info.SchoolName, info.Country, info.Province, info.City, enrollmentYear,uin)
 
 			//不更新grade
 			if grade == 0 {
 
-				sql = fmt.Sprintf(`update profiles set 							
-							schoolId = %d, 
-							schoolType = %d, 
-							schoolName = "%s", 
-							country = "%s", 
-							province = "%s", 
-							city = "%s" 
-							where uin = %d`,
-					info.SchoolId, info.SchoolType, info.SchoolName, info.Country, info.Province, info.City, uin)
+				sql = fmt.Sprintf(`update profiles set schoolId = %d, schoolType = %d,schoolName = "%s",
+							country = "%s",province = "%s",city = "%s" ,enrollmentYear = %d where uin = %d`,
+					info.SchoolId, info.SchoolType, info.SchoolName, info.Country, info.Province, info.City,enrollmentYear, uin)
 			}
 
 		} else {
-
 			//更新学校信息
-			sql = fmt.Sprintf(`update profiles set 
-							grade = %d, 
-							schoolId = %d, 
-							schoolType = %d, 
-							schoolName = "%s", 
-							deptId = %d,
-							deptName = "%s",
-							country = "%s", 
-							province = "%s", 
-							city = "%s" 
-							where uin = %d`,
-				grade, info.SchoolId, info.SchoolType, info.SchoolName, deptId, deptName, info.Country, info.Province, info.City, uin)
+			sql = fmt.Sprintf(`update profiles set grade = %d,schoolId = %d,schoolType = %d,schoolName = "%s",deptId = %d,
+							deptName = "%s",country = "%s",province = "%s",city = "%s" ,enrollmentYear = %d where uin = %d`,
+				grade, info.SchoolId, info.SchoolType, info.SchoolName, deptId, deptName, info.Country, info.Province, info.City, enrollmentYear,uin)
 
 			//不更新grade
 			if grade == 0 {
-
-				sql = fmt.Sprintf(`update profiles set 							
-							schoolId = %d, 
-							schoolType = %d, 
-							schoolName = "%s", 
-							deptId = %d,
-							deptName = "%s",
-							country = "%s", 
-							province = "%s", 
-							city = "%s" 
-							where uin = %d`,
-					info.SchoolId, info.SchoolType, info.SchoolName, deptId, deptName, info.Country, info.Province, info.City, uin)
+				sql = fmt.Sprintf(`update profiles set schoolId = %d,schoolType = %d,schoolName = "%s",deptId = %d,deptName = "%s",
+							country = "%s",province = "%s",city = "%s" ,enrollmentYear = %d where uin = %d`,
+					info.SchoolId, info.SchoolType, info.SchoolName, deptId, deptName, info.Country, info.Province, info.City,enrollmentYear, uin)
 			}
 		}
+		log.Errorf("sql:%s",sql)
 
 	} else {
 
@@ -197,13 +167,18 @@ func UpdateUserSchoolInfo(uin int64, schoolId int, schoolName string, grade int,
 			tschoolType = 1
 		}
 
-		sql = fmt.Sprintf(`update profiles set grade = %d, schoolId = %d, schoolType = %d, schoolName = "%s" where uin = %d`, grade, schoolId, tschoolType, schoolName, uin)
+		sql = fmt.Sprintf(`update profiles set grade = %d, schoolId = %d, schoolType = %d, schoolName = "%s" ,enrollmentYear = %d where uin = %d`,
+			grade, schoolId, tschoolType, schoolName,enrollmentYear, uin)
 		if grade == 0 {
-			sql = fmt.Sprintf(`update profiles set schoolId = %d, schoolType = %d, schoolName = "%s" where uin = %d`, schoolId, tschoolType, schoolName, uin)
+			sql = fmt.Sprintf(`update profiles set schoolId = %d, schoolType = %d, schoolName = "%s" ,enrollmentYear = %d where uin = %d`,
+				schoolId, tschoolType, schoolName,enrollmentYear, uin)
 		}
+		log.Errorf("sql:%s",sql)
 
 	}
 
+
+	log.Errorf("sql:%s",sql)
 	_, err = inst.Exec(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
