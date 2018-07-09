@@ -6,39 +6,45 @@ import (
 	"common/rest"
 	"fmt"
 	"net/http"
-
 )
 
 type ExtUserInfoReq struct {
-	Uin       int64  `schema:"uin"`
-	Token     string `schema:"token"`
-	Ver       int    `schema:"ver"`
-
+	Uin   int64  `schema:"uin"`
+	FUin  int64  `schema:"friendUin"`
+	Token string `schema:"token"`
+	Ver   int    `schema:"ver"`
 }
 
 type ExtUserInfoRsp struct {
-	QuestionCnt     int              `json:"questionCnt"`
-	AnswerCnt       int              `json:"answerCnt"`
+	QuestionCnt int `json:"questionCnt"`
+	AnswerCnt   int `json:"answerCnt"`
 }
 
 func doExUserInfo(req *ExtUserInfoReq, r *http.Request) (rsp *ExtUserInfoRsp, err error) {
 
 	log.Errorf("uin %d, ExtUserInfoReq %+v", req.Uin, req)
 
-	qstCnt,answerCnt , err := ExtInfo(req.Uin)
+	queryUin := req.Uin
+
+	//查询好友extra
+	if req.FUin > 0 {
+		queryUin = req.FUin
+	}
+
+	qstCnt, answerCnt, err := ExtInfo(queryUin)
 	if err != nil {
 		log.Errorf("uin %d, ExtUserInfoRsp error, %s", req.Uin, err.Error())
 		return
 	}
 
-	rsp = &ExtUserInfoRsp{qstCnt,answerCnt}
+	rsp = &ExtUserInfoRsp{qstCnt, answerCnt}
 
 	log.Errorf("uin %d, ExtUserInfoRsp succ, %+v", req.Uin, rsp)
 
 	return
 }
 
-func ExtInfo(uin int64) (qstCnt int, answerCnt int ,err error) {
+func ExtInfo(uin int64) (qstCnt int, answerCnt int, err error) {
 
 	if uin == 0 {
 		log.Error("uin is zero")
@@ -52,20 +58,16 @@ func ExtInfo(uin int64) (qstCnt int, answerCnt int ,err error) {
 		return
 	}
 
-
-	sql := fmt.Sprintf(`select count(*) from  v2answers where ownerUid = %d`,uin)
+	sql := fmt.Sprintf(`select count(*) from  v2answers where ownerUid = %d`, uin)
 
 	rows, err := inst.Query(sql)
 	defer rows.Close()
 
-
-
-	for rows.Next(){
+	for rows.Next() {
 		rows.Scan(&answerCnt)
 	}
 
-
-	sql = fmt.Sprintf(`select count(*)  from v2questions where ownerUid=%d`,uin)
+	sql = fmt.Sprintf(`select count(*)  from v2questions where ownerUid=%d`, uin)
 	rows, err = inst.Query(sql)
 	for rows.Next() {
 		rows.Scan(&qstCnt)
@@ -74,4 +76,3 @@ func ExtInfo(uin int64) (qstCnt int, answerCnt int ,err error) {
 	return
 
 }
-
