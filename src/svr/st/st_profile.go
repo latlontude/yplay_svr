@@ -2,9 +2,11 @@ package st
 
 import (
 	"common/constant"
+	"common/env"
 	"common/mydb"
 	"common/rest"
 	"fmt"
+	"strings"
 )
 
 type UserProfileInfo struct {
@@ -23,10 +25,14 @@ type UserProfileInfo struct {
 	DeptId     int    `json:"deptId"`   //大学的学院信息
 	DeptName   string `json:"deptName"` //大学的学院信息
 
-	Country  string `json:"country"`
-	Province string `json:"province"`
-	City     string `json:"city"`
-	Ts       int    `json:"ts"`
+	Country        string `json:"country"`
+	Province       string `json:"province"`
+	City           string `json:"city"`
+	Ts             int    `json:"ts"`
+	EnrollmentYear int    `json:"enrollmentYear"` //入学年份
+	Hometown       string `json:"hometown"`       //家乡
+
+	Src int `json:"src"` //来源  默认:0:同校  1:同城 2:其他
 }
 
 type UserProfileInfo2 struct {
@@ -45,14 +51,19 @@ type UserProfileInfo2 struct {
 	DeptId     int    `json:"deptId"`   //大学的学院信息
 	DeptName   string `json:"deptName"` //大学的学院信息
 
-	Country  string `json:"country"`
-	Province string `json:"province"`
-	City     string `json:"city"`
-	Ts       int    `json:"ts"`
+	Country        string `json:"country"`
+	Province       string `json:"province"`
+	City           string `json:"city"`
+	Ts             int    `json:"ts"`
+	EnrollmentYear int    `json:"enrollmentYear"` //入学年份
+	Hometown       string `json:"hometown"`       //家乡
 
 	GemCnt    int `json:"gemCnt"`
 	FriendCnt int `json:"friendCnt"`
 	NewsCnt   int `json:"newsCnt"`
+	Src       int `json:"src"` //来源  默认:0:同校  1:同城 2:其他
+
+	Type int `json:"type"` //是否是白名单用户  0:非白名单  1:白名单
 }
 
 func (this *UserProfileInfo) String() string {
@@ -105,7 +116,8 @@ func GetUserProfileInfo(uin int64) (info *UserProfileInfo, err error) {
 		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
 		return
 	}
-	sql := fmt.Sprintf(`select uin, userName, phone, nickName, headImgUrl, gender, age, grade, schoolId, schoolType, schoolName, deptId, deptName, country, province, city from profiles where uin = %d`, uin)
+	sql := fmt.Sprintf(`select uin, userName, phone, nickName, headImgUrl, gender, age, grade, schoolId, schoolType,schoolName, 
+		deptId, deptName, country, province, city ,enrollmentYear,hometown from profiles where uin = %d`, uin)
 
 	rows, err := inst.Query(sql)
 	if err != nil {
@@ -136,7 +148,9 @@ func GetUserProfileInfo(uin int64) (info *UserProfileInfo, err error) {
 			&info.DeptName,
 			&info.Country,
 			&info.Province,
-			&info.City)
+			&info.City,
+			&info.EnrollmentYear,
+			&info.Hometown)
 
 		if len(info.HeadImgUrl) > 0 {
 			info.HeadImgUrl = fmt.Sprintf("http://yplay-1253229355.image.myqcloud.com/headimgs/%s", info.HeadImgUrl)
@@ -179,7 +193,7 @@ func BatchGetUserProfileInfo(uins []int64) (res map[int64]*UserProfileInfo, err 
 		log.Error(err)
 		return
 	}
-	sql := fmt.Sprintf(`select uin, userName, phone, nickName, headImgUrl, gender, age, grade, schoolId, schoolType, schoolName, deptId, deptName, country, province, city from profiles where uin in (%s)`, str)
+	sql := fmt.Sprintf(`select uin, userName, phone, nickName, headImgUrl, gender, age, grade, schoolId, schoolType, schoolName, deptId, deptName, country, province, city ,enrollmentYear,hometown from profiles where uin in (%s)`, str)
 
 	rows, err := inst.Query(sql)
 	if err != nil {
@@ -207,7 +221,9 @@ func BatchGetUserProfileInfo(uins []int64) (res map[int64]*UserProfileInfo, err 
 			&info.DeptName,
 			&info.Country,
 			&info.Province,
-			&info.City)
+			&info.City,
+			&info.EnrollmentYear,
+			&info.Hometown)
 
 		if len(info.HeadImgUrl) > 0 {
 			info.HeadImgUrl = fmt.Sprintf("http://yplay-1253229355.image.myqcloud.com/headimgs/%s", info.HeadImgUrl)
@@ -233,7 +249,7 @@ func GetUserProfileInfo2(uin int64) (info *UserProfileInfo2, err error) {
 		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
 		return
 	}
-	sql := fmt.Sprintf(`select uin, userName, phone, nickName, headImgUrl, gender, age, grade, schoolId, schoolType, schoolName, deptId, deptName, country, province, city from profiles where uin = %d`, uin)
+	sql := fmt.Sprintf(`select uin, userName, phone, nickName, headImgUrl, gender, age, grade, schoolId, schoolType,schoolName, deptId, deptName, country, province, city ,enrollmentYear,hometown from profiles where uin = %d`, uin)
 
 	rows, err := inst.Query(sql)
 	if err != nil {
@@ -264,7 +280,9 @@ func GetUserProfileInfo2(uin int64) (info *UserProfileInfo2, err error) {
 			&info.DeptName,
 			&info.Country,
 			&info.Province,
-			&info.City)
+			&info.City,
+			&info.EnrollmentYear,
+			&info.Hometown)
 
 		if len(info.HeadImgUrl) > 0 {
 			info.HeadImgUrl = fmt.Sprintf("http://yplay-1253229355.image.myqcloud.com/headimgs/%s", info.HeadImgUrl)
@@ -304,6 +322,23 @@ func GetUserProfileInfo2(uin int64) (info *UserProfileInfo2, err error) {
 		if field == constant.ENUM_USER_STAT_FRIEND_CNT {
 			info.FriendCnt = value
 		}
+	}
+
+	//判断白名单 写到Type里面
+	whiteList := strings.Split(env.Config.WhiteList.Phones, ",") //内部测试手机号
+	log.Debugf("whiteList:%+v", whiteList)
+
+	isWhitePhone := false
+
+	for _, value := range whiteList {
+		if value == info.Phone {
+			isWhitePhone = true
+			break
+		}
+	}
+
+	if isWhitePhone {
+		info.Type = 1
 	}
 
 	return

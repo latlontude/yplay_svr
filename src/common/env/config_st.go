@@ -117,6 +117,10 @@ type YPLAYSvrConfig struct {
 		Code   string
 	}
 
+	WhiteList struct {
+		Phones string
+	}
+
 	Activity struct {
 		Schools string
 	}
