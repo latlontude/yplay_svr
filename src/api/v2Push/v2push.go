@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"strings"
 	"svr/st"
+	"time"
 )
 
 var log = env.NewLogger("v2push")
@@ -37,7 +38,7 @@ func SendBeDeletePush(operatorUid int64, uid int64, reason string, deleteType in
 	}
 
 	deleteMsg.Type = deleteType
-	deleteMsg.Ts = 0
+	deleteMsg.Ts = time.Now().Unix()
 	deleteMsg.Reason = reason
 
 	data, err := json.Marshal(&deleteMsg)

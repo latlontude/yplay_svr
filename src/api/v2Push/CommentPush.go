@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"svr/st"
+	"time"
 )
 
 //被评论 发推送
@@ -97,9 +98,10 @@ func SendBeLikedCommentPush(uid int64, qid, likeId int) {
 		Question  st.V2QuestionInfo  `json:"question"`
 		MyComment st.CommentInfo     `json:"myComment"`
 		NewLiker  st.UserProfileInfo `json:"newLiker"`
+		Ts       int64              `json:"ts"`
 	}
 	var beLikedMsg BeLikedMsg
-
+	beLikedMsg.Ts = time.Now().Unix()
 	//点赞人info
 	if uid > 0 {
 		ui, err1 := st.GetUserProfileInfo(uid)
