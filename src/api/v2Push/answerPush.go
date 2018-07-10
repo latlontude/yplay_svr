@@ -13,7 +13,7 @@ import (
 )
 
 //新增回答 发推送
-func SendNewAddAnswerPush(uin int64,qid int, answer st.AnswersInfo) {
+func SendNewAddAnswerPush(uin int64, qid int, answer st.AnswersInfo) {
 
 	var serviceAccountUin int64
 	serviceAccountUin = 100001 //客服号
@@ -57,13 +57,14 @@ func SendNewAddAnswerPush(uin int64,qid int, answer st.AnswersInfo) {
 		return
 	}
 
+	//TODO : uids 应该去重uin
 	for _, uid := range uids {
-		if uid !=uin {
-			go im.SendV2CommonMsg(serviceAccountUin, uid, 14, dataStr, descStr)
+		//不需要给自己发推送   自问自答不重复发
+		if uid == uin || uid == qidOwner {
+			continue
 		}
+		go im.SendV2CommonMsg(serviceAccountUin, uid, 14, dataStr, descStr)
 	}
-
-
 
 	//同问该问题的人 发推送
 	sameAskUidArr, err := GetSameAskUidArr(qid)
@@ -81,6 +82,8 @@ func SendNewAddAnswerPush(uin int64,qid int, answer st.AnswersInfo) {
 			log.Errorf(err.Error())
 			continue
 		}
+
+		log.Errorf("sameAsk ")
 		go im.SendV2CommonMsg(serviceAccountUin, sameAskUin, 14, dataStr, descStr)
 	}
 
@@ -101,7 +104,7 @@ func getAnswerUidByQid(qid int) (uids []int64, err error) {
 		return
 	}
 
-	sql := fmt.Sprintf(`select ownerUid from  v2answers where qid = %d`, qid)
+	sql := fmt.Sprintf(`select ownerUid from  v2answers where qid = %d group by ownerUid`, qid)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())

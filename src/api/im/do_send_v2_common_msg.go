@@ -12,7 +12,7 @@ import (
 )
 
 func MakeV2CommonMsg(fromUin int64, dataType int, groupId, data, descStr string) (msg IMMsg, err error) {
-	log.Debugf("start MakeV2CommonMsg groupId:%s", groupId)
+	//log.Debugf("start MakeV2CommonMsg groupId:%s", groupId)
 
 	var customData IMCustomData
 	customData.DataType = dataType
@@ -57,7 +57,7 @@ func MakeV2CommonMsg(fromUin int64, dataType int, groupId, data, descStr string)
 	offlinePush.Ands = AndroidInfo{"噗噗"}
 
 	msg.OfflinePush = offlinePush
-	log.Debugf("end MakeV2CommonMsg")
+	//log.Debugf("end MakeV2CommonMsg")
 	return
 }
 
@@ -88,7 +88,7 @@ func SendV2CommonMsg(fromUin, toUin int64, dataType int, notifyData, descStr str
 		return
 	}
 
-	log.Errorf("IMSendV2CommonMsgReq uin %d, req %+v", fromUin, msg)
+	//log.Errorf("IMSendV2CommonMsgReq uin %d, req %+v", fromUin, msg)
 
 	data, err := json.Marshal(&msg)
 	if err != nil {
@@ -123,7 +123,7 @@ func SendV2CommonMsg(fromUin, toUin int64, dataType int, notifyData, descStr str
 		return
 	}
 
-	log.Errorf("IMSendV2CommonMsgRsp uin %d, rsp %+v", fromUin, rsp)
+	//log.Errorf("IMSendV2CommonMsgRsp uin %d, rsp %+v", fromUin, rsp)
 
 	if rsp.ErrorCode != 0 {
 		err = rest.NewAPIError(constant.E_IM_REQ_SEND_V2_COMMON_MSG, rsp.ErrorInfo)

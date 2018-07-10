@@ -105,8 +105,8 @@ func AddCustomServiceAccount(uin int64) (err error) {
 		}
 	}
 
-	text := "欢迎来到噗噗！如果你在使用中有任何的问题或建议，非常欢迎与我沟通！噗——"
-	go im.SendTextMsg(sessionId, text, serviceAccountUin, uin)
+	//text := "欢迎来到噗噗！如果你在使用中有任何的问题或建议，非常欢迎与我沟通！噗——"
+	//go im.SendTextMsg(sessionId, text, serviceAccountUin, uin)
 	log.Debugf("end AddCustomServiceAccount")
 
 	return
