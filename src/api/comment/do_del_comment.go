@@ -5,6 +5,7 @@ import (
 	"common/constant"
 	"common/mydb"
 	"common/rest"
+	"encoding/json"
 	"fmt"
 	"net/http"
 )
@@ -93,7 +94,14 @@ func DelComment(uin int64, answerId, commentId int, reason string) (code int, er
 
 	//不是我自己删的 发推送
 	if !isMyself {
-		v2push.SendBeDeletePush(uin, ownerUid, reason, 3)
+		comment,_,_:= GetV2Comment(commentId)
+		data, err1 := json.Marshal(&comment)
+		if err1 != nil {
+			log.Errorf(err1.Error())
+			return
+		}
+		dataStr := string(data)
+		v2push.SendBeDeletePush(uin, ownerUid, reason, 3,dataStr)
 	}
 
 	code = 0

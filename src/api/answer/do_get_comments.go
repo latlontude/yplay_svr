@@ -44,7 +44,7 @@ func doGetComments(req *GetCommentsReq, r *http.Request) (rsp *GetCommentsRsp, e
 
 func GetComments(uin int64, answerId, pageNum, pageSize int) (comments []*st.CommentInfo, totalCnt int, err error) {
 
-	log.Debugf("start GetComments uin:%d", uin)
+	//log.Debugf("start GetComments uin:%d", uin)
 
 	if answerId <= 0 || pageNum < 0 || pageSize < 0 {
 		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid params")
@@ -147,12 +147,12 @@ func GetComments(uin int64, answerId, pageNum, pageSize int) (comments []*st.Com
 		comments = append(comments, &info)
 	}
 
-	log.Debugf("end GetComments uin:%d totalCnt:%d", uin, totalCnt)
+	//log.Debugf("end GetComments uin:%d totalCnt:%d", uin, totalCnt)
 	return
 }
 
 func getCommentLikeCnt(commentId int) (cnt int, err error) {
-	log.Debugf("start getCommentLikeCnt commentId:%d", commentId)
+	//log.Debugf("start getCommentLikeCnt commentId:%d", commentId)
 
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
 	if inst == nil {
@@ -179,7 +179,7 @@ func getCommentLikeCnt(commentId int) (cnt int, err error) {
 }
 
 func getReplyArray(uin int64, commentId int) (Replys []st.ReplyInfo, err error) {
-	log.Debugf("start getReplyArray uin:%d commentId:%d", uin, commentId)
+	//log.Debugf("start getReplyArray uin:%d commentId:%d", uin, commentId)
 
 	Replys = make([]st.ReplyInfo, 0)
 
@@ -250,12 +250,12 @@ func getReplyArray(uin int64, commentId int) (Replys []st.ReplyInfo, err error) 
 		Replys = append(Replys, replyInfo)
 	}
 
-	log.Debugf("end getReplyArray uin:%d commentId:%d replayInfos:%+v", uin, commentId, Replys)
+	//log.Debugf("end getReplyArray uin:%d commentId:%d replayInfos:%+v", uin, commentId, Replys)
 	return
 }
 
 func getReplyLikeCnt(replyId int) (cnt int, err error) {
-	log.Debugf("start getReplyLikeCnt replyId:%d", replyId)
+	//log.Debugf("start getReplyLikeCnt replyId:%d", replyId)
 
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
 	if inst == nil {
@@ -277,12 +277,12 @@ func getReplyLikeCnt(replyId int) (cnt int, err error) {
 		rows.Scan(&cnt)
 	}
 
-	log.Debugf("end getReplyLikeCnt replyId:%d cnt:%d", replyId, cnt)
+	//log.Debugf("end getReplyLikeCnt replyId:%d cnt:%d", replyId, cnt)
 	return
 }
 
 func checkIsILikeComment(uin int64, commentId int) (ret bool, err error) {
-	log.Debugf("start checkIsILikeComment uin:%d commentId:%d", uin, commentId)
+	//log.Debugf("start checkIsILikeComment uin:%d commentId:%d", uin, commentId)
 
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
 	if inst == nil {
@@ -306,12 +306,12 @@ func checkIsILikeComment(uin int64, commentId int) (ret bool, err error) {
 		ret = true
 	}
 
-	log.Debugf("end checkIsILikeComment uin:%d commentId:%d ret:%t", uin, commentId, ret)
+	//log.Debugf("end checkIsILikeComment uin:%d commentId:%d ret:%t", uin, commentId, ret)
 	return
 }
 
 func checkIsILikeReply(uin int64, replyId int) (ret bool, err error) {
-	log.Debugf("start checkIsILikeReply uin:%d replyId:%d", uin, replyId)
+	//log.Debugf("start checkIsILikeReply uin:%d replyId:%d", uin, replyId)
 
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
 	if inst == nil {
@@ -335,6 +335,6 @@ func checkIsILikeReply(uin int64, replyId int) (ret bool, err error) {
 		ret = true
 	}
 
-	log.Debugf("end checkIsILikeReply uin:%d replyId:%d ret:%t", uin, replyId, ret)
+	//log.Debugf("end checkIsILikeReply uin:%d replyId:%d ret:%t", uin, replyId, ret)
 	return
 }

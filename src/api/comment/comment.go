@@ -13,6 +13,7 @@ var (
 		"/replytocomment": auth.Apify2(doReplyToComment), //对评论进行回复
 		"/replytoreply":   auth.Apify2(doReplyToReply),   //对评论下的回复进行回复
 		"/delreply":       auth.Apify2(doDelReply),       //删除评论下的某个回复
+
 	}
 
 	log = env.NewLogger("comment")

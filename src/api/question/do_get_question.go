@@ -44,7 +44,7 @@ func doGetQuestions(req *GetQuestionsReq, r *http.Request) (rsp *GetQuestionsRsp
 
 func GetQuestions(uin int64, boardId, pageNum, pageSize int) (questions []*st.V2QuestionInfo, totalCnt int, err error) {
 
-	log.Debugf("start GetQuestions uin:%d", uin)
+	//log.Debugf("start GetQuestions uin:%d", uin)
 
 	if boardId <= 0 || pageNum < 0 || pageSize < 0 {
 		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid params")
@@ -137,12 +137,12 @@ func GetQuestions(uin int64, boardId, pageNum, pageSize int) (questions []*st.V2
 		questions = append(questions, &info)
 	}
 
-	log.Debugf("end GetQuestions uin:%d totalCnt:%d", uin, totalCnt)
+	//log.Debugf("end GetQuestions uin:%d totalCnt:%d", uin, totalCnt)
 	return
 }
 
 func getAnswerCnt(qid int) (cnt int, err error) {
-	log.Debugf("start getAnswerCnt qid:%d", qid)
+	//log.Debugf("start getAnswerCnt qid:%d", qid)
 
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
 	if inst == nil {
@@ -164,12 +164,12 @@ func getAnswerCnt(qid int) (cnt int, err error) {
 		rows.Scan(&cnt)
 	}
 
-	log.Debugf("end getAnswerCnt qid:%d totalCnt:%d", qid, cnt)
+	//log.Debugf("end getAnswerCnt qid:%d totalCnt:%d", qid, cnt)
 	return
 }
 
 func getBestAnswer(uin int64, qid int) (answer *st.AnswersInfo, err error) {
-	log.Debugf("start getBestAnswer qid:%d", qid)
+	//log.Debugf("start getBestAnswer qid:%d", qid)
 
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
 	if inst == nil {
@@ -270,7 +270,7 @@ func getBestAnswer(uin int64, qid int) (answer *st.AnswersInfo, err error) {
 		}
 	}
 
-	log.Debugf("end getBestAnswer answer:%+v", answer)
+	//log.Debugf("end getBestAnswer answer:%+v", answer)
 	return
 }
 

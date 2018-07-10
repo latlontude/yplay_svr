@@ -201,7 +201,7 @@ func sortQuestionAnswer(answers []*st.AnswersInfo) (sortedAnswers []*st.AnswersI
 }
 
 func getCommentCnt(answerId int) (cnt int, err error) {
-	log.Debugf("start getCommentCnt answerId:%d", answerId)
+	//log.Debugf("start getCommentCnt answerId:%d", answerId)
 
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
 	if inst == nil {
@@ -259,7 +259,7 @@ func getCommentCnt(answerId int) (cnt int, err error) {
 		sql := fmt.Sprintf(`select count(commentId) as cnt from v2comments where answerId = %d and commentStatus = 0`, answerId)
 	*/
 
-	log.Debugf("end getCommentCnt answerId:%d commentCnt:%d,replyCnt:%d,cnt:%d", answerId, commentCnt, replyCnt, cnt)
+	//log.Debugf("end getCommentCnt answerId:%d commentCnt:%d,replyCnt:%d,cnt:%d", answerId, commentCnt, replyCnt, cnt)
 	return
 }
 

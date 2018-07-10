@@ -1,9 +1,11 @@
 package comment
 
 import (
+	"api/v2push"
 	"common/constant"
 	"common/mydb"
 	"common/rest"
+	"encoding/json"
 	"fmt"
 	"net/http"
 )
@@ -16,6 +18,7 @@ type DelReplyReq struct {
 	AnswerId  int `schema:"answerId"`
 	CommentId int `schema:"commentId"`
 	ReplyId   int `schema:"replyId"`
+	Reason    string `schema:"reason"`
 }
 
 type DelReplyRsp struct {
@@ -26,7 +29,7 @@ func doDelReply(req *DelReplyReq, r *http.Request) (rsp *DelReplyRsp, err error)
 
 	log.Debugf("uin %d, DelReplyReq %+v", req.Uin, req)
 
-	code, err := DelReply(req.Uin, req.AnswerId, req.CommentId, req.ReplyId)
+	code, err := DelReply(req.Uin, req.AnswerId, req.CommentId, req.ReplyId,req.Reason)
 
 	if err != nil {
 		log.Errorf("uin %d, DelReply error, %s", req.Uin, err.Error())
@@ -40,7 +43,7 @@ func doDelReply(req *DelReplyReq, r *http.Request) (rsp *DelReplyRsp, err error)
 	return
 }
 
-func DelReply(uin int64, answerId, commentId, replyId int) (code int, err error) {
+func DelReply(uin int64, answerId, commentId, replyId int,reason string) (code int, err error) {
 	log.Debugf("start DelReply uin = %d", uin)
 
 	code = -1
@@ -57,17 +60,19 @@ func DelReply(uin int64, answerId, commentId, replyId int) (code int, err error)
 		log.Error(err)
 		return
 	}
-
-	uids, err := getDelReplyPermitOperators(answerId, commentId, replyId)
+	uids, ownerUid,err := getDelReplyPermitOperators(answerId, commentId, replyId)
 	if err != nil {
 		log.Error(err)
 		return
 	}
-
+	isMyself := false
 	permit := false
 	for _, uid := range uids {
 		if uid == uin {
 			permit = true
+		}
+		if ownerUid == uin {
+			isMyself = true
 		}
 	}
 
@@ -86,13 +91,25 @@ func DelReply(uin int64, answerId, commentId, replyId int) (code int, err error)
 		return
 	}
 
+	//不是我自己删的 发推送
+	if !isMyself {
+		reply,_,_:= GetV2Reply(replyId)
+		data, err1 := json.Marshal(&reply)
+		if err1 != nil {
+			log.Errorf(err1.Error())
+			return
+		}
+		dataStr := string(data)
+		v2push.SendBeDeletePush(uin, ownerUid, reason, 4,dataStr)
+	}
+
 	code = 0
 
 	log.Debugf("end DelReplay uin = %d code = %d", uin, code)
 	return
 }
 
-func getDelReplyPermitOperators(answerId, commentId, replyId int) (operators []int64, err error) {
+func getDelReplyPermitOperators(answerId, commentId, replyId int) (operators []int64, owner int64,err error) {
 
 	if answerId == 0 || commentId == 0 {
 		log.Errorf("commentId or answerId is zero")
@@ -150,7 +167,7 @@ func getDelReplyPermitOperators(answerId, commentId, replyId int) (operators []i
 	}
 
 	//回应者本人有权删除自己的回应
-	var owner int64
+	//var owner int64
 	sql = fmt.Sprintf(`select fromUid from v2replys where replyId = %d and commentId = %d`, replyId, commentId)
 	rows, err = inst.Query(sql)
 	if err != nil {

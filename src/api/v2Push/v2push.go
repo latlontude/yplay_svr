@@ -16,15 +16,17 @@ import (
 var log = env.NewLogger("v2push")
 
 /**
-删除提问 发推送
+	删除提问 发推送
 */
-func SendBeDeletePush(operatorUid int64, uid int64, reason string, deleteType int) {
-
+func SendBeDeletePush(operatorUid int64, uid int64, reason string, deleteType int,deleteData string) {
+	var serviceAccountUin int64
+	serviceAccountUin = 100001 //客服号
 	type BeDeleteMsg struct {
-		Type     int                `json:"type"` // type: 1:提问被删除 2：回答被删除 3：评论被删除
+		Type     int                `json:"type"` // type: 1:提问被删除 2：回答被删除 3：评论被删除 4:回复被删除
 		Operator st.UserProfileInfo `json:"operator"`
 		Ts       int64              `json:"ts"`
 		Reason   string             `json:"reason"`
+		Data     string             `json:"data"`
 	}
 
 	var deleteMsg BeDeleteMsg
@@ -40,6 +42,7 @@ func SendBeDeletePush(operatorUid int64, uid int64, reason string, deleteType in
 	deleteMsg.Type = deleteType
 	deleteMsg.Ts = time.Now().Unix()
 	deleteMsg.Reason = reason
+	deleteMsg.Data = deleteData
 
 	data, err := json.Marshal(&deleteMsg)
 	if err != nil {
@@ -53,7 +56,7 @@ func SendBeDeletePush(operatorUid int64, uid int64, reason string, deleteType in
 	descStr := "收到新消息"
 
 	//给question 所属着发推送
-	go im.SendV2CommonMsg(operatorUid, uid, 18, dataStr, descStr)
+	go im.SendV2CommonMsg(serviceAccountUin, uid, 18, dataStr, descStr)
 
 	return
 }

@@ -48,6 +48,7 @@ func RemoveFriend(uin, friendUin int64) (err error) {
 	}
 
 	if friendUin == 100001 { //客服号
+		err = rest.NewAPIError(constant.E_INVALID_PARAM, "can not remove pupu assist")
 		log.Debugf(" service account can not be removed!")
 		return
 	}

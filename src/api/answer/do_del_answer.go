@@ -5,6 +5,7 @@ import (
 	"common/constant"
 	"common/mydb"
 	"common/rest"
+	"encoding/json"
 	"fmt"
 	"net/http"
 )
@@ -93,7 +94,14 @@ func DelAnswer(uin int64, qid, answerId int, reason string) (code int, err error
 	}
 
 	if !isMyself {
-		v2push.SendBeDeletePush(uin, ownerUid, reason, 2)
+		answer,_:= GetV2Answer(answerId)
+		data, err1 := json.Marshal(&answer)
+		if err1 != nil {
+			log.Errorf(err1.Error())
+			return
+		}
+		dataStr := string(data)
+		v2push.SendBeDeletePush(uin, ownerUid, reason, 2,dataStr)
 	}
 
 	code = 0

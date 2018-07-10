@@ -98,7 +98,7 @@ func SendBeLikedCommentPush(uid int64, qid, likeId int) {
 		Question  st.V2QuestionInfo  `json:"question"`
 		MyComment st.CommentInfo     `json:"myComment"`
 		NewLiker  st.UserProfileInfo `json:"newLiker"`
-		Ts       int64              `json:"ts"`
+		Ts       int64               `json:"ts"`
 	}
 	var beLikedMsg BeLikedMsg
 	beLikedMsg.Ts = time.Now().Unix()

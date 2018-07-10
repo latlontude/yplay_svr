@@ -1,11 +1,13 @@
 package comment
 
 import (
+	"api/v2push"
 	"common/constant"
 	"common/mydb"
 	"common/rest"
 	"fmt"
 	"net/http"
+	"svr/st"
 	"time"
 )
 
@@ -97,6 +99,22 @@ func ReplyToReply(uin int64, answerId, commentId, replyId int, replyContent stri
 		log.Error(err.Error())
 		return
 	}
+
+	var newReply st.ReplyInfo
+	newReply.ReplyId = int(repId)
+	newReply.ReplyContent = replyContent
+	newReply.ReplyTs  = ts
+
+	ui, err := st.GetUserProfileInfo(uin)
+	if err != nil {
+		log.Error(err.Error())
+		return
+	}
+	newReply.ReplyFromUserInfo = ui
+
+	//给回答者发送push，告诉ta，ta的回答收到了新评论 dataType:16
+	go v2push.SendReplyBeReplyPush(replyId, newReply)
+
 
 	return
 }

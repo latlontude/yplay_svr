@@ -72,7 +72,7 @@ func doGetRecommends(req *GetRecommendsReq, r *http.Request) (rsp *GetRecommends
 
 	rsp = &GetRecommendsRsp{total, friends}
 
-	log.Debugf("uin %d, GetRecommendsRsp succ, %+v", req.Uin, rsp)
+	//log.Debugf("uin %d, GetRecommendsRsp succ, %+v", req.Uin, rsp)
 
 	return
 }

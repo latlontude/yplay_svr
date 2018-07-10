@@ -9,7 +9,7 @@ type ReplyInfo struct {
 	ReplyContent      string           `json:"replyContent"`
 	ReplyFromUserInfo *UserProfileInfo `json:"fromUserInfo"`
 	ReplyToUserInfo   *UserProfileInfo `json:"toUserInfo"`
-	ReplyTs           int              `json:"replyTs"`
+	ReplyTs           int64              `json:"replyTs"`
 	LikeCnt           int              `json:"likeCnt"`
 	IsILike           bool             `json:"isILike"`
 }
