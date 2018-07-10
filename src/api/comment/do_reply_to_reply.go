@@ -16,6 +16,7 @@ type ReplyToReplyReq struct {
 	Token string `schema:"token"`
 	Ver   int    `schema:"ver"`
 
+	Qid          int    `schema:"qid"`
 	AnswerId     int    `schema:"answerId"`
 	CommentId    int    `schema:"commentId"`
 	ReplyId      int    `schema:"replyId"`
@@ -30,7 +31,7 @@ func doReplyToReply(req *ReplyToReplyReq, r *http.Request) (rsp *ReplyToReplyRsp
 
 	log.Debugf("uin %d, ReplyToReplyReq %+v", req.Uin, req)
 
-	replyId, err := ReplyToReply(req.Uin, req.AnswerId, req.CommentId, req.ReplyId, req.ReplyContent)
+	replyId, err := ReplyToReply(req.Uin, req.Qid, req.AnswerId, req.CommentId, req.ReplyId, req.ReplyContent)
 
 	if err != nil {
 		log.Errorf("uin %d, PostAnswer error, %s", req.Uin, err.Error())
@@ -44,7 +45,7 @@ func doReplyToReply(req *ReplyToReplyReq, r *http.Request) (rsp *ReplyToReplyRsp
 	return
 }
 
-func ReplyToReply(uin int64, answerId, commentId, replyId int, replyContent string) (repId int64, err error) {
+func ReplyToReply(uin int64, qid, answerId, commentId, replyId int, replyContent string) (repId int64, err error) {
 
 	if answerId <= 0 || commentId <= 0 || replyId <= 0 || len(replyContent) == 0 {
 		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid params")
@@ -104,7 +105,7 @@ func ReplyToReply(uin int64, answerId, commentId, replyId int, replyContent stri
 	var newReply st.ReplyInfo
 	newReply.ReplyId = int(repId)
 	newReply.ReplyContent = replyContent
-	newReply.ReplyTs  = ts
+	newReply.ReplyTs = ts
 
 	ui, err := st.GetUserProfileInfo(uin)
 	if err != nil {
@@ -114,8 +115,7 @@ func ReplyToReply(uin int64, answerId, commentId, replyId int, replyContent stri
 	newReply.ReplyFromUserInfo = ui
 
 	//给回答者发送push，告诉ta，ta的回答收到了新评论 dataType:16
-	go v2push.SendReplyBeReplyPush(uin , int(repId), newReply)
-
+	go v2push.SendReplyBeReplyPush(uin, qid, answerId, commentId, int(repId), newReply)
 
 	return
 }
