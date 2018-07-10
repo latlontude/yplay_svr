@@ -12,7 +12,7 @@ import (
 )
 
 //被评论 发推送
-func SendBeCommentPush(answerId int, comment st.CommentInfo) {
+func SendBeCommentPush(uin int64 , answerId int, comment st.CommentInfo) {
 
 	var serviceAccountUin int64
 	serviceAccountUin = 100001 //客服号
@@ -58,7 +58,10 @@ func SendBeCommentPush(answerId int, comment st.CommentInfo) {
 	descStr := "收到新消息"
 
 	//给回答者发送push，告诉ta，ta的回答收到了新评论 dataType:16
-	go im.SendV2CommonMsg(serviceAccountUin, answerUid, 16, dataStr, descStr)
+
+	if answerUid != uin {
+		go im.SendV2CommonMsg(serviceAccountUin, answerUid, 16, dataStr, descStr)
+	}
 }
 
 func getQidAnswerUidByAnswerId(answerId int) (qid int, answerUid int64, err error) {

@@ -58,7 +58,7 @@ func SendNewAddAnswerPush(uin int64,qid int, answer st.AnswersInfo) {
 	}
 
 	for _, uid := range uids {
-		if uid !=uin{
+		if uid !=uin {
 			go im.SendV2CommonMsg(serviceAccountUin, uid, 14, dataStr, descStr)
 		}
 	}

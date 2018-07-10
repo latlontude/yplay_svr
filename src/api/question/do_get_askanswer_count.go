@@ -97,7 +97,7 @@ func dailyCount(uin int64, begin int64, end int64) (askPersonNum int, askPersonA
 
 	//真实用户提问总数
 	sql = fmt.Sprintf(`select count(*) from v2questions where createTs >= %d and createTs < %d 
-							and ownerUid not in (%s)`, begin, end, str)
+							and ownerUid not in (%s) and boardId = 5`, begin, end, str)
 	rows, err = inst.Query(sql)
 	errMsg(err)
 
@@ -109,7 +109,7 @@ func dailyCount(uin int64, begin int64, end int64) (askPersonNum int, askPersonA
 
 	//运营用户提问总数
 	sql = fmt.Sprintf(`select count(*) from v2questions where createTs >= %d and createTs < %d 
-							and ownerUid  in (%s)`, begin, end, str)
+							and ownerUid  in (%s) and boardId = 5`, begin, end, str)
 	rows, err = inst.Query(sql)
 	errMsg(err)
 	for rows.Next() {
@@ -118,7 +118,7 @@ func dailyCount(uin int64, begin int64, end int64) (askPersonNum int, askPersonA
 	log.Debugf("askOperatorCount:%d", askOperatorCount)
 
 
-	sql = fmt.Sprintf(`select ownerUid from v2questions where createTs >= %d and createTs < %d and ownerUid not in (%s) group by ownerUid`, begin, end, str)
+	sql = fmt.Sprintf(`select ownerUid from v2questions where createTs >= %d and createTs < %d and ownerUid not in (%s) and boardId = 5 group by ownerUid `, begin, end, str)
 	rows, err = inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -145,7 +145,7 @@ func dailyCount(uin int64, begin int64, end int64) (askPersonNum int, askPersonA
 
 	log.Debugf("askPersonNum:%d,askPerson=%s", askPersonNum, askPersonArr)
 
-	sql = fmt.Sprintf(`select ownerUid from v2questions where createTs >= %d and createTs < %d and ownerUid in (%s) group by ownerUid`, begin, end, str)
+	sql = fmt.Sprintf(`select ownerUid from v2questions where createTs >= %d and createTs < %d and ownerUid in (%s) and boardId = 5 group by ownerUid`, begin, end, str)
 	rows, err = inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -185,7 +185,9 @@ func dailyCount(uin int64, begin int64, end int64) (askPersonNum int, askPersonA
 
 	//answer
 
-	sql = fmt.Sprintf(`select count(*) from v2answers where answerTs >= %d and answerTs < %d and ownerUid not in (%s)`, begin, end, str)
+	sql = fmt.Sprintf(`select count(*) from v2answers where answerTs >= %d and answerTs < %d 
+			and ownerUid in (select ownerUid from v2questions where boardId =5)
+			and ownerUid not in (%s) `, begin, end, str)
 	rows, err = inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -199,7 +201,9 @@ func dailyCount(uin int64, begin int64, end int64) (askPersonNum int, askPersonA
 
 	log.Debugf("answerCount:%d", answerCount)
 
-	sql = fmt.Sprintf(`select count(*) from v2answers where answerTs >= %d and answerTs < %d and ownerUid  in (%s)`, begin, end, str)
+	sql = fmt.Sprintf(`select count(*) from v2answers where answerTs >= %d and answerTs < %d 
+			and ownerUid in (select ownerUid from v2questions where boardId =5)
+			and ownerUid  in (%s) `, begin, end, str)
 	rows, err = inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -214,7 +218,9 @@ func dailyCount(uin int64, begin int64, end int64) (askPersonNum int, askPersonA
 	log.Debugf("answerOperatorCount:%d", answerOperatorCount)
 
 
-	sql = fmt.Sprintf(`select ownerUid from v2answers where answerTs >= %d and answerTs < %d and ownerUid not in (%s) group by ownerUid`, begin, end, str)
+	sql = fmt.Sprintf(`select ownerUid from v2answers where answerTs >= %d and answerTs < %d
+			and ownerUid in (select ownerUid from v2questions where boardId =5)
+			and ownerUid not in (%s)  group by ownerUid `, begin, end, str)
 	rows, err = inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -243,7 +249,9 @@ func dailyCount(uin int64, begin int64, end int64) (askPersonNum int, askPersonA
 
 
 
-	sql = fmt.Sprintf(`select ownerUid from v2answers where answerTs >= %d and answerTs < %d and ownerUid in (%s) group by ownerUid`, begin, end, str)
+	sql = fmt.Sprintf(`select ownerUid from v2answers where answerTs >= %d and answerTs < %d 
+					and ownerUid in (select ownerUid from v2questions where boardId =5)
+					and ownerUid in (%s)  group by ownerUid`, begin, end, str)
 	rows, err = inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())

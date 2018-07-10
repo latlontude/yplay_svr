@@ -58,7 +58,7 @@ func ExtInfo(uin int64) (qstCnt int, answerCnt int, err error) {
 		return
 	}
 
-	sql := fmt.Sprintf(`select count(*) from  v2answers where ownerUid = %d`, uin)
+	sql := fmt.Sprintf(`select count(*) from  v2answers where ownerUid = %d and answerStatus = 0`, uin)
 
 	rows, err := inst.Query(sql)
 	defer rows.Close()
@@ -67,7 +67,7 @@ func ExtInfo(uin int64) (qstCnt int, answerCnt int, err error) {
 		rows.Scan(&answerCnt)
 	}
 
-	sql = fmt.Sprintf(`select count(*)  from v2questions where ownerUid=%d`, uin)
+	sql = fmt.Sprintf(`select count(*)  from v2questions where ownerUid=%d and qStatus = 0 `, uin)
 	rows, err = inst.Query(sql)
 	for rows.Next() {
 		rows.Scan(&qstCnt)

@@ -72,7 +72,7 @@ func SendBeLikedReplyPush(uid int64, qid, likeId int) {
 }
 
 //回复被回复
-func SendReplyBeReplyPush(replyId int, newReply st.ReplyInfo) {
+func SendReplyBeReplyPush(uin int64 , replyId int, newReply st.ReplyInfo) {
 
 	var serviceAccountUin int64
 	serviceAccountUin = 100001 //客服号
@@ -104,12 +104,16 @@ func SendReplyBeReplyPush(replyId int, newReply st.ReplyInfo) {
 
 	descStr := "收到新消息"
 
-	//给回答者发送push，告诉ta，ta的回答收到了新评论 dataType:16
-	go im.SendV2CommonMsg(serviceAccountUin, replyOwnerUid, 22, dataStr, descStr)
+	//给回答者发送push，告诉ta，ta的回复收到了新回复,dataType:22
+	log.Errorf("sendUin:%d,replyOwnerUid:%d",serviceAccountUin,replyOwnerUid)
+
+	if uin != replyOwnerUid {
+		go im.SendV2CommonMsg(serviceAccountUin, replyOwnerUid, 22, dataStr, descStr)
+	}
 }
 
 //评论被回复
-func SendCommentBeReplyPush(commentId int, reply st.ReplyInfo) {
+func SendCommentBeReplyPush(uin int64 ,commentId int, reply st.ReplyInfo) {
 
 	var serviceAccountUin int64
 	serviceAccountUin = 100001 //客服号
@@ -141,7 +145,10 @@ func SendCommentBeReplyPush(commentId int, reply st.ReplyInfo) {
 	descStr := "收到新消息"
 
 	//给回答者发送push，告诉ta，ta的回答收到了新评论 dataType:16
-	go im.SendV2CommonMsg(serviceAccountUin, commentOwnerUid, 21, dataStr, descStr)
+	log.Debugf("sendUin:%d,commentOwnerUid:%d",serviceAccountUin,commentOwnerUid)
+	if commentOwnerUid != uin {
+		go im.SendV2CommonMsg(serviceAccountUin, commentOwnerUid, 21, dataStr, descStr)
+	}
 }
 
 //replyId replyInfo

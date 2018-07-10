@@ -93,6 +93,7 @@ func ReplyToReply(uin int64, answerId, commentId, replyId int, replyContent stri
 		return
 	}
 
+	//新生成的replyId
 	repId, err = res.LastInsertId()
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
@@ -113,7 +114,7 @@ func ReplyToReply(uin int64, answerId, commentId, replyId int, replyContent stri
 	newReply.ReplyFromUserInfo = ui
 
 	//给回答者发送push，告诉ta，ta的回答收到了新评论 dataType:16
-	go v2push.SendReplyBeReplyPush(replyId, newReply)
+	go v2push.SendReplyBeReplyPush(uin , int(repId), newReply)
 
 
 	return

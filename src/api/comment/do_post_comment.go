@@ -99,7 +99,7 @@ func PostComment(uin int64, answerId int, commentText string) (commentId int64, 
 	newComment.OwnerInfo = ui
 
 	//给回答者发送push，告诉ta，ta的回答收到了新评论 dataType:16
-	go v2push.SendBeCommentPush(answerId, newComment)
+	go v2push.SendBeCommentPush(uin,answerId, newComment)
 
 	log.Debugf("end PostComment uin:%d commentId:%d", uin, commentId)
 	return

@@ -112,8 +112,8 @@ func ReplyToComment(uin int64, answerId, commentId int, replyContent string) (re
 	}
 	newReply.ReplyFromUserInfo = ui
 
-	//给回答者发送push，告诉ta，ta的回答收到了新评论 dataType:16
-	go v2push.SendCommentBeReplyPush(commentId, newReply)
+	//给评论者发送push，告诉ta，ta的回答收到了新评论 dataType:16
+	go v2push.SendCommentBeReplyPush(uin,commentId, newReply)
 
 	return
 }
