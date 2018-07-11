@@ -91,7 +91,7 @@ func Login2(phone string, code string, uuid int64, device, os, appVer string) (r
 
 	log.Debugf("phone[:7]:%s", phone[:7])
 
-	if phone[:7] == "1406666" {
+	if phone[:7] == "1406666" || phone[:7] == "1706666" {
 		find = true
 	}
 

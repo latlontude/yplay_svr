@@ -16,9 +16,9 @@ import (
 var log = env.NewLogger("v2push")
 
 /**
-	删除提问 发推送
+删除提问 发推送
 */
-func SendBeDeletePush(operatorUid int64, uid int64, reason string, deleteType int,deleteData string) {
+func SendBeDeletePush(operatorUid int64, uid int64, reason string, deleteType int, deleteData string) {
 	var serviceAccountUin int64
 	serviceAccountUin = 100001 //客服号
 	type BeDeleteMsg struct {
@@ -74,7 +74,8 @@ func getV2Question(qid int) (question st.V2QuestionInfo, err error) {
 		return
 	}
 
-	sql := fmt.Sprintf(`select qid, qTitle, qContent, qImgUrls, ownerUid, isAnonymous, createTs, modTs  from  v2questions where qid = %d`, qid)
+	sql := fmt.Sprintf(`select qid, boardId,qTitle, qContent, qImgUrls, ownerUid, isAnonymous, createTs, modTs  
+			from  v2questions where qid = %d`, qid)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -84,10 +85,28 @@ func getV2Question(qid int) (question st.V2QuestionInfo, err error) {
 	defer rows.Close()
 
 	var ownerUid int64
+	var boardInfo st.BoardInfo //墙信息
 
 	for rows.Next() {
-		rows.Scan(&question.Qid, &question.QTitle, &question.QContent, &question.QImgUrls, &ownerUid, &question.IsAnonymous, &question.CreateTs, &question.ModTs)
+		rows.Scan(&question.Qid, &boardInfo.BoardId, &question.QTitle, &question.QContent, &question.QImgUrls, &ownerUid,
+			&question.IsAnonymous, &question.CreateTs, &question.ModTs)
 	}
+
+	//TODO  墙主信息
+	sql = fmt.Sprintf(`select ownerUid from v2boards where boardId = %d`, boardInfo.BoardId)
+	rows, err = inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Error(err)
+	}
+	var boardUid int64
+	for rows.Next() {
+		rows.Scan(&boardUid)
+	}
+	var OwnerInfo st.UserProfileInfo
+	OwnerInfo.Uin = boardUid
+	boardInfo.OwnerInfo = &OwnerInfo
+	question.Board = &boardInfo
 
 	if ownerUid > 0 {
 		ui, err1 := st.GetUserProfileInfo(ownerUid)
@@ -100,16 +119,9 @@ func getV2Question(qid int) (question st.V2QuestionInfo, err error) {
 	return
 }
 
-
-
-
-
-
-
-
 /**
 获取同问该问题的uid
- */
+*/
 func GetSameAskUidArr(qid int) (uids []string, err error) {
 	if qid == 0 {
 		log.Errorf("qid is zero")
@@ -135,7 +147,7 @@ func GetSameAskUidArr(qid int) (uids []string, err error) {
 	for rows.Next() {
 		rows.Scan(&sameAskUid)
 	}
-	uids = strings.Split(sameAskUid,",")
+	uids = strings.Split(sameAskUid, ",")
 
 	return
 }

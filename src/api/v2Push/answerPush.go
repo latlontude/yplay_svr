@@ -27,12 +27,13 @@ func SendNewAddAnswerPush(uin int64, qid int, answer st.AnswersInfo) {
 	type NewAddAnswerMsg struct {
 		Question  st.V2QuestionInfo `json:"question"`
 		NewAnswer st.AnswersInfo    `json:"newAnswer"`
+		Ts        int64             `json:"ts"`
 	}
 
 	var newAddAnswerMsg NewAddAnswerMsg
 	newAddAnswerMsg.Question = question
 	newAddAnswerMsg.NewAnswer = answer
-
+	newAddAnswerMsg.Ts = time.Now().Unix()
 	data, err := json.Marshal(&newAddAnswerMsg)
 	if err != nil {
 		log.Errorf(err.Error())
@@ -63,7 +64,7 @@ func SendNewAddAnswerPush(uin int64, qid int, answer st.AnswersInfo) {
 		if uid == uin || uid == qidOwner {
 			continue
 		}
-		go im.SendV2CommonMsg(serviceAccountUin, uid, 14, dataStr, descStr)
+		//go im.SendV2CommonMsg(serviceAccountUin, uid, 14, dataStr, descStr)
 	}
 
 	//同问该问题的人 发推送

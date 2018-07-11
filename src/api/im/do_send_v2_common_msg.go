@@ -123,7 +123,7 @@ func SendV2CommonMsg(fromUin, toUin int64, dataType int, notifyData, descStr str
 		return
 	}
 
-	//log.Errorf("IMSendV2CommonMsgRsp uin %d, rsp %+v", fromUin, rsp)
+	log.Errorf("IMSendV2CommonMsgRsp uin %d, rsp %+v", fromUin, rsp)
 
 	if rsp.ErrorCode != 0 {
 		err = rest.NewAPIError(constant.E_IM_REQ_SEND_V2_COMMON_MSG, rsp.ErrorInfo)

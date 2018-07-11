@@ -12,7 +12,7 @@ import (
 )
 
 //被评论 发推送
-func SendBeCommentPush(uin int64 , answerId int, comment st.CommentInfo) {
+func SendBeCommentPush(uin int64, answerId int, comment st.CommentInfo) {
 
 	var serviceAccountUin int64
 	serviceAccountUin = 100001 //客服号
@@ -39,12 +39,14 @@ func SendBeCommentPush(uin int64 , answerId int, comment st.CommentInfo) {
 		Question   st.V2QuestionInfo `json:"question"`
 		MyAnswer   st.AnswersInfo    `json:"myAnswer"`
 		NewComment st.CommentInfo    `json:"newComment"`
+		Ts         int64             `json:"ts"`
 	}
 
 	var beCommentMsg BeCommentMsg
 	beCommentMsg.NewComment = comment
 	beCommentMsg.Question = question
 	beCommentMsg.MyAnswer = answer
+	beCommentMsg.Ts = time.Now().Unix()
 
 	data, err := json.Marshal(&beCommentMsg)
 	if err != nil {
@@ -101,7 +103,7 @@ func SendBeLikedCommentPush(uid int64, qid, likeId int) {
 		Question  st.V2QuestionInfo  `json:"question"`
 		MyComment st.CommentInfo     `json:"myComment"`
 		NewLiker  st.UserProfileInfo `json:"newLiker"`
-		Ts       int64               `json:"ts"`
+		Ts        int64              `json:"ts"`
 	}
 	var beLikedMsg BeLikedMsg
 	beLikedMsg.Ts = time.Now().Unix()
@@ -146,8 +148,8 @@ func SendBeLikedCommentPush(uid int64, qid, likeId int) {
 	//自己赞自己 就不要发通知了
 	if commentOwnerUid != uid {
 		go im.SendV2CommonMsg(serviceAccountUin, commentOwnerUid, 19, dataStr, descStr)
-	}else {
-		log.Debugf("commentOwnerUid:u%  uid=%d", commentOwnerUid,uid)
+	} else {
+		log.Debugf("commentOwnerUid:u%  uid=%d", commentOwnerUid, uid)
 	}
 
 	return

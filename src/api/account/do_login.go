@@ -44,7 +44,7 @@ func doLogin(req *LoginReq, r *http.Request) (rsp *LoginRsp, err error) {
 		return
 	}
 
-	log.Debugf("phone %s, LoginRsp succ, %+v", req.Phone, rsp)
+	//log.Debugf("phone %s, LoginRsp succ, %+v", req.Phone, rsp)
 
 	return
 }
@@ -132,7 +132,7 @@ func GetUinByPhone(phone string) (uin int64, isNewUser int, err error) {
 	log.Debugf("start GetUinByPhone phone:%s", phone)
 
 	innerTestPhones := strings.Split(env.Config.InnerTest.Phones, ",") //内部测试手机号
-	log.Debugf("innerTestPhones:%+v", innerTestPhones)
+	//log.Debugf("innerTestPhones:%+v", innerTestPhones)
 
 	find := false
 	for _, value := range innerTestPhones {

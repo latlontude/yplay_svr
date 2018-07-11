@@ -85,6 +85,9 @@ func DelComment(uin int64, answerId, commentId int, reason string) (code int, er
 
 	sql := fmt.Sprintf(`delete from v2comments where answerId = %d and commentId = %d`, answerId, commentId)
 
+	//放到上面
+	comment, _, _ := GetV2Comment(commentId)
+
 	_, err = inst.Exec(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
@@ -94,14 +97,14 @@ func DelComment(uin int64, answerId, commentId int, reason string) (code int, er
 
 	//不是我自己删的 发推送
 	if !isMyself {
-		comment,_,_:= GetV2Comment(commentId)
+
 		data, err1 := json.Marshal(&comment)
 		if err1 != nil {
 			log.Errorf(err1.Error())
 			return
 		}
 		dataStr := string(data)
-		v2push.SendBeDeletePush(uin, ownerUid, reason, 3,dataStr)
+		v2push.SendBeDeletePush(uin, ownerUid, reason, 3, dataStr)
 	}
 
 	code = 0

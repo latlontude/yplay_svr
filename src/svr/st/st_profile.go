@@ -324,9 +324,9 @@ func GetUserProfileInfo2(uin int64) (info *UserProfileInfo2, err error) {
 		}
 	}
 
-	//判断白名单 写到Type里面
+	//判断白名单 写到Type里面s
 	whiteList := strings.Split(env.Config.WhiteList.Phones, ",") //内部测试手机号
-	log.Debugf("whiteList:%+v", whiteList)
+	log.Debugf("whiteList:%+v,info.phone:%", whiteList, info.Phone)
 
 	isWhitePhone := false
 
