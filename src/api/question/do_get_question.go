@@ -121,17 +121,17 @@ func GetQuestions(uin int64, boardId, pageNum, pageSize int) (questions []*st.V2
 			info.OwnerInfo = ui
 		}
 
-		answerCnt, err := getAnswerCnt(info.Qid)
+		answerCnt, err := GetAnswerCnt(info.Qid)
 		if err != nil {
 			log.Error(err.Error())
 			continue
 		}
 		info.AnswerCnt = answerCnt
 
-		bestAnswer, _ := getBestAnswer(uin, info.Qid)
+		bestAnswer, _ := GetBestAnswer(uin, info.Qid)
 		info.BestAnswer = bestAnswer
 
-		responders, _ := getQidNewResponders(info.Qid)
+		responders, _ := GetQidNewResponders(info.Qid)
 		info.NewResponders = responders
 
 		questions = append(questions, &info)
@@ -141,7 +141,7 @@ func GetQuestions(uin int64, boardId, pageNum, pageSize int) (questions []*st.V2
 	return
 }
 
-func getAnswerCnt(qid int) (cnt int, err error) {
+func GetAnswerCnt(qid int) (cnt int, err error) {
 	//log.Debugf("start getAnswerCnt qid:%d", qid)
 
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
@@ -168,7 +168,7 @@ func getAnswerCnt(qid int) (cnt int, err error) {
 	return
 }
 
-func getBestAnswer(uin int64, qid int) (answer *st.AnswersInfo, err error) {
+func GetBestAnswer(uin int64, qid int) (answer *st.AnswersInfo, err error) {
 	//log.Debugf("start getBestAnswer qid:%d", qid)
 
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
@@ -274,7 +274,7 @@ func getBestAnswer(uin int64, qid int) (answer *st.AnswersInfo, err error) {
 	return
 }
 
-func getQidNewResponders(qid int) (responders []*st.UserProfileInfo, err error) {
+func GetQidNewResponders(qid int) (responders []*st.UserProfileInfo, err error) {
 
 	if qid == 0 {
 		log.Errorf("qid is zero")

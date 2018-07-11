@@ -18,40 +18,39 @@ type AskAndAnswerCountReq struct {
 }
 
 type AskAndAnswerCountRsp struct {
-	AskPersonNum            int    `json:"AskPersonNum"`
-	AskPersonArr            string `json:"AskPersonArr"`    //真实用户
-	AskPersonCount          int    `json:"AskPersonCount"`
-	AnswerPersonNum         int    `json:"AnswerPersonNum"`
-	AnswerPersonArr         string `json:"AnswerPersonArr"` //真实用户
-	AnswerPersonCount       int    `json:"AnswerPersonCount"`
+	AskPersonNum      int    `json:"AskPersonNum"`
+	AskPersonArr      string `json:"AskPersonArr"` //真实用户
+	AskPersonCount    int    `json:"AskPersonCount"`
+	AnswerPersonNum   int    `json:"AnswerPersonNum"`
+	AnswerPersonArr   string `json:"AnswerPersonArr"` //真实用户
+	AnswerPersonCount int    `json:"AnswerPersonCount"`
 
-
-	AskOperatorNum          int    `json:"AskOperatorNum"`
-	AskOperatorArr          string `json:"AskOperatorArr"`    //运营用户
-	AskOperatorCount        int    `json:"AskOperatorCount"`
-	AnswerOperatorNum       int    `json:"AnswerOperatorNum"`
-	AnswerOperatorArr       string `json:"AnswerOperatorArr"` //运营用户
-	AnswerOperatorCount     int    `json:"AnswerOperatorCount"`
+	AskOperatorNum      int    `json:"AskOperatorNum"`
+	AskOperatorArr      string `json:"AskOperatorArr"` //运营用户
+	AskOperatorCount    int    `json:"AskOperatorCount"`
+	AnswerOperatorNum   int    `json:"AnswerOperatorNum"`
+	AnswerOperatorArr   string `json:"AnswerOperatorArr"` //运营用户
+	AnswerOperatorCount int    `json:"AnswerOperatorCount"`
 }
 
 func doDailyCount(req *AskAndAnswerCountReq, r *http.Request) (rsp *AskAndAnswerCountRsp, err error) {
 	log.Debugf("uin %d, AskAndAnswerCountReq %+v", req.Uin, req)
 
-	p1,p2,p3,p4,p5,p6,o1,o2,o3,o4,o5,o6,err  := dailyCount(req.Uin, req.Begin, req.End)
+	p1, p2, p3, p4, p5, p6, o1, o2, o3, o4, o5, o6, err := dailyCount(req.Uin, req.Begin, req.End)
 	if err != nil {
 		log.Errorf("uin %d, AskAndAnswerCountRsp error, %s", req.Uin, err.Error())
 		return
 	}
 
-	rsp = &AskAndAnswerCountRsp{p1,p2,p3,p4,p5,p6,
-	o1,o2,o3,o4,o5,o6}
+	rsp = &AskAndAnswerCountRsp{p1, p2, p3, p4, p5, p6,
+		o1, o2, o3, o4, o5, o6}
 
 	log.Debugf("uin %d, AskAndAnswerCountRsp succ, %+v", req.Uin, rsp)
 	return
 }
 
 func dailyCount(uin int64, begin int64, end int64) (askPersonNum int, askPersonArr string, askCount int, answerPersonNum int, answerPersonArr string, answerCount int,
-	askOperatorNum int, askOperatorArr string, askOperatorCount int, answerOperatorNum int, answerOperatorArr string, answerOperatorCount int,err error) {
+	askOperatorNum int, askOperatorArr string, askOperatorCount int, answerOperatorNum int, answerOperatorArr string, answerOperatorCount int, err error) {
 
 	log.Debugf("dailyCount uin = %d", uin)
 
@@ -117,7 +116,6 @@ func dailyCount(uin int64, begin int64, end int64) (askPersonNum int, askPersonA
 	}
 	log.Debugf("askOperatorCount:%d", askOperatorCount)
 
-
 	sql = fmt.Sprintf(`select ownerUid from v2questions where createTs >= %d and createTs < %d and ownerUid not in (%s) and boardId = 5 group by ownerUid `, begin, end, str)
 	rows, err = inst.Query(sql)
 	if err != nil {
@@ -172,17 +170,6 @@ func dailyCount(uin int64, begin int64, end int64) (askPersonNum int, askPersonA
 
 	log.Debugf("askOperatorNum:%d,askOperatorArr=%s", askOperatorNum, askOperatorArr)
 
-
-
-
-
-
-
-
-
-
-
-
 	//answer
 
 	sql = fmt.Sprintf(`select count(*) from v2answers where answerTs >= %d and answerTs < %d 
@@ -217,7 +204,6 @@ func dailyCount(uin int64, begin int64, end int64) (askPersonNum int, askPersonA
 
 	log.Debugf("answerOperatorCount:%d", answerOperatorCount)
 
-
 	sql = fmt.Sprintf(`select ownerUid from v2answers where answerTs >= %d and answerTs < %d
 			and ownerUid in (select ownerUid from v2questions where boardId =5)
 			and ownerUid not in (%s)  group by ownerUid `, begin, end, str)
@@ -246,8 +232,6 @@ func dailyCount(uin int64, begin int64, end int64) (askPersonNum int, askPersonA
 	}
 
 	log.Debugf("answerPersonNum:%d,str=%s", answerPersonNum, answerPersonArr)
-
-
 
 	sql = fmt.Sprintf(`select ownerUid from v2answers where answerTs >= %d and answerTs < %d 
 					and ownerUid in (select ownerUid from v2questions where boardId =5)

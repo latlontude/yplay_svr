@@ -270,7 +270,7 @@ func GetV2QuestionsAndAnswer(uin int64, fUin int64, pageSize int, pageNum int) (
 			info.OwnerInfo = ui
 		}
 
-		answerCnt, err := getAnswerCnt(info.Qid)
+		answerCnt, err := GetAnswerCnt(info.Qid)
 		if err != nil {
 			log.Error(err.Error())
 			continue
