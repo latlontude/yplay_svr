@@ -5,6 +5,8 @@ import (
 	"common/env"
 	"common/mydb"
 	"common/rest"
+	"database/sql"
+	"encoding/json"
 	"fmt"
 	"strings"
 )
@@ -32,7 +34,13 @@ type UserProfileInfo struct {
 	EnrollmentYear int    `json:"enrollmentYear"` //入学年份
 	Hometown       string `json:"hometown"`       //家乡
 
-	Src int `json:"src"` //来源  默认:0:同校  1:同城 2:其他
+	Type int `json:"type"`   //是否是白名单用户  0:非白名单  1:白名单
+	Ext  string `json:"ext"`
+	Src  int `json:"src"`    //来源  默认:0:同校  1:同城 2:其他
+}
+
+type ExtInfo struct {
+	SecoendHeadImgUrl  string  `json:"secondHeadImgUrl"`
 }
 
 type UserProfileInfo2 struct {
@@ -62,8 +70,8 @@ type UserProfileInfo2 struct {
 	FriendCnt int `json:"friendCnt"`
 	NewsCnt   int `json:"newsCnt"`
 	Src       int `json:"src"` //来源  默认:0:同校  1:同城 2:其他
-
 	Type int `json:"type"` //是否是白名单用户  0:非白名单  1:白名单
+	Ext  string `json:"ext"`
 }
 
 func (this *UserProfileInfo) String() string {
@@ -155,7 +163,7 @@ func GetUserProfileInfo(uin int64) (info *UserProfileInfo, err error) {
 		if len(info.HeadImgUrl) > 0 {
 			info.HeadImgUrl = fmt.Sprintf("http://yplay-1253229355.image.myqcloud.com/headimgs/%s", info.HeadImgUrl)
 		} else {
-			info.HeadImgUrl = fmt.Sprintf("http://yplay-1253229355.image.myqcloud.com/headimgs/defaultHeader.png")
+			//info.HeadImgUrl = fmt.Sprintf("http://yplay-1253229355.image.myqcloud.com/headimgs/defaultHeader.png")
 		}
 
 		find = true
@@ -166,6 +174,52 @@ func GetUserProfileInfo(uin int64) (info *UserProfileInfo, err error) {
 		return
 	}
 
+
+	//判断白名单 写到Type里面s
+	whiteList := strings.Split(env.Config.WhiteList.Phones, ",") //内部测试手机号
+	isWhitePhone := false
+
+	for _, value := range whiteList {
+		if value == info.Phone {
+			isWhitePhone = true
+			break
+		}
+	}
+
+	var extInfo ExtInfo
+	if isWhitePhone {
+		info.Type = 1
+		headImg := getSecondHeadImgUrl(inst,info.Phone)
+		if len(headImg) > 0 {
+			extInfo.SecoendHeadImgUrl = fmt.Sprintf("http://yplay-1253229355.image.myqcloud.com/headimgs/%s", headImg)
+			log.Debugf("phone:%s  ,  url:%s",info.Phone,extInfo.SecoendHeadImgUrl)
+		}
+
+		data, err1 := json.Marshal(&extInfo)
+		if err1 != nil {
+			log.Errorf(err1.Error())
+		}
+		dataStr := string(data)
+		info.Ext = dataStr
+	}
+
+	return
+}
+
+
+func getSecondHeadImgUrl(inst *sql.DB ,phone string) (secoendHeadImgUrl string){
+	sql := fmt.Sprintf(`select headImgUrl from secondHeadImgUrl where phone = %s`, phone)
+	rows, err := inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		rows.Scan(&secoendHeadImgUrl)
+	}
+	secoendHeadImgUrl = strings.Trim(secoendHeadImgUrl," \t\r\n")
 	return
 }
 
@@ -287,7 +341,7 @@ func GetUserProfileInfo2(uin int64) (info *UserProfileInfo2, err error) {
 		if len(info.HeadImgUrl) > 0 {
 			info.HeadImgUrl = fmt.Sprintf("http://yplay-1253229355.image.myqcloud.com/headimgs/%s", info.HeadImgUrl)
 		} else {
-			info.HeadImgUrl = fmt.Sprintf("http://yplay-1253229355.image.myqcloud.com/headimgs/defaultHeader.png")
+			//info.HeadImgUrl = fmt.Sprintf("http://yplay-1253229355.image.myqcloud.com/headimgs/defaultHeader.png")
 		}
 
 		find = true
@@ -326,7 +380,6 @@ func GetUserProfileInfo2(uin int64) (info *UserProfileInfo2, err error) {
 
 	//判断白名单 写到Type里面s
 	whiteList := strings.Split(env.Config.WhiteList.Phones, ",") //内部测试手机号
-	log.Debugf("whiteList:%+v,info.phone:%", whiteList, info.Phone)
 
 	isWhitePhone := false
 
@@ -337,8 +390,21 @@ func GetUserProfileInfo2(uin int64) (info *UserProfileInfo2, err error) {
 		}
 	}
 
+	var extInfo ExtInfo
 	if isWhitePhone {
 		info.Type = 1
+		headImg := getSecondHeadImgUrl(inst,info.Phone)
+		if len(headImg) > 0 {
+			extInfo.SecoendHeadImgUrl = fmt.Sprintf("http://yplay-1253229355.image.myqcloud.com/headimgs/%s", headImg)
+			log.Debugf("phone:%s  ,  url:%s",info.Phone,extInfo.SecoendHeadImgUrl)
+		}
+
+		data, err1 := json.Marshal(&extInfo)
+		if err1 != nil {
+			log.Errorf(err1.Error())
+		}
+		dataStr := string(data)
+		info.Ext = dataStr
 	}
 
 	return

@@ -21,6 +21,7 @@ import (
 	"api/submit"
 	"api/user"
 	"api/vote"
+	"api/experience"
 	"common/env"
 	"common/httputil"
 	"common/mydb"
@@ -84,6 +85,7 @@ func main() {
 	httputil.HandleAPIMap("/api/story/", story.APIMap)
 	httputil.HandleAPIMap("/svr/cache/", cache.APIMap)
 	httputil.HandleAPIMap("/api/activity/", activity.APIMap)
+	httputil.HandleAPIMap("/api/experience/", experience.APIMap)
 
 	log.Errorf("Starting yplay_svr...")
 	panicUnless(httputil.ListenHttp(env.Config.HttpServer.BindAddr))

@@ -75,3 +75,6 @@ const E_PRE_GENE_QIDS_LIST_ERR = 17002
 
 //微信公众号的一些错误码
 const E_USER_ALREADY_GET_RED_PACKET = 200001
+
+
+//Exp

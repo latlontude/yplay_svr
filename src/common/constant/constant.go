@@ -113,3 +113,7 @@ const ENUM_NOTIFY_TYPE_LEAVE_FROZEN = 1
 const ENUM_NOTIFY_TYPE_IM = 2
 const ENUM_NOTIFY_TYPE_ADD_FRIEND = 3
 const ENUM_NOTIFY_TYPE_SUBMIT_ADD_NEW_HOT = 4
+
+
+//const label for qid
+const EXPERIENCE_QID_LABEL_COUNT = 1    //每个问题最多 多少个标签
