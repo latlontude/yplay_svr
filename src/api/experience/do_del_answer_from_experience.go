@@ -9,27 +9,22 @@ import (
 )
 
 type DelQidInExperienceReq struct {
-
-	Uin         int64   `schema:"uin"`
-	Token       string  `schema:"token"`
-	Ver         int     `schema:"ver"`
-	Qid         int     `schema:"qid"`
-	LabelId     int     `schema:"labelId"`
-	BoardId     int     `schema:"boardId"`
-
+	Uin      int64  `schema:"uin"`
+	Token    string `schema:"token"`
+	Ver      int    `schema:"ver"`
+	AnswerId int    `schema:"answerId"`
+	LabelId  int    `schema:"labelId"`
+	BoardId  int    `schema:"boardId"`
 }
 
 type DelQidInExperienceRsp struct {
-
 }
 
-
-
-func doDelQidInExperience(req *DelQidInExperienceReq, r *http.Request) (rsp *DelQidInExperienceRsp, err error) {
+func doDelAnswerIdFromExp(req *DelQidInExperienceReq, r *http.Request) (rsp *DelQidInExperienceRsp, err error) {
 
 	log.Debugf("uin %d, DelQidInExperienceReq succ, %+v", req.Uin, rsp)
 
-	err  = DelQidInExperience(req.Uin, req.BoardId, req.Qid, req.LabelId)
+	err = DelAnswerIdFromExp(req.Uin, req.BoardId, req.AnswerId, req.LabelId)
 
 	if err != nil {
 		log.Errorf("uin %d, DelQidInExperienceReq error, %s", req.Uin, err.Error())
@@ -40,14 +35,13 @@ func doDelQidInExperience(req *DelQidInExperienceReq, r *http.Request) (rsp *Del
 	return
 }
 
-
-func DelQidInExperience(uin int64, boardId,qid,labelId int) (err error){
+func DelAnswerIdFromExp(uin int64, boardId, answerId, labelId int) (err error) {
 
 	//校验权限
-	hasPermission ,err := CheckPermit(uin,boardId,labelId)
+	hasPermission, err := CheckPermit(uin, boardId, labelId)
 
 	if !hasPermission {
-		err = rest.NewAPIError(constant.E_DB_QUERY, "add question has not  permit")
+		err = rest.NewAPIError(constant.E_DB_QUERY, "del answer has not  permit")
 		return
 	}
 
@@ -58,7 +52,7 @@ func DelQidInExperience(uin int64, boardId,qid,labelId int) (err error){
 		return
 	}
 
-	sql := fmt.Sprintf(`delete from experience_share where boardId = %d and labelId = %d and qid = %d`,boardId,labelId,qid)
+	sql := fmt.Sprintf(`delete from experience_share where boardId = %d and labelId = %d and answerId = %d`, boardId, labelId, answerId)
 
 	rows, err := inst.Query(sql)
 
@@ -71,5 +65,3 @@ func DelQidInExperience(uin int64, boardId,qid,labelId int) (err error){
 
 	return
 }
-
-
