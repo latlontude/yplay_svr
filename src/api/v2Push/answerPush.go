@@ -24,6 +24,10 @@ func SendNewAddAnswerPush(uin int64, qid int, answer st.AnswersInfo) {
 	}
 	qidOwner := question.OwnerInfo.Uin
 
+	if qidOwner == uin {
+		return
+	}
+
 	type NewAddAnswerMsg struct {
 		Question  st.V2QuestionInfo `json:"question"`
 		NewAnswer st.AnswersInfo    `json:"newAnswer"`

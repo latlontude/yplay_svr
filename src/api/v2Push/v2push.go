@@ -75,7 +75,7 @@ func getV2Question(qid int) (question st.V2QuestionInfo, err error) {
 	}
 
 	sql := fmt.Sprintf(`select qid, boardId,qTitle, qContent, qImgUrls, ownerUid, isAnonymous, createTs, modTs  
-			from  v2questions where qid = %d`, qid)
+			from  v2questions where qid = %d and qStatus = 0`, qid)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())

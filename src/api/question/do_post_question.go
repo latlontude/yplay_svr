@@ -1,6 +1,7 @@
 package question
 
 import (
+	"api/elastSearch"
 	"common/constant"
 	"common/mydb"
 	"common/rest"
@@ -74,7 +75,7 @@ func PostQuestion(uin int64, boardId int, title, content, imgUrls string, isAnon
 
 	status := 0 //0 默认
 
-	res, err := stmt.Exec(0, boardId, uin, title, content, imgUrls, isAnonymous, status, ts, 0,"")
+	res, err := stmt.Exec(0, boardId, uin, title, content, imgUrls, isAnonymous, status, ts, 0, "")
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
 		log.Error(err.Error())
@@ -86,6 +87,11 @@ func PostQuestion(uin int64, boardId int, title, content, imgUrls string, isAnon
 		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
 		log.Error(err.Error())
 		return
+	}
+
+	err1 := elastSearch.AddQstToEs(int(qid), content)
+	if err1 != nil {
+		log.Debugf("es error")
 	}
 
 	return

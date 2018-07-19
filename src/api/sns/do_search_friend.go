@@ -73,8 +73,8 @@ func SearchFriends(uin int64, userName string) (friends []*SearchFriendInfo, err
 		return
 	}
 
-	sql := fmt.Sprintf(`select uin, phone, nickName, headImgUrl, gender, grade, schoolId, schoolType, schoolName, deptId, deptName from profiles where userName = ?`)
-	rows, err := inst.Query(sql, userName)
+	sql := fmt.Sprintf(`select uin, phone, nickName, headImgUrl, gender, grade, schoolId, schoolType, schoolName, deptId, deptName from profiles where userName = '%s'`, userName)
+	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
 		log.Error(err.Error())

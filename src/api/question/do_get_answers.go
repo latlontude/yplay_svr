@@ -63,7 +63,7 @@ func GetAnswers(uin int64, qid, pageNum, pageSize int) (answers []*st.AnswersInf
 	}
 
 	s := (pageNum - 1) * pageSize
-	e := pageSize
+	e := s + pageSize
 
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
 	if inst == nil {
@@ -120,6 +120,19 @@ func GetAnswers(uin int64, qid, pageNum, pageSize int) (answers []*st.AnswersInf
 			info.OwnerInfo = ui
 		}
 
+		//TODO 增加最新回复的两条评论
+		latestComments, err2 := GetLatesCommentByAnswerId(info.AnswerId)
+		info.LatestComment = latestComments
+		if err2 == nil {
+			info.LatestComment = latestComments
+		}
+
+		//查找该问题的labelName
+		expLabels, err3 := GetLabelInfoByAnswerId(info.AnswerId)
+		if err3 == nil {
+			info.ExpLabel = expLabels
+		}
+
 		commentCnt, err1 := getCommentCnt(info.AnswerId)
 		if err1 != nil {
 			log.Error(err1.Error())
@@ -155,18 +168,16 @@ func GetAnswers(uin int64, qid, pageNum, pageSize int) (answers []*st.AnswersInf
 		return
 	}
 
-	answers = make([]*st.AnswersInfo, 0)
-	for i := 0; i < len(retAnsers); i++ {
-		if i >= s {
-			answers = append(answers, retAnsers[i])
-		}
-
-		if i > e-1 {
-			break
-		}
+	// 超过最大长度  等于slice长度
+	totalCnt = len(retAnsers)
+	if e > totalCnt {
+		e = totalCnt
 	}
 
-	//log.Debugf("end GetAnswers uin:%d totalCnt:%d", uin, totalCnt)
+	//s - e
+	answers = retAnsers[s:e]
+
+	log.Debugf("end GetAnswers uin:%d totalCnt:%d, len:%d ,s:%d,e:%d", uin, totalCnt, len(retAnsers), s, e)
 	return
 }
 
@@ -317,5 +328,79 @@ func checkIsILikeAnswer(uin int64, answerId int) (ret bool, err error) {
 	}
 
 	//log.Debugf("end checkIsILikeAnswer uin:%d answerId:%d ret:%t", uin, answerId, ret)
+	return
+}
+
+func GetLatesCommentByAnswerId(answerId int) (comments []*st.CommentInfo, err error) {
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		log.Error(err)
+		return
+	}
+
+	sql := fmt.Sprintf(`select * from v2comments where answerId = %d order by commentTs desc limit 2`, answerId)
+
+	rows, err := inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var info st.CommentInfo
+		var uid int64
+		var ts int
+		info.Replys = make([]st.ReplyInfo, 0)
+
+		rows.Scan(
+			&info.CommentId,
+			&info.AnswerId,
+			&info.CommentContent,
+			&uid,
+			&ts,
+			&info.CommentTs)
+
+		if uid > 0 {
+			ui, err1 := st.GetUserProfileInfo(uid)
+			if err1 != nil {
+				log.Error(err1.Error())
+				continue
+			}
+
+			info.OwnerInfo = ui
+		}
+
+		comments = append(comments, &info)
+	}
+
+	return
+}
+
+func GetLabelInfoByAnswerId(answerId int) (expLabels []*st.ExpLabel, err error) {
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		log.Error(err)
+		return
+	}
+
+	sql := fmt.Sprintf(`select experience_label.labelId, experience_label.labelName from experience_share,experience_label 
+where experience_share.labelId = experience_label.labelId and experience_share.answerId = %d`, answerId)
+
+	rows, err := inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var expLabel st.ExpLabel
+		rows.Scan(&expLabel.LabelId, &expLabel.LabelName)
+		expLabels = append(expLabels, &expLabel)
+	}
+
 	return
 }
