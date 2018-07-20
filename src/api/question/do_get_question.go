@@ -17,6 +17,7 @@ type GetQuestionsReq struct {
 	BoardId  int `schema:"boardId"`
 	PageNum  int `schema:"pageNum"`
 	PageSize int `schema:"pageSize"`
+	Qid      int `schema:"qid"`
 }
 
 type GetQuestionsRsp struct {
@@ -28,7 +29,7 @@ func doGetQuestions(req *GetQuestionsReq, r *http.Request) (rsp *GetQuestionsRsp
 
 	log.Debugf("uin %d, GetQuestionsReq %+v", req.Uin, req)
 
-	questions, totalCnt, err := GetQuestions(req.Uin, req.BoardId, req.PageNum, req.PageSize)
+	questions, totalCnt, err := GetQuestions(req.Uin, req.Qid, req.BoardId, req.PageNum, req.PageSize)
 
 	if err != nil {
 		log.Errorf("uin %d, GetQuestions error, %s", req.Uin, err.Error())
@@ -37,12 +38,12 @@ func doGetQuestions(req *GetQuestionsReq, r *http.Request) (rsp *GetQuestionsRsp
 
 	rsp = &GetQuestionsRsp{questions, totalCnt}
 
-	log.Debugf("uin %d, GetQuestionsRsp succ", req.Uin)
+	log.Debugf("uin %d, GetQuestionsRsp succ  , rsp", req.Uin, rsp)
 
 	return
 }
 
-func GetQuestions(uin int64, boardId, pageNum, pageSize int) (questions []*st.V2QuestionInfo, totalCnt int, err error) {
+func GetQuestions(uin int64, qid, boardId, pageNum, pageSize int) (questions []*st.V2QuestionInfo, totalCnt int, err error) {
 
 	//log.Debugf("start GetQuestions uin:%d", uin)
 
@@ -88,7 +89,16 @@ func GetQuestions(uin int64, boardId, pageNum, pageSize int) (questions []*st.V2
 		return
 	}
 
-	sql = fmt.Sprintf(`select qid, ownerUid, qTitle, qContent, qImgUrls, isAnonymous, createTs, modTs from v2questions where qStatus = 0 and (qContent != "" or qImgUrls != "") and boardId = %d order by createTs desc limit %d, %d`, boardId, s, e)
+	//第一次拉去列表 没有qid
+	if qid == 0 {
+		sql = fmt.Sprintf(`select qid, ownerUid, qTitle, qContent, qImgUrls, isAnonymous, createTs, modTs from v2questions 
+		where qStatus = 0 and (qContent != "" or qImgUrls != "") and boardId = %d order by createTs desc limit %d, %d`, boardId, s, e)
+	} else {
+		//后面拉去问题列表防止插入 重复数据 客户端传qid,从小于qid的地方去pageSize
+		sql = fmt.Sprintf(`select qid, ownerUid, qTitle, qContent, qImgUrls, isAnonymous, createTs, modTs from v2questions 
+		where qStatus = 0 and (qContent != "" or qImgUrls != "") and boardId = %d  and qid < %d
+		order by qid desc limit %d, %d`, boardId, qid, s, e)
+	}
 
 	rows, err = inst.Query(sql)
 	if err != nil {
