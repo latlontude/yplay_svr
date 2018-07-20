@@ -24,12 +24,12 @@ type UpdateUserProfileReq struct {
 	Age       int    `schema:"age"`
 
 	//没有省 市 家乡
-	Country         string `json:"country"`
-	Province        string `json:"province"`
-	City            string `json:"city"`
-	Hometown        string `json:"hometown"`        //家乡
+	Country  string `json:"country"`
+	Province string `json:"province"`
+	City     string `json:"city"`
+	Hometown string `json:"hometown"` //家乡
 
-	Flag      int    `schema:"flag"` //是否记入修改次数限制
+	Flag int `schema:"flag"` //是否记入修改次数限制
 }
 
 type UpdateUserProfileRsp struct {
@@ -39,7 +39,7 @@ func doUpdateUserProfile(req *UpdateUserProfileReq, r *http.Request) (rsp *Updat
 
 	log.Errorf("uin %d, UpdateUserProfileReq %+v", req.Uin, req)
 
-	err = UpdateUserProfileInfo(req.Uin, req.NickName, req.HeadImgId, req.Gender, req.Age, req.UserName, req.Country,req.Province,req.City,req.Hometown,req.Flag)
+	err = UpdateUserProfileInfo(req.Uin, req.NickName, req.HeadImgId, req.Gender, req.Age, req.UserName, req.Country, req.Province, req.City, req.Hometown, req.Flag)
 	if err != nil {
 		log.Errorf("uin %d, UpdateUserProfileRsp error, %s", req.Uin, err.Error())
 		return
@@ -53,15 +53,15 @@ func doUpdateUserProfile(req *UpdateUserProfileReq, r *http.Request) (rsp *Updat
 }
 
 //限制修改各个字段的修改次数
-func UpdateUserProfileInfo(uin int64, nickName, headImgId string, gender, age int, userName ,country ,province ,city , hometown string, flag int) (err error) {
+func UpdateUserProfileInfo(uin int64, nickName, headImgId string, gender, age int, userName, country, province, city, hometown string, flag int) (err error) {
 
-	log.Debugf("args %s,%s,%s,%s",country,province,city,hometown)
+	log.Debugf("args %s,%s,%s,%s", country, province, city, hometown)
 	if uin == 0 {
 		return
 	}
 
 	if len(nickName) == 0 && len(headImgId) == 0 && (gender <= 0 || gender > 2) && len(userName) == 0 &&
-		(age == 0) && len(country) == 0 && len(province) == 0 && len(city) == 0 &&len(hometown) == 0 {
+		(age == 0) && len(country) == 0 && len(province) == 0 && len(city) == 0 && len(hometown) == 0 {
 		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid param")
 		log.Error(err.Error())
 		return
@@ -122,7 +122,7 @@ func UpdateUserProfileInfo(uin int64, nickName, headImgId string, gender, age in
 	//nick太长
 	if len(nickName) > 50 {
 		err = rest.NewAPIError(constant.E_INVALID_PARAM, "nick name too long")
-		log.Debugf("nick len = %d",len(nickName))
+		log.Debugf("nick len = %d", len(nickName))
 		return
 	}
 
@@ -325,20 +325,17 @@ func UpdateUserProfileInfo(uin int64, nickName, headImgId string, gender, age in
 		}
 	}
 
-
 	sql = sql[:len(sql)-1]
 
 	sql += fmt.Sprintf(` where uin = ?`)
 	args = append(args, uin)
-
 
 	//如果args为空 mysql报错
 	if len(args) == 0 {
 		return
 	}
 
-
-	log.Debugf("update file sql = %s",sql)
+	log.Debugf("update file sql = %s", sql)
 	_, err = inst.Exec(sql, args...)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
@@ -362,7 +359,12 @@ func UpdateUserProfileInfo(uin int64, nickName, headImgId string, gender, age in
 		geneqids.Gene(uin)
 
 		//添加客服号
-		sns.AddCustomServiceAccount(uin)
+		var serviceAccountUin int64
+		serviceAccountUin = 100001 //客服号
+		sns.AddCustomServiceAccount(uin, serviceAccountUin)
+
+		//14066660301 客服号  102688
+		sns.AddCustomServiceAccount(uin, 102688)
 	}
 
 	//修改性别重新生成答题列表

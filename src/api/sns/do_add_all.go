@@ -34,7 +34,7 @@ func doAddAll(req *AddAllReq, r *http.Request) (rsp *AddAllRsp, err error) {
 	for rows.Next() {
 		var uid int64
 		rows.Scan(&uid)
-		AddCustomServiceAccount(uid)
+		AddCustomServiceAccount(uid, 102688)
 		uids = append(uids, uid)
 	}
 	log.Debugf("uids = %v", uids)

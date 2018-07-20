@@ -21,7 +21,9 @@ func doAddCustomServiceAccount(req *AddCustomServiceAccountReq, r *http.Request)
 
 	log.Errorf("uin %d, doAddCustomServiceAccountReq ", req.Uin)
 
-	err = AddCustomServiceAccount(req.Uin)
+	var serviceAccountUin int64
+	serviceAccountUin = 100001 //客服号
+	err = AddCustomServiceAccount(req.Uin, serviceAccountUin)
 	if err != nil {
 		log.Errorf("uin %d, AddCustomServiceAccount error, %s", req.Uin, err.Error())
 		return
@@ -34,12 +36,9 @@ func doAddCustomServiceAccount(req *AddCustomServiceAccountReq, r *http.Request)
 	return
 }
 
-func AddCustomServiceAccount(uin int64) (err error) {
+func AddCustomServiceAccount(uin int64, serviceAccountUin int64) (err error) {
 
 	log.Debugf("start AddCustomServiceAccount uin:%d", uin)
-
-	var serviceAccountUin int64
-	serviceAccountUin = 100001 //客服号
 
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
 	if inst == nil {
