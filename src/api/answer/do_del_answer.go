@@ -1,6 +1,7 @@
 package answer
 
 import (
+	"api/elastSearch"
 	"api/v2push"
 	"common/constant"
 	"common/mydb"
@@ -93,15 +94,21 @@ func DelAnswer(uin int64, qid, answerId int, reason string) (code int, err error
 		return
 	}
 
+	//从elastSearch删掉该数据
+	err2 := elastSearch.DelAnswerFromEs(answerId)
+	if err2 != nil {
+		log.Errorf(err2.Error())
+	}
+
 	if !isMyself {
-		answer,_:= GetV2Answer(answerId)
+		answer, _ := GetV2Answer(answerId)
 		data, err1 := json.Marshal(&answer)
 		if err1 != nil {
 			log.Errorf(err1.Error())
 			return
 		}
 		dataStr := string(data)
-		v2push.SendBeDeletePush(uin, ownerUid, reason, 2,dataStr)
+		v2push.SendBeDeletePush(uin, ownerUid, reason, 2, dataStr)
 	}
 
 	code = 0
