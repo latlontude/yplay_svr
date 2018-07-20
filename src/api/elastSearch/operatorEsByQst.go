@@ -62,3 +62,26 @@ func AddQstToEs(qid int, qContent string) (err error) {
 	log.Debugf("dump:%s , req:%v", string(dump), req)
 	return
 }
+
+func DelQstToEs(qid int) (err error) {
+
+	client := &http.Client{}
+	url := fmt.Sprintf("http://122.152.206.97:9200/interlocution/questions/%d", qid)
+	req, err := http.NewRequest("DELETE", url, nil)
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+
+	client.Do(req)
+	req.Header.Add("Content-Type", "application/json")
+	dump, err := httputil.DumpRequest(req, true)
+
+	if err != nil {
+		log.Error(err.Error())
+		return
+	}
+
+	log.Debugf("dump:%s , req:%v", string(dump), req)
+	return
+}

@@ -64,3 +64,26 @@ func AddAnswerToEs(qid, answerId int, answerContent string) (err error) {
 	log.Debugf("dump:%s , req:%v", string(dump), req)
 	return
 }
+
+func DelAnswerFromEs(answerId int) (err error) {
+
+	client := &http.Client{}
+	url := fmt.Sprintf("http://122.152.206.97:9200/interlocution/answers/%d", answerId)
+	req, err := http.NewRequest("DELETE", url, nil)
+	if err != nil {
+		log.Debugf(err.Error())
+		return
+	}
+
+	client.Do(req)
+	req.Header.Add("Content-Type", "application/json")
+	dump, err := httputil.DumpRequest(req, true)
+	if err != nil {
+		log.Error(err.Error())
+		return
+	}
+
+	log.Debugf("dump :%s", dump)
+
+	return
+}

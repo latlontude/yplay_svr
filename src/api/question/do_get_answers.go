@@ -120,7 +120,7 @@ func GetAnswers(uin int64, qid, pageNum, pageSize int) (answers []*st.AnswersInf
 			info.OwnerInfo = ui
 		}
 
-		//TODO 增加最新回复的两条评论
+		//TODO 增加最新回复的两条评论  2018-07-19改为最早两条
 		latestComments, err2 := GetLatesCommentByAnswerId(info.AnswerId)
 		info.LatestComment = latestComments
 		if err2 == nil {
@@ -339,7 +339,7 @@ func GetLatesCommentByAnswerId(answerId int) (comments []*st.CommentInfo, err er
 		return
 	}
 
-	sql := fmt.Sprintf(`select * from v2comments where answerId = %d order by commentTs desc limit 2`, answerId)
+	sql := fmt.Sprintf(`select * from v2comments where answerId = %d  limit 2`, answerId)
 
 	rows, err := inst.Query(sql)
 	if err != nil {

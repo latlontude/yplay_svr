@@ -31,7 +31,7 @@ type SearchAllRsp struct {
 	InterlocutionRsp InterlocutionRsp        `json:"interlocutionRsp"`
 }
 
-func doSearch(req *SearchAllReq, r *http.Request) (rsp *SearchAllRsp, err error) {
+func doSearchAll(req *SearchAllReq, r *http.Request) (rsp *SearchAllRsp, err error) {
 
 	log.Debugf("uin %d, SearchAllReq succ, %+v", req.Uin, req)
 	//TODO search  pupu用户       search label    search question and answer
@@ -64,6 +64,12 @@ func SearchAll(uin int64, content string, pageNum int, pageSize int) (friends []
 		return
 	}
 	getLabelListRsp = GetLabelListRsp{labelList, labelListCnt}
+
+	if labelListCnt >= pageSize {
+		return
+	} else {
+		pageSize = pageSize - labelListCnt
+	}
 
 	interlocution, totalCnt, err := elastSearch.SearchInterlocutionFromEs(uin, content, pageNum, pageSize)
 	if err != nil {

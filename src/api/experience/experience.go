@@ -26,7 +26,7 @@ var (
 		"/addAnswerIdInExp":   auth.Apify2(doAddAnswerIdInExp),
 		"/delAnswerIdFromExp": auth.Apify2(doDelAnswerIdFromExp),
 		"/getExpHome":         auth.Apify2(doGetExpHome),
-		"/search":             auth.Apify2(doSearch),
+		"/searchAll":          auth.Apify2(doSearchAll),
 	}
 
 	log = env.NewLogger("experience")

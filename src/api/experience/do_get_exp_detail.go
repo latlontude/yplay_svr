@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+	"svr/st"
 )
 
 // 自定义排序
@@ -39,22 +40,24 @@ type GetExperienceDetailReq struct {
 }
 
 type GetExperienceDetailRsp struct {
-	ExpInfo  []*ExperienceInfo `json:"expInfo"`
-	TotalCnt int               `json:"totalCnt"`
+	ExpInfo    []*ExperienceInfo     `json:"expInfo"`
+	TotalCnt   int                   `json:"totalCnt"`
+	Operators  []*st.UserProfileInfo `json:"operators"`
+	UpdateTime int64                 `json:"updateTime"`
 }
 
 func doGetExpDetail(req *GetExperienceDetailReq, r *http.Request) (rsp *GetExperienceDetailRsp, err error) {
 
 	log.Debugf("uin %d, GetExperienceDetailReq succ, %+v", req.Uin, rsp)
 
-	expInfo, totalCnt, err := getExpDetail(req.Uin, req.BoardId, req.LabelId, req.PageNum, req.PageSize)
+	expInfo, totalCnt, operators, updateTime, err := getExpDetail(req.Uin, req.BoardId, req.LabelId, req.PageNum, req.PageSize)
 
 	if err != nil {
 		log.Errorf("uin %d, GetExperienceDetailReq error, %s", req.Uin, err.Error())
 		return
 	}
 
-	rsp = &GetExperienceDetailRsp{expInfo, totalCnt}
+	rsp = &GetExperienceDetailRsp{expInfo, totalCnt, operators, updateTime}
 
 	log.Debugf("uin %d, GetExperienceDetailRsp succ, %+v", req.Uin, rsp)
 
@@ -65,7 +68,7 @@ func doGetExpDetail(req *GetExperienceDetailReq, r *http.Request) (rsp *GetExper
 labelId labelName count updateTs qid question
 */
 
-func getExpDetail(uin int64, boardId, labelId, pageNum, pageSize int) (ExpInfo []*ExperienceInfo, totalCnt int, err error) {
+func getExpDetail(uin int64, boardId, labelId, pageNum, pageSize int) (ExpInfo []*ExperienceInfo, totalCnt int, operators []*st.UserProfileInfo, updateTime int64, err error) {
 
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
 	if inst == nil {
@@ -113,6 +116,34 @@ func getExpDetail(uin int64, boardId, labelId, pageNum, pageSize int) (ExpInfo [
 
 	//排序
 	sort.Sort(Interface(ExpInfo))
+
+	//updateTime = ExpInfo[0].Ts
+
+	//整理过经验弹的人
+	sql = fmt.Sprintf(`select operator,ts from experience_share where boardId = %d and labelId = %d  group by operator order by ts`, boardId, labelId)
+
+	rows, err = inst.Query(sql)
+	defer rows.Close()
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Error(err)
+		return
+	}
+
+	for rows.Next() {
+		var uid int64
+
+		rows.Scan(&uid, &updateTime)
+
+		if uid > 0 {
+			ui, err1 := st.GetUserProfileInfo(uid)
+			if err1 != nil {
+				log.Error(err1.Error())
+				continue
+			}
+			operators = append(operators, ui)
+		}
+	}
 
 	return
 

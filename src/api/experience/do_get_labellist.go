@@ -17,8 +17,8 @@ type GetLabelListReq struct {
 	//AnswerId   int    `schema:"answerId"`
 	LabelName string `schema:"labelName"`
 
-	pageNum  int `schema:"pageNum"`
-	pageSize int `schema:"pageSize"`
+	PageNum  int `schema:"pageNum"`
+	PageSize int `schema:"pageSize"`
 }
 
 type LabelInfo struct {
@@ -34,7 +34,7 @@ func doGetLabelList(req *GetLabelListReq, r *http.Request) (rsp *GetLabelListRsp
 
 	log.Debugf("uin %d, GetLabelListReq %+v", req.Uin, req)
 
-	labelList, totalCnt, err := GetLabelList(req.Uin, req.LabelName, req.pageNum, req.pageSize)
+	labelList, totalCnt, err := GetLabelList(req.Uin, req.LabelName, req.PageNum, req.PageSize)
 
 	if err != nil {
 		log.Errorf("uin %d, GetLabelListReq error, %s", req.Uin, err.Error())
@@ -99,29 +99,3 @@ func getLabelInfo(inst *sql.DB, labelName string, pageNum, pageSize int) (labelL
 	}
 	return
 }
-
-//func isVisibleLabel(inst *sql.DB, answerId int) (isVisible bool , err error){
-//
-//	sql := fmt.Sprintf(`select count(answerId) from experience_share where answerId = %d`,answerId)
-//
-//	rows, err := inst.Query(sql)
-//	defer rows.Close()
-//	if err != nil {
-//		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
-//		log.Error(err)
-//		return
-//	}
-//
-//	var qidLabelCount int
-//	for rows.Next() {
-//		rows.Scan(&qidLabelCount)
-//	}
-//
-//	if qidLabelCount >= constant.EXPERIENCE_QID_LABEL_COUNT {
-//		isVisible = false
-//	}
-//
-//	isVisible = true
-//
-//	return
-//}

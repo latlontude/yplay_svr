@@ -1,6 +1,7 @@
 package question
 
 import (
+	"api/elastSearch"
 	"api/v2push"
 	"common/constant"
 	"common/mydb"
@@ -91,16 +92,40 @@ func DelQuestion(uin int64, qid int, reason string) (code int, err error) {
 		return
 	}
 
+	//从elastSearch删掉提问
+	err2 := elastSearch.DelQstToEs(qid)
+	if err2 != nil {
+		log.Errorf(err2.Error())
+	}
+
+	//删除该问题的所有回答
+	sql = fmt.Sprintf(`select answerId from v2answers where qid = %d`, qid)
+	rows, err := inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Error(err)
+		return
+	}
+
+	for rows.Next() {
+		var answerId int
+		rows.Scan(&answerId)
+		err2 := elastSearch.DelAnswerFromEs(answerId)
+		if err2 != nil {
+			log.Errorf(err2.Error())
+		}
+	}
+
 	//不是我自己删的  发推送
 	if !isMyself {
-		question,_:= GetV2Question(qid)
+		question, _ := GetV2Question(qid)
 		data, err1 := json.Marshal(&question)
 		if err1 != nil {
 			log.Errorf(err1.Error())
 			return
 		}
 		dataStr := string(data)
-		v2push.SendBeDeletePush(uin, ownerUid, reason, 1,dataStr)
+		v2push.SendBeDeletePush(uin, ownerUid, reason, 1, dataStr)
 	}
 
 	code = 0
