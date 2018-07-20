@@ -88,7 +88,8 @@ func GetComments(uin int64, answerId, pageNum, pageSize int) (comments []*st.Com
 		return
 	}
 
-	sql = fmt.Sprintf(`select commentId, answerId, commentContent, ownerUid, commentTs from v2comments where commentStatus = 0 and answerId = %d order by commentTs  limit %d, %d`, answerId, s, e)
+	sql = fmt.Sprintf(`select commentId, answerId, commentContent, ownerUid, commentTs from v2comments where commentStatus = 0 
+and answerId = %d order by commentTs  limit %d, %d`, answerId, s, e)
 
 	rows, err = inst.Query(sql)
 	if err != nil {
@@ -161,7 +162,7 @@ func getCommentLikeCnt(commentId int) (cnt int, err error) {
 		return
 	}
 
-	sql := fmt.Sprintf(`select count(id) as cnt from v2likes where type = 2 and likeId = %d and likeStatus = 0`, commentId)
+	sql := fmt.Sprintf(`select count(id) as cnt from v2likes where type = 2 and likeId = %d and likeStatus != 2`, commentId)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -264,7 +265,7 @@ func getReplyLikeCnt(replyId int) (cnt int, err error) {
 		return
 	}
 
-	sql := fmt.Sprintf(`select count(id) as cnt from v2likes where type = 3 and likeId = %d and likeStatus = 0`, replyId)
+	sql := fmt.Sprintf(`select count(id) as cnt from v2likes where type = 3 and likeId = %d and likeStatus !=2 `, replyId)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -291,7 +292,7 @@ func checkIsILikeComment(uin int64, commentId int) (ret bool, err error) {
 		return
 	}
 
-	sql := fmt.Sprintf(`select id from v2likes where type = 2 and likeId = %d and ownerUid = %d and likeStatus = 0`, commentId, uin)
+	sql := fmt.Sprintf(`select id from v2likes where type = 2 and likeId = %d and ownerUid = %d and likeStatus != 2`, commentId, uin)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -320,7 +321,7 @@ func checkIsILikeReply(uin int64, replyId int) (ret bool, err error) {
 		return
 	}
 
-	sql := fmt.Sprintf(`select id from v2likes where type = 3 and likeId = %d and ownerUid = %d and likeStatus = 0`, replyId, uin)
+	sql := fmt.Sprintf(`select id from v2likes where type = 3 and likeId = %d and ownerUid = %d and likeStatus !=2`, replyId, uin)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
