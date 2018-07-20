@@ -4,6 +4,11 @@ import (
 	"fmt"
 )
 
+type ExpLabel struct {
+	LabelId   int    `json:"labelId"`
+	LabelName string `json:"labelName"`
+}
+
 type AnswersInfo struct {
 	Qid           int              `json:"qid"`
 	AnswerId      int              `json:"answerId"`
@@ -14,6 +19,8 @@ type AnswersInfo struct {
 	LikeCnt       int              `json:"likeCnt"`
 	IsILike       bool             `json:"isILike"`
 	OwnerInfo     *UserProfileInfo `json:"ownerInfo"`
+	ExpLabel      []*ExpLabel      `json:"expLabel"`
+	LatestComment []*CommentInfo   `json:"latestComment"`
 }
 
 func (this *AnswersInfo) String() string {

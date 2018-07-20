@@ -9,7 +9,7 @@ type ReplyInfo struct {
 	ReplyContent      string           `json:"replyContent"`
 	ReplyFromUserInfo *UserProfileInfo `json:"fromUserInfo"`
 	ReplyToUserInfo   *UserProfileInfo `json:"toUserInfo"`
-	ReplyTs           int64              `json:"replyTs"`
+	ReplyTs           int64            `json:"replyTs"`
 	LikeCnt           int              `json:"likeCnt"`
 	IsILike           bool             `json:"isILike"`
 }
@@ -33,6 +33,6 @@ func (this *ReplyInfo) String() string {
 
 func (this *CommentInfo) String() string {
 
-	return fmt.Sprintf(`CommentInfo{AnswerId:%d CommentId:%d CommentContent:%s OwnerInfo:%+v OwnerInfo:%+v CommentTs:%d Replys:%+v  LikeCnt:%d IsILike:%t}`,
+	return fmt.Sprintf(`CommentInfo{AnswerId:%d CommentId:%d CommentContent:%s OwnerInfo:%+v CommentTs:%d Replys:%+v  LikeCnt:%d IsILike:%t}`,
 		this.AnswerId, this.CommentId, this.CommentContent, this.OwnerInfo, this.CommentTs, this.Replys, this.LikeCnt, this.IsILike)
 }

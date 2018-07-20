@@ -156,7 +156,7 @@ func GetMyFriendsCnt(uin int64) (total int, err error) {
 		return
 	}
 
-	log.Debugf("end GetMyFriendsCnt total:%d")
+	log.Debugf("end GetMyFriendsCnt total:%d", total)
 	return
 }
 

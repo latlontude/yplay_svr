@@ -5,7 +5,7 @@ import (
 )
 
 type BoardInfo struct {
-	BoardId      int64  `json:"boardId"`
+	BoardId      int    `json:"boardId"`
 	BoardName    string `json:"boardName"`
 	BoardIntro   string `json:"boardIntro"`
 	BoardIconUrl string `json:"boardIconUrl"`
@@ -20,10 +20,14 @@ type BoardInfo struct {
 	FollowCnt int `json:"followCnt"`
 
 	CreateTs int `json:"createTs"`
+
+	IsAdmin bool `json:"isAdmin"`
 }
 
 func (this *BoardInfo) String() string {
 
-	return fmt.Sprintf(`BoardInfo{BoardId:%d BoardName:%s BoardIntro:%s BoardIconUrl:%s BoardStatus:%d SchoolId:%d SchoolName:%s  SchoolType:%d, CreateTs:%d, OwnerInfo:%+v, FollowCnt:%d}`,
-		this.BoardId, this.BoardName, this.BoardIntro, this.BoardIconUrl, this.BoardStatus, this.SchoolId, this.SchoolName, this.SchoolType, this.CreateTs, this.OwnerInfo, this.FollowCnt)
+	return fmt.Sprintf(`BoardInfo{BoardId:%dBoardName:%s BoardIntro:%s BoardIconUrl:%s BoardStatus:%d SchoolId:%d 
+SchoolName:%s  SchoolType:%d, CreateTs:%d, OwnerInfo:%+v, FollowCnt:%d, isAdmin:%v}`,
+		this.BoardId, this.BoardName, this.BoardIntro, this.BoardIconUrl, this.BoardStatus,
+		this.SchoolId, this.SchoolName, this.SchoolType, this.CreateTs, this.OwnerInfo, this.FollowCnt, this.IsAdmin)
 }
