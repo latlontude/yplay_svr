@@ -29,13 +29,15 @@ type ESQuestionHitElement struct {
 }
 
 type EsQuestion struct {
+	BoardId  int    `json:"boardId"`
 	Qid      int    `json:"qid"`
 	QContent string `json:"qContent"`
 }
 
-func AddQstToEs(qid int, qContent string) (err error) {
+func AddQstToEs(boardId, qid int, qContent string) (err error) {
 
 	var question EsQuestion
+	question.BoardId = boardId
 	question.Qid = qid
 	question.QContent = qContent
 

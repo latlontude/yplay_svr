@@ -37,6 +37,7 @@ type SearchInterlocutionFromEsReq struct {
 	Token    string `schema:"token"`
 	Ver      int    `schema:"ver"`
 	Content  string `schema:"content"`
+	BoardId  int    `schema:"boardId"`
 	PageNum  int    `schema:"pageNum"`
 	PageSize int    `schema:"pageSize"`
 }
@@ -50,7 +51,7 @@ func doSearchInterlocutionFromEs(req *SearchInterlocutionFromEsReq, r *http.Requ
 
 	log.Debugf("uin %d, SearchInterlocutionFromEsReq %+v", req.Uin, req)
 
-	interlocution, totalCnt, err := SearchInterlocutionFromEs(req.Uin, req.Content, req.PageNum, req.PageSize)
+	interlocution, totalCnt, err := SearchInterlocutionFromEs(req.Uin, req.Content, req.BoardId, req.PageNum, req.PageSize)
 
 	if err != nil {
 		log.Errorf("uin %d, SearchInterlocutionFromEsReq error, %s", req.Uin, err.Error())
@@ -64,7 +65,7 @@ func doSearchInterlocutionFromEs(req *SearchInterlocutionFromEsReq, r *http.Requ
 	return
 }
 
-func SearchInterlocutionFromEs(uin int64, content string, pageNum, pageSize int) (interlocution []*Interlocution, totalCnt int, err error) {
+func SearchInterlocutionFromEs(uin int64, content string, boardId, pageNum, pageSize int) (interlocution []*Interlocution, totalCnt int, err error) {
 
 	totalCnt = 0
 
@@ -81,18 +82,15 @@ func SearchInterlocutionFromEs(uin int64, content string, pageNum, pageSize int)
 	//先搜回答
 	url := fmt.Sprintf(`http://122.152.206.97:9200/interlocution/answers/_search`)
 	s := fmt.Sprintf(`
-		{
-		    "query":{
-		        "match":{
-		            "answerContent": "%s"
-				}
-		       
-		    },
-		    "from":%d,
-		    "size":%d,
-		    "sort":[],
-		    "aggs":{}
-		}`, content, (pageNum-1)*pageSize, pageSize)
+	{
+		"query":{"bool":{"must": [{"query_string":{"default_field":"answerContent","query":"%s"}},{"term":{"boardId":%d}}]}},
+		"from":%d,
+		"size":%d,
+		"sort":[],
+		"aggs":{}
+	}`, content, boardId, (pageNum-1)*pageSize, pageSize)
+
+	log.Debugf("url :%s ,query string :%s", url, s)
 
 	rsp, err := http.Post(url, "application/json", strings.NewReader(s))
 
@@ -127,8 +125,9 @@ func SearchInterlocutionFromEs(uin int64, content string, pageNum, pageSize int)
 		answerId := si.AnswerId
 		qid := si.Qid
 		answerContent := si.AnswerContent
+		answerBoardId := si.BoardId
 
-		log.Debugf("answerId :%d qid :%d , answerContent : %s", answerId, qid, answerContent)
+		log.Debugf("boardId:%d answerId :%d qid :%d , answerContent : %s", answerBoardId, answerId, qid, answerContent)
 
 		answer, err2 := common.GetV2Answer(answerId)
 		if err2 != nil {
@@ -143,24 +142,20 @@ func SearchInterlocutionFromEs(uin int64, content string, pageNum, pageSize int)
 		hashmap[answerId] = interAnswer
 	}
 
-	log.Debugf("hashAnswer  :%v    hashMap : %v", hashQidAnswerId, hashmap)
-
 	//TODO question
 
 	url = fmt.Sprintf(`http://122.152.206.97:9200/interlocution/questions/_search`)
 
 	s = fmt.Sprintf(`
-		{
-		   "query":{
-		        "match":{
-		            "qContent": "%s"
-				}
-		    },
-		    "from":%d,
-		    "size":%d,
-		    "sort":[],
-		    "aggs":{}
-		}`, content, (pageNum-1)*pageSize, pageSize)
+	{
+		"query":{"bool":{"must": [{"query_string":{"default_field":"qContent","query":"%s"}},{"term":{"boardId":%d}}]}},
+		"from":%d,
+		"size":%d,
+		"sort":[],
+		"aggs":{}
+	}`, content, boardId, (pageNum-1)*pageSize, pageSize)
+
+	log.Debugf("url:%s,query string :%s", url, s)
 
 	rsp, err = http.Post(url, "application/json", strings.NewReader(s))
 
@@ -194,7 +189,8 @@ func SearchInterlocutionFromEs(uin int64, content string, pageNum, pageSize int)
 		si := e.EsQuestion
 		qid := si.Qid
 		qContent := si.QContent
-		log.Debugf("qid :%d , qContent : %s", qid, qContent)
+		qstBoardId := si.BoardId
+		log.Debugf("boardId:%d,qid :%d , qContent : %s", qstBoardId, qid, qContent)
 
 		question, err1 := common.GetV2Question(qid)
 		if err1 != nil {

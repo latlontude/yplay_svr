@@ -29,14 +29,16 @@ type ESAnswerHitElement struct {
 }
 
 type EsAnswer struct {
+	BoardId       int    `json:"boardId"`
 	Qid           int    `json:"qid"`
 	AnswerId      int    `json:"answerId"`
 	AnswerContent string `json:"answerContent"`
 }
 
-func AddAnswerToEs(qid, answerId int, answerContent string) (err error) {
+func AddAnswerToEs(boardId, qid, answerId int, answerContent string) (err error) {
 
 	var answer EsAnswer
+	answer.BoardId = boardId
 	answer.Qid = qid
 	answer.AnswerId = answerId
 	answer.AnswerContent = answerContent
