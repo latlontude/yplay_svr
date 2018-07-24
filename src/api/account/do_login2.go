@@ -78,7 +78,6 @@ func Login2(phone string, code string, uuid int64, device, os, appVer string) (r
 	}
 
 	innerTestPhones := strings.Split(env.Config.InnerTest.Phones, ",") //内部测试手机号
-	log.Debugf("innerTestPhones:%+v", innerTestPhones)
 
 	find := false
 
