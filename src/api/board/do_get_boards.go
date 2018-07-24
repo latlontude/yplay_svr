@@ -1,6 +1,7 @@
 package board
 
 import (
+	"api/experience"
 	"common/constant"
 	"common/mydb"
 	"common/rest"
@@ -103,6 +104,15 @@ func GetBoards(uin int64) (boards []*st.BoardInfo, err error) {
 		follwCnt, _ := getFollowCnt(info.BoardId)
 		info.FollowCnt = follwCnt
 
+		//boardInfo 返回 是否是经验弹管理员
+		isAdmin, err2 := experience.CheckPermit(uin, info.BoardId, 0)
+		if err2 != nil {
+			log.Error(err2.Error())
+		}
+		info.IsAdmin = isAdmin
+
+		log.Debugf("isAdmin : %v", isAdmin)
+
 		boards = append(boards, &info)
 	}
 
@@ -110,7 +120,7 @@ func GetBoards(uin int64) (boards []*st.BoardInfo, err error) {
 	return
 }
 
-func getFollowCnt(boardId int64) (cnt int, err error) {
+func getFollowCnt(boardId int) (cnt int, err error) {
 	log.Debugf("start getFollowCnt boardId:%d", boardId)
 
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
