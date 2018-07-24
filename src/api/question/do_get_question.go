@@ -38,7 +38,7 @@ func doGetQuestions(req *GetQuestionsReq, r *http.Request) (rsp *GetQuestionsRsp
 
 	rsp = &GetQuestionsRsp{questions, totalCnt}
 
-	log.Debugf("uin %d, GetQuestionsRsp succ  , rsp", req.Uin, rsp)
+	log.Debugf("uin %d, GetQuestionsRsp succ  , rsp:%v", req.Uin, rsp)
 
 	return
 }
@@ -138,7 +138,9 @@ func GetQuestions(uin int64, qid, boardId, pageNum, pageSize int) (questions []*
 		}
 		info.AnswerCnt = answerCnt
 
+		//bestAnswer, _ := GetBestAnswer(uin, info.Qid)
 		bestAnswer, _ := GetBestAnswer(uin, info.Qid)
+
 		info.BestAnswer = bestAnswer
 
 		responders, _ := GetQidNewResponders(info.Qid)
@@ -177,7 +179,15 @@ func GetAnswerCnt(qid int) (cnt int, err error) {
 	//log.Debugf("end getAnswerCnt qid:%d totalCnt:%d", qid, cnt)
 	return
 }
+func GetFirstAnswer(uin int64, qid int) (answer *st.AnswersInfo, err error) {
+	answers, totalCnt, err := GetAnswers(uin, qid, 0, 0)
+	if err != nil {
+		log.Debugf("totalCnt:%d", totalCnt)
+	}
+	answer = answers[0]
 
+	return
+}
 func GetBestAnswer(uin int64, qid int) (answer *st.AnswersInfo, err error) {
 	//log.Debugf("start getBestAnswer qid:%d", qid)
 
@@ -268,18 +278,18 @@ func GetBestAnswer(uin int64, qid int) (answer *st.AnswersInfo, err error) {
 		answers = append(answers, &info)
 	}
 
-	sortAnswers, err := sortQuestionAnswer(answers)
-	if err != nil {
-		log.Error(err.Error())
-		return
-	}
+	//sortAnswers, err := sortQuestionAnswer(answers)
+	//if err != nil {
+	//	log.Error(err.Error())
+	//	return
+	//}
 
-	if len(sortAnswers) > 0 {
-		if sortAnswers[0].LikeCnt != 0 {
-			answer = sortAnswers[0]
-		}
-	}
-
+	//if len(sortAnswers) > 0 {
+	//	if sortAnswers[0].LikeCnt != 0 {
+	//		answer = sortAnswers[0]
+	//	}
+	//}
+	answer = answers[0]
 	//log.Debugf("end getBestAnswer answer:%+v", answer)
 	return
 }
