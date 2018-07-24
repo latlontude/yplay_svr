@@ -89,7 +89,7 @@ func PostQuestion(uin int64, boardId int, title, content, imgUrls string, isAnon
 		return
 	}
 
-	err1 := elastSearch.AddQstToEs(int(qid), content)
+	err1 := elastSearch.AddQstToEs(boardId, int(qid), content)
 	if err1 != nil {
 		log.Debugf("es error")
 	}

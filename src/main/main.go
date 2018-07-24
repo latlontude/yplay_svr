@@ -7,6 +7,8 @@ import (
 	"api/answer"
 	"api/board"
 	"api/comment"
+	"api/elastSearch"
+	"api/experience"
 	"api/feed"
 	"api/geneqids"
 	"api/helper"
@@ -21,7 +23,6 @@ import (
 	"api/submit"
 	"api/user"
 	"api/vote"
-	"api/experience"
 	"common/env"
 	"common/httputil"
 	"common/mydb"
@@ -86,6 +87,7 @@ func main() {
 	httputil.HandleAPIMap("/svr/cache/", cache.APIMap)
 	httputil.HandleAPIMap("/api/activity/", activity.APIMap)
 	httputil.HandleAPIMap("/api/experience/", experience.APIMap)
+	httputil.HandleAPIMap("/api/elastSearch/", elastSearch.APIMap)
 
 	log.Errorf("Starting yplay_svr...")
 	panicUnless(httputil.ListenHttp(env.Config.HttpServer.BindAddr))

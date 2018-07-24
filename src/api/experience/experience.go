@@ -25,9 +25,19 @@ var (
 		"/getExpDetail":       auth.Apify2(doGetExpDetail), //经验贴详情 列出带该标签的所有问题
 		"/addAnswerIdInExp":   auth.Apify2(doAddAnswerIdInExp),
 		"/delAnswerIdFromExp": auth.Apify2(doDelAnswerIdFromExp),
-		"/getExpHome":         auth.Apify2(doGetExpHome),
-		"/searchAll":          auth.Apify2(doSearchAll),
+		"/getBoardLabel":      auth.Apify2(doGetExpHome), //主页 运营可配置
+		"/searchAll":          auth.Apify2(doSearchAll),  //搜索  pupu用户 经验弹 问题和回答
 	}
 
 	log = env.NewLogger("experience")
 )
+
+//curl http://122.152.206.97:9200/interlocution/questions/_search -d '
+//	{
+//		"query":{"bool":{"must": [{"query_string":{"default_field":"qContent","query":"哈哈"}},{"term":{"boardId":4}}]}},
+//		"from":0,
+//		"size":20,
+//		"sort":[],
+//		"aggs":{}
+//	}
+//	'

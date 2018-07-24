@@ -119,8 +119,8 @@ func getExpDetail(uin int64, boardId, labelId, pageNum, pageSize int) (ExpInfo [
 
 	//updateTime = ExpInfo[0].Ts
 
-	//整理过经验弹的人
-	sql = fmt.Sprintf(`select operator,ts from experience_share where boardId = %d and labelId = %d  group by operator order by ts`, boardId, labelId)
+	//整理过经验弹的人  找到最新时间
+	sql = fmt.Sprintf(`select operator,max(ts) from experience_share where boardId = %d and labelId = %d  group by operator order by ts`, boardId, labelId)
 
 	rows, err = inst.Query(sql)
 	defer rows.Close()

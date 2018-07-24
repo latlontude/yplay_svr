@@ -15,6 +15,7 @@ type SearchAllReq struct {
 	Token string `schema:"token"`
 	Ver   int    `schema:"ver"`
 
+	BoardId  int    `schema:"boardId"`
 	Content  string `schema:"content"`
 	PageNum  int    `schema:"pageNum"`
 	PageSize int    `schema:"pageSize"`
@@ -35,7 +36,7 @@ func doSearchAll(req *SearchAllReq, r *http.Request) (rsp *SearchAllRsp, err err
 
 	log.Debugf("uin %d, SearchAllReq succ, %+v", req.Uin, req)
 	//TODO search  pupu用户       search label    search question and answer
-	friends, getLabelListRsp, interlocutionRsp, err := SearchAll(req.Uin, req.Content, req.PageNum, req.PageSize)
+	friends, getLabelListRsp, interlocutionRsp, err := SearchAll(req.Uin, req.BoardId, req.Content, req.PageNum, req.PageSize)
 
 	if err != nil {
 		log.Errorf("uin %d, GetLabelListReq error, %s", req.Uin, err.Error())
@@ -48,7 +49,7 @@ func doSearchAll(req *SearchAllReq, r *http.Request) (rsp *SearchAllRsp, err err
 	return
 }
 
-func SearchAll(uin int64, content string, pageNum int, pageSize int) (friends []*sns.SearchFriendInfo, getLabelListRsp GetLabelListRsp, interlocutionRsp InterlocutionRsp, err error) {
+func SearchAll(uin int64, boardId int, content string, pageNum int, pageSize int) (friends []*sns.SearchFriendInfo, getLabelListRsp GetLabelListRsp, interlocutionRsp InterlocutionRsp, err error) {
 
 	isCn := hasCn(content)
 	if isCn == false {
@@ -58,7 +59,8 @@ func SearchAll(uin int64, content string, pageNum int, pageSize int) (friends []
 		}
 	}
 
-	labelList, labelListCnt, err := GetLabelList(uin, content, pageNum, pageSize)
+	//查找属于该墙的label
+	labelList, labelListCnt, err := getLabelInfoByBoardId(boardId, content, pageNum, pageSize)
 	if err != nil {
 		log.Errorf("uin %d, GetLabelList error, %s", uin, err.Error())
 		return
@@ -71,7 +73,7 @@ func SearchAll(uin int64, content string, pageNum int, pageSize int) (friends []
 		pageSize = pageSize - labelListCnt
 	}
 
-	interlocution, totalCnt, err := elastSearch.SearchInterlocutionFromEs(uin, content, pageNum, pageSize)
+	interlocution, totalCnt, err := elastSearch.SearchInterlocutionFromEs(uin, content, boardId, pageNum, pageSize)
 	if err != nil {
 		log.Errorf("uin %d, GetLabelList error, %s", uin, err.Error())
 	}

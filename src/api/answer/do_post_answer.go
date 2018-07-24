@@ -13,10 +13,10 @@ import (
 )
 
 type PostAnswerReq struct {
-	Uin   int64  `schema:"uin"`
-	Token string `schema:"token"`
-	Ver   int    `schema:"ver"`
-
+	Uin           int64  `schema:"uin"`
+	Token         string `schema:"token"`
+	Ver           int    `schema:"ver"`
+	BoardId       int    `schema:"boardId"`
 	Qid           int    `schema:"qid"`
 	AnswerContent string `schema:"answerContent"`
 	AnswerImgUrls string `schema:"answerImgUrls"`
@@ -31,7 +31,7 @@ func doPostAnswer(req *PostAnswerReq, r *http.Request) (rsp *PostAnswerRsp, err 
 
 	log.Debugf("uin %d, PostAnswerReq %+v", req.Uin, req)
 
-	answerId, err := PostAnswer(req.Uin, req.Qid, strings.Trim(req.AnswerContent, " \n\t"), req.AnswerImgUrls)
+	answerId, err := PostAnswer(req.Uin, req.BoardId, req.Qid, strings.Trim(req.AnswerContent, " \n\t"), req.AnswerImgUrls)
 
 	if err != nil {
 		log.Errorf("uin %d, PostAnswer error, %s", req.Uin, err.Error())
@@ -45,7 +45,7 @@ func doPostAnswer(req *PostAnswerReq, r *http.Request) (rsp *PostAnswerRsp, err 
 	return
 }
 
-func PostAnswer(uin int64, qid int, answerContent, answerImgUrls string) (answerId int64, err error) {
+func PostAnswer(uin int64, boardId, qid int, answerContent, answerImgUrls string) (answerId int64, err error) {
 
 	if len(answerContent) == 0 && len(answerImgUrls) == 0 {
 		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid params")
@@ -87,7 +87,7 @@ func PostAnswer(uin int64, qid int, answerContent, answerImgUrls string) (answer
 		return
 	}
 
-	err1 := elastSearch.AddAnswerToEs(qid, int(answerId), answerContent)
+	err1 := elastSearch.AddAnswerToEs(boardId, qid, int(answerId), answerContent)
 	if err1 != nil {
 		log.Debugf("add answer to es error")
 	}
