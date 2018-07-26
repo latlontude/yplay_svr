@@ -1,6 +1,7 @@
 package experience
 
 import (
+	"api/elastSearch"
 	"common/constant"
 	"common/mydb"
 	"common/rest"
@@ -61,6 +62,11 @@ func DelAnswerIdFromExp(uin int64, boardId, answerId, labelId int) (err error) {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
 		log.Error(err)
 		return
+	}
+
+	err1 := elastSearch.DelAnswerFromEs(answerId)
+	if err1 != nil {
+		log.Debugf("es delete label error")
 	}
 
 	return

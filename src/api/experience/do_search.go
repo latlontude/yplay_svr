@@ -60,7 +60,9 @@ func SearchAll(uin int64, boardId int, content string, pageNum int, pageSize int
 	}
 
 	//查找属于该墙的label
-	labelList, labelListCnt, err := getLabelInfoByBoardId(boardId, content, pageNum, pageSize)
+	//labelList, labelListCnt, err := getLabelInfoByBoardId(boardId, content, pageNum, pageSize)
+
+	labelList, labelListCnt, err := elastSearch.SearchLabelFromEs(uin, content, boardId, pageNum, pageSize)
 	if err != nil {
 		log.Errorf("uin %d, GetLabelList error, %s", uin, err.Error())
 		return
