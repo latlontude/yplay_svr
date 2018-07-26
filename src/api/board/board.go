@@ -4,6 +4,7 @@ import (
 	"common/auth"
 	"common/env"
 	"common/httputil"
+	"svr/st"
 )
 
 var (
@@ -13,5 +14,6 @@ var (
 		"/unfollow":  auth.Apify2(doUnfollow),
 	}
 
-	log = env.NewLogger("board")
+	log      = env.NewLogger("board")
+	boardMap = make(map[int]*st.BoardInfo) //boardId => boardInfo
 )
