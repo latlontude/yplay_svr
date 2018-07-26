@@ -6,6 +6,7 @@ import (
 	"common/rest"
 	"fmt"
 	"net/http"
+	"sort"
 	"svr/st"
 )
 
@@ -17,7 +18,7 @@ type GetQuestionsReq struct {
 	BoardId  int `schema:"boardId"`
 	PageNum  int `schema:"pageNum"`
 	PageSize int `schema:"pageSize"`
-	Qid      int `schema:"qid"`
+	Qid      int `schema:"lastQid"`
 }
 
 type GetQuestionsRsp struct {
@@ -217,7 +218,8 @@ func GetBestAnswer(uin int64, qid int) (answer *st.AnswersInfo, err error) {
 	}
 
 	answers := make([]*st.AnswersInfo, 0)
-
+	expAnswer := make([]*st.AnswersInfo, 0)   //带经验弹的回答
+	otherAnswer := make([]*st.AnswersInfo, 0) //不带经验弹的回答
 	sql = fmt.Sprintf(`select qid, ownerUid, answerId, answerContent, answerImgUrls, answerTs  from v2answers where answerStatus = 0 and qid = %d order by answerTs desc`, qid)
 
 	rows, err = inst.Query(sql)
@@ -275,7 +277,34 @@ func GetBestAnswer(uin int64, qid int) (answer *st.AnswersInfo, err error) {
 
 		info.IsILike = isILike
 
-		answers = append(answers, &info)
+		//查找该问题的labelName
+		expLabels, err3 := GetLabelInfoByAnswerId(info.AnswerId)
+		if err3 == nil {
+			info.ExpLabel = expLabels
+		}
+		//分成两个slice
+		if len(expLabels) > 0 {
+			expAnswer = append(expAnswer, &info)
+		} else {
+			otherAnswer = append(otherAnswer, &info)
+		}
+		//answers = append(answers, &info)
+	}
+	sort.Sort(answerSort(expAnswer))
+	sort.Sort(answerSort(otherAnswer))
+
+	for _, tmp := range expAnswer {
+		var answerTmp = tmp
+		answers = append(answers, answerTmp)
+	}
+
+	for _, tmp := range otherAnswer {
+		var answerTmp = tmp
+		answers = append(answers, answerTmp)
+	}
+
+	if len(answers) > 0 {
+		answer = answers[0]
 	}
 
 	//sortAnswers, err := sortQuestionAnswer(answers)
@@ -283,14 +312,13 @@ func GetBestAnswer(uin int64, qid int) (answer *st.AnswersInfo, err error) {
 	//	log.Error(err.Error())
 	//	return
 	//}
-
+	//
 	//if len(sortAnswers) > 0 {
 	//	if sortAnswers[0].LikeCnt != 0 {
 	//		answer = sortAnswers[0]
 	//	}
 	//}
-	answer = answers[0]
-	//log.Debugf("end getBestAnswer answer:%+v", answer)
+	log.Debugf("end getBestAnswer answer:%+v", answer)
 	return
 }
 

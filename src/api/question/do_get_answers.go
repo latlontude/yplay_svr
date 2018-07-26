@@ -25,6 +25,21 @@ type GetAnswersRsp struct {
 	TotalCnt int               `json:"totalCnt"`
 }
 
+// 自定义排序 按照赞的多少
+type answerSort []*st.AnswersInfo
+
+func (I answerSort) Len() int {
+	return len(I)
+}
+
+func (I answerSort) Less(i, j int) bool {
+	return I[i].LikeCnt > I[j].LikeCnt
+}
+
+func (I answerSort) Swap(i, j int) {
+	I[i], I[j] = I[j], I[i]
+}
+
 func doGetAnswers(req *GetAnswersReq, r *http.Request) (rsp *GetAnswersRsp, err error) {
 
 	//log.Debugf("uin %d, GetAnswersReq %+v", req.Uin, req)
@@ -53,6 +68,9 @@ func GetAnswers(uin int64, qid, pageNum, pageSize int) (answers []*st.AnswersInf
 		return
 	}
 	answers = make([]*st.AnswersInfo, 0)
+
+	expAnswer := make([]*st.AnswersInfo, 0)
+	otherAnswer := make([]*st.AnswersInfo, 0)
 
 	if pageNum == 0 {
 		pageNum = 1
@@ -159,25 +177,54 @@ func GetAnswers(uin int64, qid, pageNum, pageSize int) (answers []*st.AnswersInf
 
 		info.IsILike = isILike
 
-		answers = append(answers, &info)
+		//分成两个slice
+		if len(expLabels) > 0 {
+			expAnswer = append(expAnswer, &info)
+		} else {
+			otherAnswer = append(otherAnswer, &info)
+		}
+
+		//answers = append(answers, &info)
 	}
 
-	retAnsers, err := sortQuestionAnswer(answers)
-	if err != nil {
-		log.Error(err.Error())
-		return
+	sort.Sort(answerSort(expAnswer))
+	sort.Sort(answerSort(otherAnswer))
+
+	for _, tmp := range expAnswer {
+		var answerTmp = tmp
+		answers = append(answers, answerTmp)
 	}
 
-	// 超过最大长度  等于slice长度
-	totalCnt = len(retAnsers)
+	for _, tmp := range otherAnswer {
+		var answerTmp = tmp
+		answers = append(answers, answerTmp)
+	}
+	//copy(answers,expAnswer)
+	//copy(answers[len(expAnswer):],otherAnswer)
+
+	//retAnsers, err := sortQuestionAnswer(answers)
+	//if err != nil {
+	//	log.Error(err.Error())
+	//	return
+	//}
+	//
+	//// 超过最大长度  等于slice长度
+	//totalCnt = len(retAnsers)
+	//if e > totalCnt {
+	//	e = totalCnt
+	//}
+	//
+	////s - e
+	//retAnsers = retAnsers[s:e]
+	//
+	//log.Debugf("end GetAnswers uin:%d totalCnt:%d, len:%d ,s:%d,e:%d", uin, totalCnt, len(retAnsers), s, e)
+
+	totalCnt = len(answers)
 	if e > totalCnt {
 		e = totalCnt
 	}
-
-	//s - e
-	answers = retAnsers[s:e]
-
-	log.Debugf("end GetAnswers uin:%d totalCnt:%d, len:%d ,s:%d,e:%d", uin, totalCnt, len(retAnsers), s, e)
+	answers = answers[s:e]
+	log.Debugf("end GetAnswers uin:%d totalCnt:%d, len:%d ,s:%d,e:%d", uin, totalCnt, len(answers), s, e)
 	return
 }
 
@@ -195,7 +242,7 @@ func sortQuestionAnswer(answers []*st.AnswersInfo) (sortedAnswers []*st.AnswersI
 	}
 
 	likeCntSet := make([]int, 0)
-	for key, _ := range likeCntAnswerMap {
+	for key := range likeCntAnswerMap {
 		likeCntSet = append(likeCntSet, key)
 	}
 
@@ -285,7 +332,7 @@ func getAnswerLikeCnt(answerId int) (cnt int, err error) {
 	}
 
 	// 点赞数
-	sql := fmt.Sprintf(`select count(id) as cnt from v2likes where type = 1 and likeId = %d and likeStatus = 0`, answerId)
+	sql := fmt.Sprintf(`select count(id) as cnt from v2likes where type = 1 and likeId = %d and likeStatus != 2`, answerId)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -312,7 +359,7 @@ func checkIsILikeAnswer(uin int64, answerId int) (ret bool, err error) {
 		return
 	}
 
-	sql := fmt.Sprintf(`select id from v2likes where type = 1 and likeId = %d and ownerUid = %d and likeStatus = 0`, answerId, uin)
+	sql := fmt.Sprintf(`select id from v2likes where type = 1 and likeId = %d and ownerUid = %d and likeStatus != 2`, answerId, uin)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())

@@ -1,6 +1,7 @@
 package question
 
 import (
+	"api/board"
 	"common/constant"
 	"common/mydb"
 	"common/rest"
@@ -85,19 +86,17 @@ func GetV2QuestionsAndAnswer(uin int64, fUin int64, pageSize int, pageNum int) (
 
 	//查询好友的个人主页 看不到匿名问题(回答不需要判断匿名问题)
 	if fUin > 0 {
-		sql = fmt.Sprintf(`select * from  v2answers ,v2questions ,v2boards
+		sql = fmt.Sprintf(`select * from  v2answers ,v2questions
 			where v2answers.answerStatus = 0 
 			and v2questions.qStatus = 0 
 			and v2answers.qid=v2questions.qid 
-			and v2questions.boardId = v2boards.boardId
 			and v2answers.ownerUid = %d`, fUin)
 	} else {
 		//自己看自己主页 可以看到匿名问题
-		sql = fmt.Sprintf(`select * from  v2answers ,v2questions ,v2boards
+		sql = fmt.Sprintf(`select * from  v2answers ,v2questions
 			where v2answers.answerStatus = 0 
 			and v2questions.qStatus = 0 
 			and v2answers.qid=v2questions.qid 
-			and v2questions.boardId = v2boards.boardId
 			and v2answers.ownerUid = %d`, uin)
 	}
 
@@ -119,14 +118,11 @@ func GetV2QuestionsAndAnswer(uin int64, fUin int64, pageSize int, pageNum int) (
 		var boardInfo st.BoardInfo    //墙信息
 		var uid int64
 
-		var OwnerInfo st.UserProfileInfo //墙主info
 		var answerStatus string
-		var boardId int64
+		var boardId int
 		var qStatus int64
 
-		var temp1, temp2, temp3, temp4, temp5, temp6 string //暂时不需要给前段的字段 用temp接收
 		var sameAskUid string
-
 		rows.Scan(
 			&answerInfo.AnswerId,
 			&answerInfo.Qid,
@@ -146,17 +142,8 @@ func GetV2QuestionsAndAnswer(uin int64, fUin int64, pageSize int, pageNum int) (
 			&info.CreateTs,
 			&info.ModTs,
 			&sameAskUid,
-			&boardInfo.BoardId,
-			&temp1,
-			&temp2,
-			&temp3,
-			&temp4,
-			&temp5,
-			&OwnerInfo.Uin, //取墙主uid
-			&temp6,
 		)
-
-		boardInfo.OwnerInfo = &OwnerInfo
+		boardInfo, err = board.GetBoardInfoByBoardId(uin, boardId)
 		info.Board = &boardInfo
 
 		//回答问题的时间比问题创建时间更新  统一用createTs排序
@@ -202,15 +189,13 @@ func GetV2QuestionsAndAnswer(uin int64, fUin int64, pageSize int, pageNum int) (
 	//查询所有我提出的问题
 
 	if fUin > 0 {
-		sql = fmt.Sprintf(`select * from v2questions ,v2boards 
+		sql = fmt.Sprintf(`select * from v2questions 
 				where v2questions.qStatus = 0 
 				and v2questions.isAnonymous = 0
-				and v2questions.boardId=v2boards.boardId 
 				and v2questions.ownerUid = %d`, fUin)
 	} else {
-		sql = fmt.Sprintf(`select * from v2questions ,v2boards 
+		sql = fmt.Sprintf(`select * from v2questions
 				where v2questions.qStatus = 0 
-				and v2questions.boardId=v2boards.boardId 
 				and v2questions.ownerUid = %d`, uin)
 	}
 
@@ -225,15 +210,9 @@ func GetV2QuestionsAndAnswer(uin int64, fUin int64, pageSize int, pageNum int) (
 	for rows.Next() {
 		var info st.V2QuestionInfo
 		var uid int64
-
 		var boardInfo st.BoardInfo
-
-		var boardId int64
+		var boardId int
 		var qStatus int64
-
-		var temp string
-		var OwnerInfo st.UserProfileInfo
-
 		var sameAskUid string
 
 		rows.Scan(
@@ -248,17 +227,9 @@ func GetV2QuestionsAndAnswer(uin int64, fUin int64, pageSize int, pageNum int) (
 			&info.CreateTs,
 			&info.ModTs,
 			&sameAskUid,
-			&boardInfo.BoardId,
-			&temp,
-			&temp,
-			&temp,
-			&temp,
-			&temp,
-			&OwnerInfo.Uin,
-			&temp,
 		)
 
-		boardInfo.OwnerInfo = &OwnerInfo
+		boardInfo, err = board.GetBoardInfoByBoardId(uin, boardId)
 		info.Board = &boardInfo
 		if uid > 0 {
 			ui, err1 := st.GetUserProfileInfo(uid)
