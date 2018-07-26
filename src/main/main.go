@@ -13,6 +13,7 @@ import (
 	"api/geneqids"
 	"api/helper"
 	"api/im"
+	"api/label"
 	"api/like"
 	"api/msg"
 	"api/notify"
@@ -88,7 +89,7 @@ func main() {
 	httputil.HandleAPIMap("/api/activity/", activity.APIMap)
 	httputil.HandleAPIMap("/api/experience/", experience.APIMap)
 	httputil.HandleAPIMap("/api/elastSearch/", elastSearch.APIMap)
-
+	httputil.HandleAPIMap("/api/label/", label.APIMap)
 	log.Errorf("Starting yplay_svr...")
 	panicUnless(httputil.ListenHttp(env.Config.HttpServer.BindAddr))
 }
