@@ -45,5 +45,8 @@ func GetV2Question(qid int) (question st.V2QuestionInfo, err error) {
 
 		question.OwnerInfo = ui
 	}
+
+	answerCnt, err := GetAnswerCnt(qid)
+	question.AnswerCnt = answerCnt
 	return
 }

@@ -80,6 +80,31 @@ func UpdateUserSchoolInfo(uin int64, schoolId int, schoolName string, grade int,
 		return
 	}
 
+	if schoolId <= 9999999 && schoolId >= 9999997 {
+		//TODO 手动输入学校的去数据库查一下 如果学校存在 不需要加入pendingSchool
+
+		tschoolType := 0
+
+		if schoolId == 9999999 {
+			tschoolType = 3
+		} else if schoolId == 9999998 {
+			tschoolType = 2
+		} else if schoolId == 9999997 {
+			tschoolType = 1
+		}
+
+		tmpSchoolId, err1 := GetSchoolIdBuSchoolName(tschoolType, schoolName)
+
+		if err1 != nil {
+			err = rest.NewAPIError(constant.E_DB_QUERY, err1.Error())
+			log.Error(err)
+		}
+
+		if tmpSchoolId > 0 {
+			schoolId = tmpSchoolId
+		}
+	}
+
 	if schoolId <= 9999999 && schoolId >= 9999997 { //999999[7~9] 代表用户自己输入学校 初中/高中/大学
 
 		log.Errorf("uin:%d, pending schoolName:%s ", uin, schoolName)
@@ -199,4 +224,37 @@ func UpdateUserSchoolInfo(uin int64, schoolId int, schoolName string, grade int,
 
 	log.Errorf("end UpdateUserSchoolInfo")
 	return
+}
+
+func GetSchoolIdBuSchoolName(schoolType int, schoolName string) (schoolId int, err error) {
+	schoolName = strings.Replace(schoolName, "(", "（", -1)
+	schoolName = strings.Replace(schoolName, ")", "）", -1)
+	if schoolName == "中国地质大学" {
+		//schoolName = "中国地质大学（武汉）"
+		schoolId = 78629
+		return
+	}
+
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		log.Errorf(err.Error())
+		return
+	}
+
+	sql := fmt.Sprintf(`select schoolId from schools where schoolName = '%s' and schoolType = %d`, schoolName, schoolType)
+	rows, err := inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Errorf(err.Error())
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		rows.Scan(&schoolId)
+	}
+
+	return
+
 }

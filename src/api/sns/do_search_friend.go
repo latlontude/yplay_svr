@@ -20,6 +20,7 @@ type SearchFriendReq struct {
 
 type SearchFriendInfo struct {
 	Uin        int64  `json:"uin"`
+	UserName   string `json:"userName"`
 	NickName   string `json:"nickName"`
 	HeadImgUrl string `json:"headImgUrl"`
 	Gender     int    `json:"gender"`
@@ -75,7 +76,7 @@ func SearchFriends(uin int64, userName string) (friends []*SearchFriendInfo, err
 		return
 	}
 
-	sql := fmt.Sprintf(`select uin, phone, nickName, headImgUrl, gender, grade, schoolId, schoolType, schoolName, deptId, deptName ,enrollmentYear 
+	sql := fmt.Sprintf(`select uin, phone, userName,nickName, headImgUrl, gender, grade, schoolId, schoolType, schoolName, deptId, deptName ,enrollmentYear 
 			from profiles where userName = '%s'`, userName)
 	rows, err := inst.Query(sql)
 	if err != nil {
@@ -90,6 +91,7 @@ func SearchFriends(uin int64, userName string) (friends []*SearchFriendInfo, err
 		var fi SearchFriendInfo
 		rows.Scan(&fi.Uin,
 			&fi.Phone,
+			&fi.UserName,
 			&fi.NickName,
 			&fi.HeadImgUrl,
 			&fi.Gender,

@@ -47,6 +47,7 @@ func doPostQuestion(req *PostQuestionReq, r *http.Request) (rsp *PostQuestionRsp
 
 func PostQuestion(uin int64, boardId int, title, content, imgUrls string, isAnonymous bool) (qid int64, err error) {
 
+	log.Debugf("post questions")
 	if boardId == 0 {
 		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid params")
 		log.Error(err)

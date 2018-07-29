@@ -48,7 +48,7 @@ type GetExperienceDetailRsp struct {
 
 func doGetExpDetail(req *GetExperienceDetailReq, r *http.Request) (rsp *GetExperienceDetailRsp, err error) {
 
-	log.Debugf("uin %d, GetExperienceDetailReq succ, %+v", req.Uin, rsp)
+	log.Debugf("uin %d, GetExperienceDetailReq succ, %+v", req.Uin, req)
 
 	expInfo, totalCnt, operators, updateTime, err := getExpDetail(req.Uin, req.BoardId, req.LabelId, req.PageNum, req.PageSize)
 
@@ -109,6 +109,24 @@ func getExpDetail(uin int64, boardId, labelId, pageNum, pageSize int) (ExpInfo [
 
 		Exp.Question, _ = common.GetV2Question(qid)
 		Exp.AnswerInfo, _ = common.GetV2Answer(answerId)
+
+		//点赞数
+
+		likeCnt, err1 := common.GetAnswerLikeCnt(answerId)
+		if err1 != nil {
+			log.Error(err1.Error())
+			continue
+		}
+
+		Exp.AnswerInfo.LikeCnt = likeCnt
+		isILike, err1 := common.CheckIsILikeAnswer(uin, answerId)
+		if err1 != nil {
+			log.Error(err1.Error())
+			continue
+		}
+
+		Exp.AnswerInfo.IsILike = isILike
+
 		Exp.Ts = ts
 		ExpInfo = append(ExpInfo, &Exp)
 		totalCnt++
