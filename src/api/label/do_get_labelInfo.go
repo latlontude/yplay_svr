@@ -13,7 +13,7 @@ type LabelInfo struct {
 	LabelName string `json:"labelName"`
 }
 
-func GetLabelList(uin int64, labelName string, pageNum, pageSize int) (labelList []*LabelInfo, totalCnt int, err error) {
+func GetLabelList(uin int64, boardId int, labelName string, pageNum, pageSize int) (labelList []*LabelInfo, totalCnt int, err error) {
 
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
 	if inst == nil {
@@ -22,7 +22,7 @@ func GetLabelList(uin int64, labelName string, pageNum, pageSize int) (labelList
 		return
 	}
 
-	labelList, totalCnt, err = getLabelInfo(inst, labelName, pageNum, pageSize)
+	labelList, totalCnt, err = getLabelInfo(inst, boardId, labelName, pageNum, pageSize)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
 		log.Error(err)
@@ -32,7 +32,7 @@ func GetLabelList(uin int64, labelName string, pageNum, pageSize int) (labelList
 	return
 }
 
-func getLabelInfo(inst *sql.DB, labelName string, pageNum, pageSize int) (labelList []*LabelInfo, totalCnt int, err error) {
+func getLabelInfo(inst *sql.DB, boardId int, labelName string, pageNum, pageSize int) (labelList []*LabelInfo, totalCnt int, err error) {
 
 	if pageNum == 0 {
 		pageNum = 1
@@ -45,7 +45,8 @@ func getLabelInfo(inst *sql.DB, labelName string, pageNum, pageSize int) (labelL
 	s := (pageNum - 1) * pageSize
 	e := pageSize
 
-	sql := fmt.Sprintf(`select labelId,labelName from experience_label  where locate('%s',labelName) limit %d,%d`, labelName, s, e)
+	sql := fmt.Sprintf(`select labelId,labelName from experience_label  
+			where locate('%s',labelName) and boardId = %d limit %d,%d`, labelName, boardId, s, e)
 	rows, err := inst.Query(sql)
 	defer rows.Close()
 	if err != nil {
