@@ -2,6 +2,7 @@ package question
 
 import (
 	"api/board"
+	"api/label"
 	"common/constant"
 	"common/mydb"
 	"common/rest"
@@ -9,6 +10,7 @@ import (
 	"net/http"
 	"sort"
 	"svr/st"
+	"time"
 )
 
 type GetV2QuestionsformeReq struct {
@@ -25,6 +27,8 @@ type GetV2QuestionsRsp struct {
 	TotalCnt    int                  `json:"totalCnt"`
 	QuestionCnt int                  `json:"questionCnt"`
 	AnswerCnt   int                  `json:"answerCnt"`
+	LabelList   []*label.LabelInfo   `json:"labelList"`
+	LoginDays   int                  `json:"loginDays"`
 }
 
 // 自定义排序
@@ -49,14 +53,22 @@ func doGetV2QuestionsForMe(req *GetV2QuestionsformeReq, r *http.Request) (rsp *G
 	//我提出的问题
 	questions, totalCnt, qstCnt, answerCnt, err := GetV2QuestionsAndAnswer(req.Uin, 0, req.PageSize, req.PageNum)
 
+	labelList, err := GetHomeLabelInfo(req.Uin, 0)
+
 	if err != nil {
 		log.Errorf("uin %d, doGetV2QuestionsForMe error, %s", req.Uin, err.Error())
 		return
 	}
 
-	rsp = &GetV2QuestionsRsp{questions, totalCnt, qstCnt, answerCnt}
+	loginDays, err := GetRegisterTime(req.Uin)
 
-	log.Debugf("uin %d, doGetV2QuestionsForMe success", req.Uin)
+	if err != nil {
+		log.Errorf("get profile register ts error", req.Uin, err.Error())
+	}
+
+	rsp = &GetV2QuestionsRsp{questions, totalCnt, qstCnt, answerCnt, labelList, loginDays}
+
+	log.Debugf("uin %d, doGetV2QuestionsForMe success, rsp:%+v", req.Uin, rsp)
 
 	return
 }
@@ -86,19 +98,28 @@ func GetV2QuestionsAndAnswer(uin int64, fUin int64, pageSize int, pageNum int) (
 
 	//查询好友的个人主页 看不到匿名问题(回答不需要判断匿名问题)
 	if fUin > 0 {
-		sql = fmt.Sprintf(`select * from  v2answers ,v2questions
-			where v2answers.answerStatus = 0 
-			and v2questions.qStatus = 0 
-			and v2answers.qid=v2questions.qid 
-			and v2answers.ownerUid = %d`, fUin)
+		sql = fmt.Sprintf(`select v2answers.answerId,v2answers.qid,v2answers.answerContent,v2answers.answerImgUrls,v2answers.answerTs,v2answers.ext,
+v2questions.qid, v2questions.boardId,v2questions.ownerUid,v2questions.qTitle,v2questions.qContent,
+v2questions.qImgUrls,v2questions.isAnonymous,v2questions.createTs,v2questions.modTs,v2questions.sameAskUid,v2questions.ext
+from   v2answers ,v2questions
+where v2answers.answerStatus = 0 
+and v2questions.qStatus = 0 
+and v2answers.qid=v2questions.qid
+and v2questions.isAnonymous = 0
+and v2answers.ownerUid = %d`, fUin)
 	} else {
 		//自己看自己主页 可以看到匿名问题
-		sql = fmt.Sprintf(`select * from  v2answers ,v2questions
-			where v2answers.answerStatus = 0 
-			and v2questions.qStatus = 0 
-			and v2answers.qid=v2questions.qid 
-			and v2answers.ownerUid = %d`, uin)
+		sql = fmt.Sprintf(`select v2answers.answerId,v2answers.qid,v2answers.answerContent,v2answers.answerImgUrls,v2answers.answerTs,v2answers.ext,
+v2questions.qid, v2questions.boardId,v2questions.ownerUid,v2questions.qTitle,v2questions.qContent,
+v2questions.qImgUrls,v2questions.isAnonymous,v2questions.createTs,v2questions.modTs,v2questions.sameAskUid,v2questions.ext
+from   v2answers ,v2questions
+where v2answers.answerStatus = 0 
+and v2questions.qStatus = 0 
+and v2answers.qid=v2questions.qid 
+and v2answers.ownerUid = %d`, uin)
 	}
+
+	log.Debugf("sql:%s", sql)
 
 	rows, err := inst.Query(sql)
 	defer rows.Close()
@@ -118,9 +139,7 @@ func GetV2QuestionsAndAnswer(uin int64, fUin int64, pageSize int, pageNum int) (
 		var boardInfo st.BoardInfo    //墙信息
 		var uid int64
 
-		var answerStatus string
 		var boardId int
-		var qStatus int64
 
 		var sameAskUid string
 		rows.Scan(
@@ -128,9 +147,8 @@ func GetV2QuestionsAndAnswer(uin int64, fUin int64, pageSize int, pageNum int) (
 			&answerInfo.Qid,
 			&answerInfo.AnswerContent,
 			&answerInfo.AnswerImgUrls,
-			&uid,
-			&answerStatus,
 			&answerInfo.AnswerTs,
+			&answerInfo.Ext,
 			&info.Qid,
 			&boardId,
 			&uid,
@@ -138,11 +156,11 @@ func GetV2QuestionsAndAnswer(uin int64, fUin int64, pageSize int, pageNum int) (
 			&info.QContent,
 			&info.QImgUrls,
 			&info.IsAnonymous,
-			&qStatus,
 			&info.CreateTs,
 			&info.ModTs,
 			&sameAskUid,
-		)
+			&info.Ext)
+
 		boardInfo, err = board.GetBoardInfoByBoardId(uin, boardId)
 		info.Board = &boardInfo
 
@@ -227,6 +245,7 @@ func GetV2QuestionsAndAnswer(uin int64, fUin int64, pageSize int, pageNum int) (
 			&info.CreateTs,
 			&info.ModTs,
 			&sameAskUid,
+			&info.Ext,
 		)
 
 		boardInfo, err = board.GetBoardInfoByBoardId(uin, boardId)
@@ -277,4 +296,74 @@ func GetV2QuestionsAndAnswer(uin int64, fUin int64, pageSize int, pageNum int) (
 	log.Debugf("end GetV2QuestionsAndAnswer uin:%d,fuid:%d,TotalCnt:%d qstCnt:%d,answerCnt:%d",
 		uin, fUin, totalCnt, qstCnt, answerCnt)
 	return
+}
+
+func GetHomeLabelInfo(uin int64, fUin int64) (labelList []*label.LabelInfo, err error) {
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		log.Error(err)
+		return
+	}
+
+	var uid int64
+	if fUin > 0 {
+		uid = fUin
+	} else {
+		uid = uin
+	}
+
+	sql := fmt.Sprintf(`select experience_label.labelId ,experience_label.labelName from experience_label
+	where experience_label.labelId in
+	(select experience_share.labelId from experience_share
+		where answerId in (select answerId from v2answers where ownerUid = %d )
+	     group by experience_share.labelId)`, uid)
+
+	rows, err := inst.Query(sql)
+	defer rows.Close()
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Error(err)
+		return
+	}
+
+	for rows.Next() {
+		var labelInfo label.LabelInfo
+		rows.Scan(&labelInfo.LabelId, &labelInfo.LabelName)
+		labelList = append(labelList, &labelInfo)
+	}
+
+	return
+}
+
+func GetRegisterTime(uin int64) (loginDays int, err error) {
+
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		log.Error(err)
+		return
+	}
+
+	sql := fmt.Sprintf(`select ts from profiles where uin = %d`, uin)
+
+	rows, err := inst.Query(sql)
+	defer rows.Close()
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Error(err)
+		return
+	}
+
+	var registerTime int64
+	for rows.Next() {
+		rows.Scan(&registerTime)
+	}
+
+	now := time.Now().Unix()
+
+	loginDays = int((now - registerTime) / 86400)
+
+	return
+
 }

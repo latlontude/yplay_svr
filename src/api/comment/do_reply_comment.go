@@ -22,6 +22,7 @@ type ReplyToCommentReq struct {
 	AnswerId     int    `schema:"answerId"`
 	CommentId    int    `schema:"commentId"`
 	ReplyContent string `schema:"replyContent"`
+	Ext          string `schema:"ext"`
 }
 
 type ReplyToCommentRsp struct {
@@ -32,7 +33,7 @@ func doReplyToComment(req *ReplyToCommentReq, r *http.Request) (rsp *ReplyToComm
 
 	log.Debugf("uin %d, ReplyToCommentReq %+v", req.Uin, req)
 
-	replyId, err := ReplyToComment(req.Uin, req.Qid, req.AnswerId, req.CommentId, strings.Trim(req.ReplyContent, " \n\t"))
+	replyId, err := ReplyToComment(req.Uin, req.Qid, req.AnswerId, req.CommentId, strings.Trim(req.ReplyContent, " \n\t"), req.Ext)
 
 	if err != nil {
 		log.Errorf("uin %d, PostAnswer error, %s", req.Uin, err.Error())
@@ -46,9 +47,9 @@ func doReplyToComment(req *ReplyToCommentReq, r *http.Request) (rsp *ReplyToComm
 	return
 }
 
-func ReplyToComment(uin int64, qid, answerId, commentId int, replyContent string) (replyId int64, err error) {
+func ReplyToComment(uin int64, qid, answerId, commentId int, replyContent string, ext string) (replyId int64, err error) {
 
-	if answerId <= 0 || commentId <= 0 || len(replyContent) == 0 {
+	if (answerId <= 0 || commentId <= 0 || len(replyContent) == 0) && len(ext) == 0 {
 		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid params")
 		log.Error(err)
 		return
@@ -75,8 +76,8 @@ func ReplyToComment(uin int64, qid, answerId, commentId int, replyContent string
 		rows.Scan(&toUid)
 	}
 
-	stmt, err := inst.Prepare(`insert into v2replys(replyId, commentId, replyContent, fromUid, toUid, replyStatus, replyTs) 
-		values(?, ?, ?, ?, ?, ?, ?)`)
+	stmt, err := inst.Prepare(`insert into v2replys(replyId, commentId, replyContent, fromUid, toUid, replyStatus, replyTs,ext) 
+		values(?, ?, ?, ?, ?, ?, ?, ?)`)
 
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_PREPARE, err.Error())
@@ -88,7 +89,7 @@ func ReplyToComment(uin int64, qid, answerId, commentId int, replyContent string
 	ts := time.Now().Unix()
 
 	status := 0 //0 默认
-	res, err := stmt.Exec(0, commentId, replyContent, uin, toUid, status, ts)
+	res, err := stmt.Exec(0, commentId, replyContent, uin, toUid, status, ts, ext)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
 		log.Error(err.Error())
@@ -115,7 +116,12 @@ func ReplyToComment(uin int64, qid, answerId, commentId int, replyContent string
 	newReply.ReplyFromUserInfo = ui
 
 	//给评论者发送push，告诉ta，ta的回答收到了新评论 dataType:16
-	go v2push.SendCommentBeReplyPush(uin, qid, answerId, commentId, newReply)
+
+	if len(ext) > 0 {
+		go v2push.SendAtPush(uin, 4, qid, newReply, ext)
+	} else {
+		go v2push.SendCommentBeReplyPush(uin, qid, answerId, commentId, newReply)
+	}
 
 	return
 }

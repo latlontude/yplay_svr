@@ -2,6 +2,7 @@ package question
 
 import (
 	"api/elastSearch"
+	"api/v2push"
 	"common/constant"
 	"common/mydb"
 	"common/rest"
@@ -20,6 +21,7 @@ type PostQuestionReq struct {
 	QContent    string `schema:"qContent"`
 	QImgUrls    string `schema:"qImgUrls"`
 	IsAnonymous bool   `schema:"isAnonymous"`
+	Ext         string `schema:"ext"`
 }
 
 type PostQuestionRsp struct {
@@ -31,7 +33,7 @@ func doPostQuestion(req *PostQuestionReq, r *http.Request) (rsp *PostQuestionRsp
 	log.Debugf("uin %d, PostQuestionReq %+v", req.Uin, req)
 
 	//去除首位空白字符
-	qid, err := PostQuestion(req.Uin, req.BoardId, req.QTitle, strings.Trim(req.QContent, " \n\t"), req.QImgUrls, req.IsAnonymous)
+	qid, err := PostQuestion(req.Uin, req.BoardId, req.QTitle, strings.Trim(req.QContent, " \n\t"), req.QImgUrls, req.IsAnonymous, req.Ext)
 
 	if err != nil {
 		log.Errorf("uin %d, PostQuestion error, %s", req.Uin, err.Error())
@@ -45,11 +47,17 @@ func doPostQuestion(req *PostQuestionReq, r *http.Request) (rsp *PostQuestionRsp
 	return
 }
 
-func PostQuestion(uin int64, boardId int, title, content, imgUrls string, isAnonymous bool) (qid int64, err error) {
+func PostQuestion(uin int64, boardId int, title, content, imgUrls string, isAnonymous bool, ext string) (qid int64, err error) {
 
 	log.Debugf("post questions")
 	if boardId == 0 {
 		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid params")
+		log.Error(err)
+		return
+	}
+
+	if len(content) == 0 && len(imgUrls) == 0 {
+		err = rest.NewAPIError(constant.E_INVALID_PARAM, "content and img empty")
 		log.Error(err)
 		return
 	}
@@ -62,8 +70,8 @@ func PostQuestion(uin int64, boardId int, title, content, imgUrls string, isAnon
 	}
 
 	//v2question表多加了一个字段  (同问sameAskUid)
-	stmt, err := inst.Prepare(`insert into v2questions(qid, boardId, ownerUid, qTitle, qContent, qImgUrls, isAnonymous, qStatus, createTs, modTs,sameAskUid) 
-		values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+	stmt, err := inst.Prepare(`insert into v2questions(qid, boardId, ownerUid, qTitle, qContent, qImgUrls, isAnonymous, qStatus, createTs, modTs,sameAskUid,ext) 
+		values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
 
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_PREPARE, err.Error())
@@ -76,7 +84,7 @@ func PostQuestion(uin int64, boardId int, title, content, imgUrls string, isAnon
 
 	status := 0 //0 默认
 
-	res, err := stmt.Exec(0, boardId, uin, title, content, imgUrls, isAnonymous, status, ts, 0, "")
+	res, err := stmt.Exec(0, boardId, uin, title, content, imgUrls, isAnonymous, status, ts, 0, "", ext)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
 		log.Error(err.Error())
@@ -94,6 +102,12 @@ func PostQuestion(uin int64, boardId int, title, content, imgUrls string, isAnon
 	if err1 != nil {
 		log.Debugf("es error")
 	}
+
+	var qstInter interface{}
+
+	//if uin == 103096 {
+	go v2push.SendAtPush(uin, 1, int(qid), qstInter, ext)
+	//}
 
 	return
 }

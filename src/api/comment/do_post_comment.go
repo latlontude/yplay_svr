@@ -2,7 +2,6 @@ package comment
 
 import (
 	"api/v2push"
-	_ "api/v2push"
 	"common/constant"
 	"common/mydb"
 	"common/rest"
@@ -17,8 +16,10 @@ type PostCommentReq struct {
 	Token string `schema:"token"`
 	Ver   int    `schema:"ver"`
 
+	Qid         int    `schema:"qid"`
 	AnswerId    int    `schema:"answerId"`
 	CommentText string `schema:"commentText"`
+	Ext         string `schema:"ext"`
 }
 
 type PostCommentRsp struct {
@@ -29,7 +30,7 @@ func doPostComment(req *PostCommentReq, r *http.Request) (rsp *PostCommentRsp, e
 
 	log.Debugf("uin %d, PostCommentReq %+v", req.Uin, req)
 
-	commentId, err := PostComment(req.Uin, req.AnswerId, strings.Trim(req.CommentText, " \n\t"))
+	commentId, err := PostComment(req.Uin, req.Qid, req.AnswerId, strings.Trim(req.CommentText, " \n\t"), req.Ext)
 
 	if err != nil {
 		log.Errorf("uin %d, PostComment error, %s", req.Uin, err.Error())
@@ -43,11 +44,11 @@ func doPostComment(req *PostCommentReq, r *http.Request) (rsp *PostCommentRsp, e
 	return
 }
 
-func PostComment(uin int64, answerId int, commentText string) (commentId int64, err error) {
+func PostComment(uin int64, qid, answerId int, commentText string, ext string) (commentId int64, err error) {
 
 	log.Debugf("start PostComment uin:%d", uin)
 
-	if answerId == 0 || len(commentText) == 0 {
+	if (answerId == 0 || len(commentText) == 0) && len(ext) == 0 {
 		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid params")
 		log.Error(err)
 		return
@@ -60,8 +61,8 @@ func PostComment(uin int64, answerId int, commentText string) (commentId int64, 
 		return
 	}
 
-	stmt, err := inst.Prepare(`insert into v2comments(commentId, answerId, commentContent, ownerUid, commentStatus, commentTs) 
-		values(?, ?, ?, ?, ?, ?)`)
+	stmt, err := inst.Prepare(`insert into v2comments(commentId, answerId, commentContent, ownerUid, commentStatus, commentTs,ext) 
+		values(?, ?, ?, ?, ?, ?, ?)`)
 
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_PREPARE, err.Error())
@@ -73,7 +74,7 @@ func PostComment(uin int64, answerId int, commentText string) (commentId int64, 
 	ts := time.Now().Unix()
 
 	status := 0 //0 默认
-	res, err := stmt.Exec(0, answerId, commentText, uin, status, ts)
+	res, err := stmt.Exec(0, answerId, commentText, uin, status, ts, ext)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
 		log.Error(err.Error())
@@ -100,7 +101,14 @@ func PostComment(uin int64, answerId int, commentText string) (commentId int64, 
 	newComment.OwnerInfo = ui
 
 	//给回答者发送push，告诉ta，ta的回答收到了新评论 dataType:16
-	go v2push.SendBeCommentPush(uin, answerId, newComment)
+
+	if len(ext) > 0 {
+		go v2push.SendAtPush(uin, 3, qid, newComment, ext)
+	} else {
+		go v2push.SendBeCommentPush(uin, answerId, newComment)
+	}
+	//if uin == 103096{
+	//}
 
 	log.Debugf("end PostComment uin:%d commentId:%d", uin, commentId)
 	return

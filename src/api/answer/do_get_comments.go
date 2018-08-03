@@ -88,7 +88,7 @@ func GetComments(uin int64, answerId, pageNum, pageSize int) (comments []*st.Com
 		return
 	}
 
-	sql = fmt.Sprintf(`select commentId, answerId, commentContent, ownerUid, commentTs from v2comments where commentStatus = 0 
+	sql = fmt.Sprintf(`select commentId, answerId, commentContent, ownerUid, commentTs ,ext from v2comments where commentStatus = 0 
 and answerId = %d order by commentTs  limit %d, %d`, answerId, s, e)
 
 	rows, err = inst.Query(sql)
@@ -109,7 +109,8 @@ and answerId = %d order by commentTs  limit %d, %d`, answerId, s, e)
 			&info.AnswerId,
 			&info.CommentContent,
 			&uid,
-			&info.CommentTs)
+			&info.CommentTs,
+			&info.Ext)
 
 		if uid > 0 {
 			ui, err1 := st.GetUserProfileInfo(uid)
@@ -191,7 +192,7 @@ func getReplyArray(uin int64, commentId int) (Replys []st.ReplyInfo, err error) 
 		return
 	}
 
-	sql := fmt.Sprintf(`select replyId, replyContent, fromUid, toUid, replyTs from v2replys where commentId = %d and replyStatus = 0`, commentId)
+	sql := fmt.Sprintf(`select replyId, replyContent, fromUid, toUid, replyTs ,ext from v2replys where commentId = %d and replyStatus = 0`, commentId)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -210,7 +211,8 @@ func getReplyArray(uin int64, commentId int) (Replys []st.ReplyInfo, err error) 
 			&replyInfo.ReplyContent,
 			&fromUid,
 			&toUid,
-			&replyInfo.ReplyTs)
+			&replyInfo.ReplyTs,
+			&replyInfo.Ext)
 
 		if fromUid > 0 {
 			ui, err1 := st.GetUserProfileInfo(fromUid)

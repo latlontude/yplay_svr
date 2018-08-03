@@ -74,7 +74,7 @@ func getV2Question(qid int) (question st.V2QuestionInfo, err error) {
 		return
 	}
 
-	sql := fmt.Sprintf(`select qid, boardId,qTitle, qContent, qImgUrls, ownerUid, isAnonymous, createTs, modTs  
+	sql := fmt.Sprintf(`select qid, boardId,qTitle, qContent, qImgUrls, ownerUid, isAnonymous, createTs, modTs  ,ext
 			from  v2questions where qid = %d and qStatus = 0`, qid)
 	rows, err := inst.Query(sql)
 	if err != nil {
@@ -89,7 +89,7 @@ func getV2Question(qid int) (question st.V2QuestionInfo, err error) {
 
 	for rows.Next() {
 		rows.Scan(&question.Qid, &boardInfo.BoardId, &question.QTitle, &question.QContent, &question.QImgUrls, &ownerUid,
-			&question.IsAnonymous, &question.CreateTs, &question.ModTs)
+			&question.IsAnonymous, &question.CreateTs, &question.ModTs, &question.Ext)
 	}
 
 	//TODO  墙主信息

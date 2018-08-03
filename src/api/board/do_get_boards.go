@@ -101,8 +101,8 @@ func GetBoards(uin int64) (boards []*st.BoardInfo, err error) {
 			info.SchoolType = si.SchoolType
 		}
 
-		follwCnt, _ := getFollowCnt(info.BoardId)
-		info.FollowCnt = follwCnt
+		followCnt, _ := getFollowCnt(info.BoardId)
+		info.FollowCnt = followCnt
 
 		//boardInfo 返回 是否是经验弹管理员
 		isAdmin, err2 := experience.CheckPermit(uin, info.BoardId, 0)

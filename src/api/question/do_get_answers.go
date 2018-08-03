@@ -42,7 +42,7 @@ func (I answerSort) Swap(i, j int) {
 
 func doGetAnswers(req *GetAnswersReq, r *http.Request) (rsp *GetAnswersRsp, err error) {
 
-	//log.Debugf("uin %d, GetAnswersReq %+v", req.Uin, req)
+	log.Debugf("uin %d, GetAnswersReq %+v", req.Uin, req)
 
 	answers, totalCnt, err := GetAnswers(req.Uin, req.Qid, req.PageNum, req.PageSize)
 
@@ -53,7 +53,7 @@ func doGetAnswers(req *GetAnswersReq, r *http.Request) (rsp *GetAnswersRsp, err 
 
 	rsp = &GetAnswersRsp{answers, totalCnt}
 
-	//log.Debugf("uin %d, GetQuestionsRsp succ, %+v", req.Uin, rsp)
+	log.Debugf("uin %d, GetQuestionsRsp succ, %+v", req.Uin, rsp)
 
 	return
 }
@@ -107,7 +107,7 @@ func GetAnswers(uin int64, qid, pageNum, pageSize int) (answers []*st.AnswersInf
 		return
 	}
 
-	sql = fmt.Sprintf(`select qid, ownerUid, answerId, answerContent, answerImgUrls, answerTs  from v2answers where answerStatus = 0 and qid = %d order by answerTs desc`, qid)
+	sql = fmt.Sprintf(`select qid, ownerUid, answerId, answerContent, answerImgUrls, answerTs ,ext from v2answers where answerStatus = 0 and qid = %d order by answerTs desc`, qid)
 
 	rows, err = inst.Query(sql)
 	if err != nil {
@@ -126,7 +126,8 @@ func GetAnswers(uin int64, qid, pageNum, pageSize int) (answers []*st.AnswersInf
 			&info.AnswerId,
 			&info.AnswerContent,
 			&info.AnswerImgUrls,
-			&info.AnswerTs)
+			&info.AnswerTs,
+			&info.Ext)
 
 		if uid > 0 {
 			ui, err1 := st.GetUserProfileInfo(uid)
@@ -140,9 +141,11 @@ func GetAnswers(uin int64, qid, pageNum, pageSize int) (answers []*st.AnswersInf
 
 		//TODO 增加最新回复的两条评论  2018-07-19改为最早两条
 		latestComments, err2 := GetLatesCommentByAnswerId(info.AnswerId)
+		log.Debugf("latestComment:%v", latestComments)
 		info.LatestComment = latestComments
-		if err2 == nil {
-			info.LatestComment = latestComments
+		if err2 != nil {
+			continue
+			//info.LatestComment = latestComments
 		}
 
 		//查找该问题的labelName
@@ -379,6 +382,7 @@ func checkIsILikeAnswer(uin int64, answerId int) (ret bool, err error) {
 }
 
 func GetLatesCommentByAnswerId(answerId int) (comments []*st.CommentInfo, err error) {
+	comments = make([]*st.CommentInfo, 0)
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
 	if inst == nil {
 		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
@@ -388,6 +392,7 @@ func GetLatesCommentByAnswerId(answerId int) (comments []*st.CommentInfo, err er
 
 	sql := fmt.Sprintf(`select * from v2comments where answerId = %d  limit 2`, answerId)
 
+	log.Debugf("sql:%s", sql)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -399,6 +404,7 @@ func GetLatesCommentByAnswerId(answerId int) (comments []*st.CommentInfo, err er
 		var info st.CommentInfo
 		var uid int64
 		var ts int
+
 		info.Replys = make([]st.ReplyInfo, 0)
 
 		rows.Scan(
@@ -407,7 +413,8 @@ func GetLatesCommentByAnswerId(answerId int) (comments []*st.CommentInfo, err er
 			&info.CommentContent,
 			&uid,
 			&ts,
-			&info.CommentTs)
+			&info.CommentTs,
+			&info.Ext)
 
 		if uid > 0 {
 			ui, err1 := st.GetUserProfileInfo(uid)

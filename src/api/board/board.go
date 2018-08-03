@@ -12,6 +12,7 @@ var (
 		"/getboards": auth.Apify2(doGetBoards),
 		"/follow":    auth.Apify2(doFollow),
 		"/unfollow":  auth.Apify2(doUnfollow),
+		"/join":      auth.Apify2(doJoin),
 	}
 
 	log      = env.NewLogger("board")

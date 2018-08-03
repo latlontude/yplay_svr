@@ -20,6 +20,7 @@ type PostAnswerReq struct {
 	Qid           int    `schema:"qid"`
 	AnswerContent string `schema:"answerContent"`
 	AnswerImgUrls string `schema:"answerImgUrls"`
+	Ext           string `schema:"ext"`
 }
 
 type PostAnswerRsp struct {
@@ -31,7 +32,7 @@ func doPostAnswer(req *PostAnswerReq, r *http.Request) (rsp *PostAnswerRsp, err 
 
 	log.Debugf("uin %d, PostAnswerReq %+v", req.Uin, req)
 
-	answerId, err := PostAnswer(req.Uin, req.BoardId, req.Qid, strings.Trim(req.AnswerContent, " \n\t"), req.AnswerImgUrls)
+	answerId, err := PostAnswer(req.Uin, req.BoardId, req.Qid, strings.Trim(req.AnswerContent, " \n\t"), req.AnswerImgUrls, req.Ext)
 
 	if err != nil {
 		log.Errorf("uin %d, PostAnswer error, %s", req.Uin, err.Error())
@@ -45,9 +46,9 @@ func doPostAnswer(req *PostAnswerReq, r *http.Request) (rsp *PostAnswerRsp, err 
 	return
 }
 
-func PostAnswer(uin int64, boardId, qid int, answerContent, answerImgUrls string) (answerId int64, err error) {
+func PostAnswer(uin int64, boardId, qid int, answerContent, answerImgUrls, ext string) (answerId int64, err error) {
 
-	if len(answerContent) == 0 && len(answerImgUrls) == 0 {
+	if len(answerContent) == 0 && len(answerImgUrls) == 0 && len(ext) == 0 {
 		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid params")
 		log.Error(err)
 		return
@@ -60,8 +61,8 @@ func PostAnswer(uin int64, boardId, qid int, answerContent, answerImgUrls string
 		return
 	}
 
-	stmt, err := inst.Prepare(`insert into v2answers(answerId, qid, answerContent, answerImgUrls, ownerUid, answerStatus, answerTs) 
-		values(?, ?, ?, ?, ?, ?, ?)`)
+	stmt, err := inst.Prepare(`insert into v2answers(answerId, qid, answerContent, answerImgUrls, ownerUid, answerStatus, answerTs,ext) 
+		values(?, ?, ?, ?, ?, ?, ?, ?)`)
 
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_PREPARE, err.Error())
@@ -73,7 +74,7 @@ func PostAnswer(uin int64, boardId, qid int, answerContent, answerImgUrls string
 	ts := time.Now().Unix()
 
 	status := 0 //0 默认
-	res, err := stmt.Exec(0, qid, answerContent, answerImgUrls, uin, status, ts)
+	res, err := stmt.Exec(0, qid, answerContent, answerImgUrls, uin, status, ts, ext)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
 		log.Error(err.Error())
@@ -106,6 +107,11 @@ func PostAnswer(uin int64, boardId, qid int, answerContent, answerImgUrls string
 	newAnswer.OwnerInfo = ui
 
 	//给提问者和回答过这道题目的人发送新增回答通知,把回答者uin带过去
-	go v2push.SendNewAddAnswerPush(uin, qid, newAnswer)
+	if len(ext) > 0 {
+		go v2push.SendAtPush(uin, 2, qid, newAnswer, ext)
+	} else {
+		go v2push.SendNewAddAnswerPush(uin, qid, newAnswer)
+	}
+
 	return
 }
