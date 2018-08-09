@@ -102,7 +102,7 @@ func PostComment(uin int64, qid, answerId int, commentText string, ext string) (
 
 	//给回答者发送push，告诉ta，ta的回答收到了新评论 dataType:16
 
-	if len(ext) > 0 {
+	if len(ext) > 0 && ext != "null" {
 		go v2push.SendAtPush(uin, 3, qid, newComment, ext)
 	} else {
 		go v2push.SendBeCommentPush(uin, answerId, newComment)

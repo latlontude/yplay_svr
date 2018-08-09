@@ -107,7 +107,7 @@ func PostAnswer(uin int64, boardId, qid int, answerContent, answerImgUrls, ext s
 	newAnswer.OwnerInfo = ui
 
 	//给提问者和回答过这道题目的人发送新增回答通知,把回答者uin带过去
-	if len(ext) > 0 {
+	if len(ext) > 0 && ext != "null" {
 		go v2push.SendAtPush(uin, 2, qid, newAnswer, ext)
 	} else {
 		go v2push.SendNewAddAnswerPush(uin, qid, newAnswer)

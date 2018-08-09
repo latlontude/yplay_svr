@@ -117,7 +117,7 @@ func ReplyToComment(uin int64, qid, answerId, commentId int, replyContent string
 
 	//给评论者发送push，告诉ta，ta的回答收到了新评论 dataType:16
 
-	if len(ext) > 0 {
+	if len(ext) > 0 && ext != "null" {
 		go v2push.SendAtPush(uin, 4, qid, newReply, ext)
 	} else {
 		go v2push.SendCommentBeReplyPush(uin, qid, answerId, commentId, newReply)
