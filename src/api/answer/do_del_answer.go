@@ -2,6 +2,7 @@ package answer
 
 import (
 	"api/elastSearch"
+	"api/experience"
 	"api/v2push"
 	"common/constant"
 	"common/mydb"
@@ -94,11 +95,14 @@ func DelAnswer(uin int64, qid, answerId int, reason string) (code int, err error
 		return
 	}
 
-	//从elastSearch删掉该数据
+	//TODO 从elastSearch删掉该数据
 	err2 := elastSearch.DelAnswerFromEs(answerId)
 	if err2 != nil {
 		log.Errorf(err2.Error())
 	}
+
+	//TODO 从经验弹中删除该记录
+	experience.DelAnswerFromExpByAnswerId(uin, answerId)
 
 	if !isMyself {
 		answer, _ := GetV2Answer(answerId)

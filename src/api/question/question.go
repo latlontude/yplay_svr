@@ -20,8 +20,8 @@ var (
 
 		//TEST uidArr
 		"/getSameAskUid": auth.Apify2(doGetSameAskUid),
-		"/dailyCount":    auth.Apify2(doDailyCount),
-		"/autoQuestion":  auth.Apify2(doAutoQuestion),
+		"/dailyCount":    auth.Apify(doDailyCount),
+		"/autoQuestion":  auth.Apify(doAutoQuestion),
 		"/autoInput":     auth.Apify2(doAutoInput),
 	}
 

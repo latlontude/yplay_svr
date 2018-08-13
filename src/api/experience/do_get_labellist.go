@@ -6,9 +6,10 @@ import (
 )
 
 type GetLabelListReq struct {
-	Uin   int64  `schema:"uin"`
-	Token string `schema:"token"`
-	Ver   int    `schema:"ver"`
+	Uin     int64  `schema:"uin"`
+	Token   string `schema:"token"`
+	Ver     int    `schema:"ver"`
+	BoardId int    `schema:"boardId"`
 
 	//AnswerId   int    `schema:"answerId"`
 	LabelName string `schema:"labelName"`
@@ -26,7 +27,7 @@ func doGetLabelList(req *GetLabelListReq, r *http.Request) (rsp *GetLabelListRsp
 
 	log.Debugf("uin %d, GetLabelListReq %+v", req.Uin, req)
 
-	labelList, totalCnt, err := label.GetLabelList(req.Uin, req.LabelName, req.PageNum, req.PageSize)
+	labelList, totalCnt, err := label.GetLabelList(req.Uin, req.BoardId, req.LabelName, req.PageNum, req.PageSize)
 
 	if err != nil {
 		log.Errorf("uin %d, GetLabelListReq error, %s", req.Uin, err.Error())

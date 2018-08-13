@@ -22,7 +22,7 @@ func GetLabelList(uin int64, boardId int, labelName string, pageNum, pageSize in
 		return
 	}
 
-	labelList, totalCnt, err = getLabelInfo(inst, boardId, labelName, pageNum, pageSize)
+	labelList, totalCnt, err = GetLabelInfo(inst, boardId, labelName, pageNum, pageSize)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
 		log.Error(err)
@@ -32,7 +32,7 @@ func GetLabelList(uin int64, boardId int, labelName string, pageNum, pageSize in
 	return
 }
 
-func getLabelInfo(inst *sql.DB, boardId int, labelName string, pageNum, pageSize int) (labelList []*LabelInfo, totalCnt int, err error) {
+func GetLabelInfo(inst *sql.DB, boardId int, labelName string, pageNum, pageSize int) (labelList []*LabelInfo, totalCnt int, err error) {
 
 	if pageNum == 0 {
 		pageNum = 1
@@ -45,8 +45,9 @@ func getLabelInfo(inst *sql.DB, boardId int, labelName string, pageNum, pageSize
 	s := (pageNum - 1) * pageSize
 	e := pageSize
 
+	//按照创建时间递减排序
 	sql := fmt.Sprintf(`select labelId,labelName from experience_label  
-			where locate('%s',labelName) and boardId = %d limit %d,%d`, labelName, boardId, s, e)
+			where locate('%s',labelName) and boardId = %d order by createTs desc limit %d,%d`, labelName, boardId, s, e)
 	rows, err := inst.Query(sql)
 	defer rows.Close()
 	if err != nil {
@@ -66,7 +67,7 @@ func getLabelInfo(inst *sql.DB, boardId int, labelName string, pageNum, pageSize
 	return
 }
 
-func getLabelInfoByBoardId(boardId int, labelName string, pageNum, pageSize int) (labelList []*LabelInfo, totalCnt int, err error) {
+func GetLabelInfoByBoardId(boardId int, labelName string, pageNum, pageSize int) (labelList []*LabelInfo, totalCnt int, err error) {
 
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
 	if inst == nil {

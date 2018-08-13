@@ -101,7 +101,7 @@ func GetBoards(uin int64) (boards []*st.BoardInfo, err error) {
 			info.SchoolType = si.SchoolType
 		}
 
-		followCnt, _ := getFollowCnt(info.BoardId)
+		followCnt, _ := GetFollowCnt(info.BoardId)
 		info.FollowCnt = followCnt
 
 		//boardInfo 返回 是否是经验弹管理员
@@ -120,8 +120,36 @@ func GetBoards(uin int64) (boards []*st.BoardInfo, err error) {
 	return
 }
 
-func getFollowCnt(boardId int) (cnt int, err error) {
-	//log.Debugf("start getFollowCnt boardId:%d", boardId)
+//
+//func getFollowCnt(boardId int) (cnt int, err error) {
+//	//log.Debugf("start getFollowCnt boardId:%d", boardId)
+//
+//	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+//	if inst == nil {
+//		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+//		log.Error(err)
+//		return
+//	}
+//
+//	sql := fmt.Sprintf(`select count(id) as cnt from v2follow where boardId = %d and status = 0`, boardId)
+//
+//	rows, err := inst.Query(sql)
+//	if err != nil {
+//		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+//		log.Error(err)
+//		return
+//	}
+//	defer rows.Close()
+//
+//	for rows.Next() {
+//		rows.Scan(&cnt)
+//	}
+//
+//	//log.Debugf("end getFollowCnt boardId:%d cnt:%d", boardId, cnt)
+//	return
+//}
+
+func GetFollowCnt(boardId int) (followCnt int, err error) {
 
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
 	if inst == nil {
@@ -130,7 +158,7 @@ func getFollowCnt(boardId int) (cnt int, err error) {
 		return
 	}
 
-	sql := fmt.Sprintf(`select count(id) as cnt from v2follow where boardId = %d and status = 0`, boardId)
+	sql := fmt.Sprintf(`select count(uin) as cnt from profiles where schoolId in (select schoolId  from v2boards where boardId = %d ) `, boardId)
 
 	rows, err := inst.Query(sql)
 	if err != nil {
@@ -141,10 +169,10 @@ func getFollowCnt(boardId int) (cnt int, err error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		rows.Scan(&cnt)
+		rows.Scan(&followCnt)
 	}
+	log.Debug("board followCnt :%d", followCnt)
 
-	//log.Debugf("end getFollowCnt boardId:%d cnt:%d", boardId, cnt)
 	return
 }
 
@@ -210,7 +238,7 @@ func GetBoardInfoByBoardId(uin int64, boardId int) (info st.BoardInfo, err error
 			info.SchoolType = si.SchoolType
 		}
 
-		follwCnt, _ := getFollowCnt(info.BoardId)
+		follwCnt, _ := GetFollowCnt(info.BoardId)
 		info.FollowCnt = follwCnt
 
 		//boardInfo 返回 是否是经验弹管理员

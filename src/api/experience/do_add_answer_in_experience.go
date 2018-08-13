@@ -2,6 +2,8 @@ package experience
 
 import (
 	"api/elastSearch"
+	"api/v2push"
+	_ "api/v2push"
 	"common/constant"
 	"common/mydb"
 	"common/rest"
@@ -72,6 +74,13 @@ func AddAnswerIdInExp(uin int64, boardId, qid, answerId, labelId int) (err error
 		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
 		log.Error(err.Error())
 		return
+	}
+
+	arrayUin := []int64{102772, 102773, 102774, 103307, 103122, 103126, 103096, 103004, 103032, 101749}
+	for _, v := range arrayUin {
+		if uin == v {
+			go v2push.SendAddAnswerIdInExpPush(uin, qid, labelId, answerId)
+		}
 	}
 
 	//写完数据库 将answerId labelId labelName boardId 写入elastSearch

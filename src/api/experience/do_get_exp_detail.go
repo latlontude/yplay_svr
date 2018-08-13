@@ -19,7 +19,13 @@ func (I Interface) Len() int {
 }
 
 func (I Interface) Less(i, j int) bool {
-	return I[i].Ts > I[j].Ts
+
+	if I[i].AnswerInfo.LikeCnt == I[j].AnswerInfo.LikeCnt {
+		return I[i].Ts > I[j].Ts
+	} else {
+		return I[i].AnswerInfo.LikeCnt > I[j].AnswerInfo.LikeCnt
+	}
+
 }
 
 func (I Interface) Swap(i, j int) {
@@ -65,7 +71,7 @@ func doGetExpDetail(req *GetExperienceDetailReq, r *http.Request) (rsp *GetExper
 }
 
 /**
-labelId labelName count updateTs qid question
+查看经验弹详情 (查看某个经验弹收录的所有回答)
 */
 
 func getExpDetail(uin int64, boardId, labelId, pageNum, pageSize int) (ExpInfo []*ExperienceInfo, totalCnt int, operators []*st.UserProfileInfo, updateTime int64, err error) {
@@ -90,7 +96,7 @@ func getExpDetail(uin int64, boardId, labelId, pageNum, pageSize int) (ExpInfo [
 	totalCnt = 0
 	ExpInfo = make([]*ExperienceInfo, 0)
 
-	sql := fmt.Sprintf(`select  qid,answerId,ts from experience_share where boardId = %d  and labelId = %d limit %d,%d`, boardId, labelId, start, end)
+	sql := fmt.Sprintf(`select  qid,answerId,ts from experience_share where  boardId = %d and labelId = %d limit %d,%d`, boardId, labelId, start, end)
 
 	rows, err := inst.Query(sql)
 	defer rows.Close()

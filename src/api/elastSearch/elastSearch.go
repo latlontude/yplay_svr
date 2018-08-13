@@ -9,7 +9,6 @@ import (
 var (
 	APIMap = httputil.APIMap{
 		"/essearch": auth.Apify2(doSearchInterlocutionFromEs), //获取标签列表
-		//"/uploadImg": auth.Apify2(doUploadImg),
 	}
 
 	log = env.NewLogger("elastSearch")
