@@ -43,6 +43,12 @@ func GetV2Answer(answerId int) (answer st.AnswersInfo, err error) {
 		answer.OwnerInfo = ui
 	}
 
+	//查找该问题的labelName
+	expLabels, err3 := GetLabelInfoByAnswerId(answer.AnswerId)
+	if err3 == nil {
+		answer.ExpLabel = expLabels
+	}
+
 	return
 }
 
