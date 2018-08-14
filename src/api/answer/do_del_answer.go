@@ -95,13 +95,13 @@ func DelAnswer(uin int64, qid, answerId int, reason string) (code int, err error
 		return
 	}
 
-	//TODO 从elastSearch删掉该数据
+	//从elastSearch删掉该数据
 	err2 := elastSearch.DelAnswerFromEs(answerId)
 	if err2 != nil {
 		log.Errorf(err2.Error())
 	}
 
-	//TODO 从经验弹中删除该记录
+	//从经验弹中删除该记录 不需要校验经验弹权限  TODO (删除更改experience_share 的status状态  或者删除记录)
 	experience.DelAnswerFromExpByAnswerId(uin, answerId)
 
 	if !isMyself {

@@ -66,7 +66,7 @@ func DelAnswerIdFromExp(uin int64, boardId, qid, answerId, labelId int) (err err
 		return
 	}
 
-	err1 := elastSearch.DelAnswerFromEs(answerId)
+	err1 := elastSearch.DelLabelToEs(answerId)
 	if err1 != nil {
 		log.Debugf("es delete label error")
 	}
@@ -76,7 +76,6 @@ func DelAnswerIdFromExp(uin int64, boardId, qid, answerId, labelId int) (err err
 	for _, v := range arrayUin {
 		if uin == v {
 			go v2push.SendDelAnswerIdInExpPush(uin, qid, answerId, labelId)
-
 		}
 	}
 
@@ -106,7 +105,21 @@ func DelAnswerFromExpByAnswerId(uin int64, answerId int) (err error) {
 	for rows.Next() {
 		var boardId, labelId, qid int
 		rows.Scan(&boardId, &labelId, &qid)
-		DelAnswerIdFromExp(uin, boardId, qid, answerId, labelId)
+
+		sql := fmt.Sprintf(`delete from experience_share where boardId = %d and labelId = %d and answerId = %d`, boardId, labelId, answerId)
+
+		_, err2 := inst.Query(sql)
+
+		if err2 != nil {
+			err = rest.NewAPIError(constant.E_DB_QUERY, err2.Error())
+			log.Error(err2)
+			return
+		}
+
+		err3 := elastSearch.DelLabelToEs(answerId)
+		if err3 != nil {
+			log.Debugf("es delete label error")
+		}
 	}
 	return
 }
