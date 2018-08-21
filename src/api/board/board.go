@@ -9,13 +9,19 @@ import (
 
 var (
 	APIMap = httputil.APIMap{
-		"/getboards":    auth.Apify2(doGetBoards),
-		"/follow":       auth.Apify2(doFollow),
-		"/unfollow":     auth.Apify2(doUnfollow),
-		"/join":         auth.Apify2(doJoin),         //加入天使团
-		"/getAngelList": auth.Apify2(doGetAngelInfo), //获取天使团信息
+		"/getboards":      auth.Apify2(doGetBoards),
+		"/follow":         auth.Apify2(doFollow),
+		"/unfollow":       auth.Apify2(doUnfollow),
+		"/join":           auth.Apify2(doJoin),         //加入天使团
+		"/getAngelList":   auth.Apify2(doGetAngelInfo), //获取天使团信息
+		"/addAngel":       auth.Apify2(doAddAngel),
+		"/demiseBigAngel": auth.Apify2(doDemiseBigAngel), //转让
+		"/deleteAngel":    auth.Apify2(doDelAngel),       //卸任
+		"/inviteAngel":    auth.Apify(doInviteAngel),     //邀请
+		"/acceptAngel":    auth.Apify2(doAcceptAngel),    //接收
 	}
 
-	log      = env.NewLogger("board")
+	log = env.NewLogger("board")
+
 	boardMap = make(map[int]*st.BoardInfo) //boardId => boardInfo
 )
