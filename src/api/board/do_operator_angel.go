@@ -6,6 +6,7 @@ import (
 	"common/mydb"
 	"common/rest"
 	"fmt"
+	"svr/st"
 	"time"
 )
 
@@ -21,7 +22,25 @@ func AddAngelInAdmin(uin int64, boardId int, labelId int, AngelUin int64) (err e
 		log.Error(err)
 		return
 	}
+	//先判断是不是已经加入了admin表
+	sql := fmt.Sprintf(`select count(uin) from experience_admin where boardId = %d and uin = %d`, boardId, AngelUin)
 
+	rows, err := inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		return
+	}
+	defer rows.Close()
+
+	count := 0
+	for rows.Next() {
+		rows.Scan(&count)
+	}
+
+	if count == 1 {
+		log.Debugf("have joined admin :uin:%d,angelUin:%d", uin, AngelUin)
+		return
+	}
 	stmt, err := inst.Prepare(`insert into experience_admin(id, boardId, labelId,uin,ts) values(?, ?, ?, ?, ?)`)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_PREPARE, err.Error())
@@ -52,9 +71,11 @@ func DelAngelFromAdmin(uin int64, boardId int, AngelUin int64) (err error) {
 		return
 	}
 
+	log.Debugf("permissionList:%v", permissionList)
+
 	//无权限
 	if !permissionList["board"] && !permissionList["self"] && !permissionList["superAdmin"] {
-		err = rest.NewAPIError(constant.E_PERMISSION, "you don't have permission")
+		err = rest.NewAPIError(constant.E_PERMISSION, "you don't have permission"+fmt.Sprintf("permissionList:%v", permissionList))
 		log.Error(err)
 		return
 	}
@@ -75,11 +96,27 @@ func DelAngelFromAdmin(uin int64, boardId int, AngelUin int64) (err error) {
 		return
 	}
 
+	sql = fmt.Sprintf(`update invite_angel set status = 1 where toUin = %d and boardId = %d`, AngelUin, boardId)
+	_, err = inst.Exec(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
+		log.Error(err.Error())
+		return
+	}
+
 	return
 }
 
 //禅让墙主
 func DemiseBigAngel(uin int64, toUin int64, boardId int) (err error) {
+
+	log.Debugf("uin:%d,toUin:%d,boardId:%d", uin, toUin, boardId)
+
+	if toUin == 0 {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "toUin is zero")
+		log.Error(err)
+		return
+	}
 
 	permissionList, err := CheckOperatorAngelPermission(uin, boardId)
 	if err != nil {
@@ -225,6 +262,27 @@ func InviteAngel(uin int64, AngelUin int64, boardId int) (err error) {
 		return
 	}
 
+	//3.判断是不是同一个学校的?
+
+	myInfo, err := st.GetUserProfileInfo(uin)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, "GetUserInfo error")
+		log.Errorf(err.Error())
+		return
+	}
+	angelInfo, err := st.GetUserProfileInfo(AngelUin)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, "GetUserInfo error")
+		log.Errorf(err.Error())
+		return
+	}
+
+	//不是同一个学校的
+	if myInfo.SchoolId != angelInfo.SchoolId && uin != 100001 {
+		log.Errorf("different school ,uin:%d,angelUin:%d", uin, AngelUin)
+		return
+	}
+
 	//3.插入表
 	stmt, err := inst.Prepare(`insert into invite_angel values(?, ?, ?, ?, ?, ?, ?)`)
 	if err != nil {
@@ -283,25 +341,31 @@ func AcceptAngel(uin int64, boardId int, msgId int) (err error) {
 		}
 	}
 
-	if flag == true && status == 0 {
-		//更新invite表状态
-		sql = fmt.Sprintf(`update invite_angel set status = 1 where msgId = %d and boardId = %d`, msgId, boardId)
-		_, err = inst.Exec(sql)
-		if err != nil {
-			err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
-			log.Error(err.Error())
+	//有此记录
+	if flag == true {
+		if status == 0 {
+			//更新invite表状态
+			sql = fmt.Sprintf(`update invite_angel set status = 1 where msgId = %d and boardId = %d`, msgId, boardId)
+			_, err = inst.Exec(sql)
+			if err != nil {
+				err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
+				log.Error(err.Error())
+				return
+			}
+
+			//加入admin表
+			err = AddAngelInAdmin(uin, boardId, 0, uin)
+			if err != nil {
+				log.Errorf("add angel err , uin:%d err:%+v", uin, err.Error())
+				return
+			}
+		} else {
+			err = rest.NewAPIError(constant.E_DB_QUERY, "邀请已过期")
+			log.Errorf(err.Error())
 			return
 		}
-
-		//加入admin表
-		err = AddAngelInAdmin(uin, boardId, 0, uin)
-		if err != nil {
-			log.Errorf("add angel err , uin:%d err:%+v", uin, err.Error())
-			return
-		}
-
 	} else {
-		err = rest.NewAPIError(constant.E_DB_QUERY, "accept repeat")
+		err = rest.NewAPIError(constant.E_DB_QUERY, "无邀请记录")
 		log.Errorf(err.Error())
 		return
 	}

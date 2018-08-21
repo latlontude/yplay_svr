@@ -27,12 +27,13 @@ func (I uInfo) Swap(i, j int) {
 }
 
 type GetAngelInfoReq struct {
-	Uin   int64  `schema:"uin"`
-	Token string `schema:"token"`
-	Ver   int    `schema:"ver"`
+	Uin      int64  `schema:"uin"`
+	Token    string `schema:"token"`
+	Ver      int    `schema:"ver"`
+	SchoolId int    `schema:"schoolId"`
+	BoardId  int    `schema:"boardId"`
 
-	SchoolId int `schema:"schoolId"`
-	BoardId  int `schema:"boardId"`
+	ShowType int `schema:"showType"` //展示方式
 }
 
 type GetAngelInfoRsp struct {
@@ -42,7 +43,14 @@ type GetAngelInfoRsp struct {
 func doGetAngelInfo(req *GetAngelInfoReq, r *http.Request) (rsp *GetAngelInfoRsp, err error) {
 
 	log.Debugf("uin %d, GetAngelInfoReq %+v", req.Uin, req)
-	angelList, err := GetAngelInfoList(req.Uin, req.BoardId)
+
+	var angelList []*st.UserProfileInfo
+	if req.ShowType == 1 {
+		angelList, err = GetExpAngelInfoList(req.Uin, req.BoardId)
+	} else {
+		angelList, err = GetAngelInfoList(req.Uin, req.BoardId)
+	}
+
 	if err != nil {
 		return
 	}

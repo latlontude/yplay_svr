@@ -19,12 +19,12 @@ type DemiseBigAngelRsp struct {
 
 func doDemiseBigAngel(req *DemiseBigAngelReq, r *http.Request) (rsp *DemiseBigAngelRsp, err error) {
 
-	log.Debugf("uin %d, AddAngelReq succ, %+v", req.Uin, rsp)
+	log.Debugf("uin %d, DemiseBigAngelReq succ, %+v", req.Uin, req)
 
 	err = DemiseBigAngel(req.Uin, req.AngelUin, req.BoardId)
 
 	if err != nil {
-		log.Errorf("uin %d, AddAngelRsp error, %s", req.Uin, err.Error())
+		log.Errorf("uin %d, DemiseBigAngelReq error, %s", req.Uin, err.Error())
 		return
 	}
 

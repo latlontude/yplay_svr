@@ -171,7 +171,7 @@ func GetFollowCnt(boardId int) (followCnt int, err error) {
 	for rows.Next() {
 		rows.Scan(&followCnt)
 	}
-	log.Debug("board followCnt :%d", followCnt)
+	log.Debugf("board followCnt :%d", followCnt)
 
 	return
 }

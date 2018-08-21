@@ -19,12 +19,12 @@ type AcceptAngelRsp struct {
 
 func doAcceptAngel(req *AcceptAngelReq, r *http.Request) (rsp *AcceptAngelRsp, err error) {
 
-	log.Debugf("uin %d, AddAngelReq succ, %+v", req.Uin, rsp)
+	log.Debugf("uin %d, AcceptAngelReq  : %+v", req.Uin, req)
 
 	err = AcceptAngel(req.Uin, req.BoardId, req.MsgId)
 
 	if err != nil {
-		log.Errorf("uin %d, AddAngelRsp error, %s", req.Uin, err.Error())
+		log.Errorf("uin %d, AcceptAngelReq error, %s", req.Uin, err.Error())
 		return
 	}
 
