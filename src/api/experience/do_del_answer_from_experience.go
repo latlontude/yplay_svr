@@ -1,6 +1,7 @@
 package experience
 
 import (
+	"api/common"
 	"api/elastSearch"
 	"api/v2push"
 	"common/constant"
@@ -41,7 +42,7 @@ func doDelAnswerIdFromExp(req *DelQidInExperienceReq, r *http.Request) (rsp *Del
 func DelAnswerIdFromExp(uin int64, boardId, qid, answerId, labelId int) (err error) {
 
 	//校验权限
-	hasPermission, err := CheckPermit(uin, boardId, labelId)
+	hasPermission, err := common.CheckPermit(uin, boardId, labelId)
 
 	if !hasPermission {
 		err = rest.NewAPIError(constant.E_DB_QUERY, "del answer has not  permit")
@@ -71,13 +72,7 @@ func DelAnswerIdFromExp(uin int64, boardId, qid, answerId, labelId int) (err err
 		log.Debugf("es delete label error")
 	}
 
-	arrayUin := []int64{102772, 102773, 102774, 103307, 103122, 103126, 103096, 103004, 103032, 101749}
-
-	for _, v := range arrayUin {
-		if uin == v {
-			go v2push.SendDelAnswerIdInExpPush(uin, qid, answerId, labelId)
-		}
-	}
+	go v2push.SendDelAnswerIdInExpPush(uin, qid, answerId, labelId)
 
 	return
 }

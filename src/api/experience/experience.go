@@ -27,8 +27,6 @@ var (
 		"/delAnswerIdFromExp": auth.Apify2(doDelAnswerIdFromExp),
 		"/getBoardLabel":      auth.Apify2(doGetExpHome), //主页 运营可配置
 		"/searchAll":          auth.Apify2(doSearchAll),  //搜索  pupu用户 经验弹 问题和回答
-		"/addAdmin":           auth.Apify2(doAddAdmin),
-		"/getAdminList":       auth.Apify2(doGetAdminList),
 		"/addLabel":           auth.Apify2(doAddLabel),
 	}
 

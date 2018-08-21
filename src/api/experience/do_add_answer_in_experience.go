@@ -1,9 +1,9 @@
 package experience
 
 import (
+	"api/common"
 	"api/elastSearch"
 	"api/v2push"
-	_ "api/v2push"
 	"common/constant"
 	"common/mydb"
 	"common/rest"
@@ -43,7 +43,7 @@ func doAddAnswerIdInExp(req *AddAnswerInExperienceReq, r *http.Request) (rsp *Ad
 func AddAnswerIdInExp(uin int64, boardId, qid, answerId, labelId int) (err error) {
 
 	//校验权限
-	hasPermission, err := CheckPermit(uin, boardId, labelId)
+	hasPermission, err := common.CheckPermit(uin, boardId, labelId)
 
 	if !hasPermission {
 		err = rest.NewAPIError(constant.E_DB_QUERY, "add answer has not  permit")
@@ -76,12 +76,7 @@ func AddAnswerIdInExp(uin int64, boardId, qid, answerId, labelId int) (err error
 		return
 	}
 
-	arrayUin := []int64{102772, 102773, 102774, 103307, 103122, 103126, 103096, 103004, 103032, 101749}
-	for _, v := range arrayUin {
-		if uin == v {
-			go v2push.SendAddAnswerIdInExpPush(uin, qid, labelId, answerId)
-		}
-	}
+	go v2push.SendAddAnswerIdInExpPush(uin, qid, labelId, answerId)
 
 	//写完数据库 将answerId labelId labelName boardId 写入elastSearch
 
@@ -101,64 +96,6 @@ func AddAnswerIdInExp(uin int64, boardId, qid, answerId, labelId int) (err error
 	err1 := elastSearch.AddLabelToEs(boardId, answerId, labelId, labelName)
 	if err1 != nil {
 		log.Debugf("es put label error")
-	}
-
-	return
-}
-
-func CheckPermit(uin int64, boardId int, labelId int) (hasPermission bool, err error) {
-
-	if uin == 0 {
-		return
-	}
-
-	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
-	if inst == nil {
-		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
-		log.Error(err)
-		return
-	}
-
-	//board
-	sql := fmt.Sprintf(`select ownerUid from v2boards where boardId = %d`, boardId)
-	rows, err := inst.Query(sql)
-	defer rows.Close()
-	if err != nil {
-		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
-		log.Error(err)
-		return
-	}
-
-	hasPermission = false
-
-	for rows.Next() {
-		var uid int64
-		rows.Scan(&uid)
-		if uid == uin {
-			hasPermission = true
-		}
-	}
-
-	//admin
-	sql = fmt.Sprintf(`select uin from experience_admin  where boardId = %d`, boardId)
-	rows, err = inst.Query(sql)
-	defer rows.Close()
-	if err != nil {
-		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
-		log.Error(err)
-		return
-	}
-
-	for rows.Next() {
-		var uid int64
-		rows.Scan(&uid)
-		if uid == uin {
-			hasPermission = true
-		}
-	}
-
-	if uin == 100001 {
-		hasPermission = true
 	}
 
 	return

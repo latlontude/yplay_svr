@@ -1,6 +1,7 @@
 package experience
 
 import (
+	"api/board"
 	"common/constant"
 	"common/mydb"
 	"common/rest"
@@ -23,6 +24,7 @@ type GetExpHomeReq struct {
 }
 
 type ExpHome struct {
+	BoardId   int    `json:"boardId"`
 	LabelId   int    `json:"labelId"`
 	LabelName string `json:"labelName"`
 	Count     int    `json:"count"`
@@ -67,7 +69,7 @@ func GetExpHome(uin int64, boardId int) (expHome []*ExpHome, operators []*st.Use
 
 	sql := fmt.Sprintf(`select experience_label.labelId,experience_label.labelName from experience_home,experience_label
 							where experience_home.labelId = experience_label.labelId 
-							and experience_home.boardId = %d
+							and experience_label.boardId = %d
 							and experience_home.startTime <=%d<=experience_home.endTime`, boardId, currentTime)
 
 	log.Debugf("sql:%s\n", sql)
@@ -79,9 +81,6 @@ func GetExpHome(uin int64, boardId int) (expHome []*ExpHome, operators []*st.Use
 		return
 	}
 	expHome = make([]*ExpHome, 0)
-
-	//operators
-	//userMap := make(map[int64]st.UserProfileInfo, 0)
 
 	for rows.Next() {
 		var expHomeTmp ExpHome
@@ -97,39 +96,18 @@ func GetExpHome(uin int64, boardId int) (expHome []*ExpHome, operators []*st.Use
 		for rows2.Next() {
 			rows2.Scan(&expHomeTmp.Count)
 		}
+		// count 为0 的经验弹 过滤
+		if expHomeTmp.Count == 0 {
+			continue
+		}
 		expHome = append(expHome, &expHomeTmp)
-
-		//整理过经验弹的人  找到最新时间
-		//sql = fmt.Sprintf(`select operator from experience_share where boardId = %d and labelId = %d  group by operator order by ts`, boardId, expHomeTmp.LabelId)
-
 	}
 
-	//现任管理员和墙主 type = 1表示墙主
-	sql = fmt.Sprintf(`select uin from experience_admin where boardId = %d order by type desc `, boardId)
-
-	rows3, err3 := inst.Query(sql)
-	if err3 != nil {
-		err = rest.NewAPIError(constant.E_DB_QUERY, err3.Error())
+	operators, err = board.GetExpAngelInfoList(uin, boardId)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
 		log.Error(err)
 		return
-	}
-	for rows3.Next() {
-		var uid int64
-		rows3.Scan(&uid)
-		//去重
-		//if _, ok := userMap[uid]; ok {
-		//	log.Debugf("map [k:%d,v:%+v]", uid, userMap[uid])
-		//	continue
-		//}
-		if uid > 0 {
-			ui, err1 := st.GetUserProfileInfo(uid)
-			if err1 != nil {
-				log.Error(err1.Error())
-				continue
-			}
-			//userMap[uid] = *ui
-			operators = append(operators, ui)
-		}
 	}
 	return
 }

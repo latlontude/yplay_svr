@@ -50,6 +50,7 @@ type GetExperienceDetailRsp struct {
 	TotalCnt   int                   `json:"totalCnt"`
 	Operators  []*st.UserProfileInfo `json:"operators"`
 	UpdateTime int64                 `json:"updateTime"`
+	BoardInfo  st.BoardInfo          `json:"wallInfo"`
 }
 
 func doGetExpDetail(req *GetExperienceDetailReq, r *http.Request) (rsp *GetExperienceDetailRsp, err error) {
@@ -62,8 +63,13 @@ func doGetExpDetail(req *GetExperienceDetailReq, r *http.Request) (rsp *GetExper
 		log.Errorf("uin %d, GetExperienceDetailReq error, %s", req.Uin, err.Error())
 		return
 	}
+	boardInfo, err := GetBoardInfoByBoardId(req.Uin, req.BoardId)
+	if err != nil {
+		log.Errorf("uin %d, GetExperienceDetailReq error, %s", req.Uin, err.Error())
+		return
+	}
 
-	rsp = &GetExperienceDetailRsp{expInfo, totalCnt, operators, updateTime}
+	rsp = &GetExperienceDetailRsp{expInfo, totalCnt, operators, updateTime, boardInfo}
 
 	log.Debugf("uin %d, GetExperienceDetailRsp succ, %+v", req.Uin, rsp)
 
@@ -171,4 +177,61 @@ func getExpDetail(uin int64, boardId, labelId, pageNum, pageSize int) (ExpInfo [
 
 	return
 
+}
+
+func GetBoardInfoByBoardId(uin int64, boardId int) (info st.BoardInfo, err error) {
+
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		log.Error(err)
+		return
+	}
+
+	sql := fmt.Sprintf(`select boardId, boardName, boardIntro, boardIconUrl, boardStatus, schoolId, ownerUid, createTs from v2boards where boardId = %d and boardStatus = 0`, boardId)
+
+	rows, err := inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var uid int64
+
+		rows.Scan(
+			&info.BoardId,
+			&info.BoardName,
+			&info.BoardIntro,
+			&info.BoardIconUrl,
+			&info.BoardStatus,
+			&info.SchoolId,
+			&uid,
+			&info.CreateTs)
+
+		if uid > 0 {
+			ui, err1 := st.GetUserProfileInfo(uid)
+			if err1 != nil {
+				log.Error(err1.Error())
+				continue
+			}
+
+			info.OwnerInfo = ui
+		}
+
+		if info.SchoolId > 0 {
+			si, err1 := st.GetSchoolInfo(info.SchoolId)
+			if err != nil {
+				log.Error(err1.Error())
+				continue
+			}
+
+			info.SchoolName = si.SchoolName
+			info.SchoolType = si.SchoolType
+		}
+
+	}
+
+	return
 }
