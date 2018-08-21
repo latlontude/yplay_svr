@@ -9,6 +9,10 @@ import (
 	"strconv"
 )
 
+type EsAnswerHighlight struct {
+	HighlightContent []string `json:"answerContent"`
+}
+
 type ESAnswerRspBody struct {
 	Took uint32       `json:"took"`
 	Hits ESAnswerHits `json:"hits"`
@@ -21,11 +25,12 @@ type ESAnswerHits struct {
 }
 
 type ESAnswerHitElement struct {
-	Index    string   `json:"_index"`
-	Type     string   `json:"_type"`
-	Id       string   `json:"_id"`
-	Score    float64  `json:"_score"`
-	EsAnswer EsAnswer `json:"_source"`
+	Index     string            `json:"_index"`
+	Type      string            `json:"_type"`
+	Id        string            `json:"_id"`
+	Score     float64           `json:"_score"`
+	EsAnswer  EsAnswer          `json:"_source"`
+	Highlight EsAnswerHighlight `json:"highlight"`
 }
 
 type EsAnswer struct {

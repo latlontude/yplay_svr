@@ -27,10 +27,25 @@ func (I inter) Swap(i, j int) {
 }
 
 type Interlocution struct {
-	Question st.V2QuestionInfo `json:"question"` //问题
-	Answers  st.AnswersInfo    `json:"answer"`   //若干回答
-	Type     int               `json:"type"`     //类型    3:提问和回答都被匹配  2:回答被匹配  1:提问被匹配
+	Question          st.V2QuestionInfo `json:"question"`          //问题
+	Answers           st.AnswersInfo    `json:"answer"`            //若干回答
+	QuestionHighlight string            `json:"questionHighlight"` //高亮
+	AnswerHighlight   string            `json:"answerHighlight"`   //高亮
+	Type              int               `json:"type"`              //类型    3:提问和回答都被匹配  2:回答被匹配  1:提问被匹配
 }
+
+const (
+	PRE_TAG    = "<K9j4A1cw0sV>"
+	END_TAG    = "</K9j4A1cw0sV>"
+	FONT_START = "<font color='#0092E9'>"
+	FONT_END   = "</font>"
+
+	QUESTION_HIGHLIGHT_LENGTH = 22
+	ANSWER_HIGHLIGHT_LENGTH   = 63
+
+	TYPE_QUESTION_HIGHLIGHT = 0
+	TYPE_ANSWER_HIGHLIGHT   = 1
+)
 
 type SearchInterlocutionFromEsReq struct {
 	Uin      int64  `schema:"uin"`
@@ -87,8 +102,15 @@ func SearchInterlocutionFromEs(uin int64, content string, boardId, pageNum, page
 		"from":%d,
 		"size":%d,
 		"sort":[],
-		"aggs":{}
-	}`, content, boardId, (pageNum-1)*pageSize, pageSize)
+		"aggs":{},
+		"highlight": {
+            "pre_tags": ["%s"],
+            "post_tags": ["%s"],
+        	"fields" : {
+            	"answerContent" : {"number_of_fragments":0}
+        	}
+    	}
+	}`, content, boardId, (pageNum-1)*pageSize, pageSize, PRE_TAG, END_TAG)
 
 	log.Debugf("url :%s ,query string :%s", url, s)
 
@@ -126,8 +148,8 @@ func SearchInterlocutionFromEs(uin int64, content string, boardId, pageNum, page
 		qid := si.Qid
 		answerContent := si.AnswerContent
 		answerBoardId := si.BoardId
-
-		log.Debugf("boardId:%d answerId :%d qid :%d , answerContent : %s", answerBoardId, answerId, qid, answerContent)
+		highlight := e.Highlight
+		log.Debugf("boardId:%d answerId :%d qid :%d , answerContent : %s,high:%+v", answerBoardId, answerId, qid, answerContent, highlight)
 
 		answer, err2 := common.GetV2Answer(answerId)
 		if err2 != nil {
@@ -139,6 +161,11 @@ func SearchInterlocutionFromEs(uin int64, content string, boardId, pageNum, page
 		var interAnswer Interlocution
 		interAnswer.Type = 2
 		interAnswer.Answers = answer
+		//if uin == 103004 || uin == 103096 {
+		//只取第一个
+		content := highlight.HighlightContent[0]
+		interAnswer.AnswerHighlight = GetHighlightString(content, TYPE_QUESTION_HIGHLIGHT)
+		//}
 		hashmap[answerId] = interAnswer
 	}
 
@@ -152,8 +179,15 @@ func SearchInterlocutionFromEs(uin int64, content string, boardId, pageNum, page
 		"from":%d,
 		"size":%d,
 		"sort":[],
-		"aggs":{}
-	}`, content, boardId, (pageNum-1)*pageSize, pageSize)
+		"aggs":{},
+		"highlight": {
+            "pre_tags": ["%s"],
+            "post_tags": ["%s"],
+        	"fields" : {
+            	"qContent" : {"number_of_fragments":0}
+        	}
+    	}
+	}`, content, boardId, (pageNum-1)*pageSize, pageSize, PRE_TAG, END_TAG)
 
 	log.Debugf("url:%s,query string :%s", url, s)
 
@@ -190,7 +224,8 @@ func SearchInterlocutionFromEs(uin int64, content string, boardId, pageNum, page
 		qid := si.Qid
 		qContent := si.QContent
 		qstBoardId := si.BoardId
-		log.Debugf("boardId:%d,qid :%d , qContent : %s", qstBoardId, qid, qContent)
+		highlight := e.Highlight
+		log.Debugf("boardId:%d,qid :%d , qContent : %s,high:%+v", qstBoardId, qid, qContent, highlight)
 
 		question, err1 := common.GetV2Question(qid)
 		if err1 != nil {
@@ -204,19 +239,24 @@ func SearchInterlocutionFromEs(uin int64, content string, boardId, pageNum, page
 			}
 		}
 
+		var interQts Interlocution
 		//说明之前匹配到回答
 		if qstAnswerIs != 0 {
-			interQts := hashmap[qstAnswerIs]
+			interQts = hashmap[qstAnswerIs]
 			interQts.Question = question
 			interQts.Type = 3
 			delete(hashmap, qstAnswerIs)
-			interlocution = append(interlocution, &interQts)
 		} else {
-			var interQts Interlocution
 			interQts.Question = question
 			interQts.Type = 1
-			interlocution = append(interlocution, &interQts)
 		}
+
+		//if uin == 103004 || uin == 103096 {
+		//只取第一个
+		content := highlight.HighlightContent[0]
+		interQts.QuestionHighlight = GetHighlightString(content, TYPE_ANSWER_HIGHLIGHT)
+		//}
+		interlocution = append(interlocution, &interQts)
 		totalCnt++
 	}
 
@@ -238,5 +278,105 @@ func SearchInterlocutionFromEs(uin int64, content string, boardId, pageNum, page
 	//排序
 	sort.Sort(inter(interlocution))
 
+	return
+}
+
+func GetHighlightString(content string, highlightType int) (highlight string) {
+
+	var runeString string
+
+	emStart := PRE_TAG
+	emEnd := END_TAG
+	start := strings.Index(content, emStart)
+	end := strings.Index(content, emEnd) + len(emEnd)
+
+	//tag 字符总数
+	labelLength := len([]rune(FONT_START)) + len([]rune(FONT_END))
+
+	//字符总个数
+	totalLength := len([]rune(content)) - labelLength
+
+	log.Debugf("content:%s,totalLength:%d", content, totalLength)
+
+	showLength := 0
+	if highlightType == 0 {
+		showLength = QUESTION_HIGHLIGHT_LENGTH
+	} else {
+		showLength = ANSWER_HIGHLIGHT_LENGTH
+	}
+
+	if totalLength > showLength {
+		//匹配到的字符个数
+		highLength := len([]rune(content[start:end]))
+
+		//剩余字符数
+		restLength := showLength + labelLength - highLength - 6
+
+		//剩余字符一半
+		half := restLength / 2
+
+		//左半部字符串
+		beforeString := content[:start]
+		//右半部字符串
+		endString := content[end:]
+
+		beforeRune := []rune(beforeString)
+		beforeRuneLength := len(beforeRune)
+
+		endRune := []rune(endString)
+		endRuneLength := len(endRune)
+
+		var left, right []rune
+		if beforeRuneLength > half {
+			if endRuneLength > half {
+				left = beforeRune[beforeRuneLength-half:]
+				right = endRune[:half]
+			} else {
+				right = endRune
+				//剩余全是左边的
+				leftTotal := restLength - endRuneLength
+
+				log.Debugf("restlen:%d,leftTotal:%d,beforeLen:%d,endLen:%d,content:%s",
+					restLength, leftTotal, beforeRuneLength, endRuneLength, content)
+				if leftTotal > beforeRuneLength {
+					left = beforeRune
+				} else {
+					//取left  + harf - right
+					left = beforeRune[beforeRuneLength-leftTotal:]
+				}
+				log.Debugf("left:%s right:%s", string(left), string(right))
+			}
+		} else {
+			if beforeRuneLength > half {
+				left = beforeRune[beforeRuneLength-half:]
+				right = endRune[:half]
+				log.Debugf("left:%s right:%s", string(left), string(right))
+			} else {
+				left = beforeRune
+				//剩余全是右边的
+				rightTotal := restLength - beforeRuneLength
+				if rightTotal > endRuneLength {
+					right = endRune
+				} else {
+					//取left  + harf - right
+					right = endRune[:rightTotal]
+				}
+				log.Debugf("left:%s right:%s", string(left), string(right))
+			}
+		}
+		log.Debugf("left:%s right:%s , content:%s , part:%s", string(left), string(right), content, content[start:end])
+
+		runeString = string("...") + string(left) + content[start:end] + string(right) + string("...")
+
+	} else {
+		runeString = content
+	}
+
+	runeString = strings.Replace(runeString, PRE_TAG, FONT_START, -1)
+	runeString = strings.Replace(runeString, END_TAG, FONT_END, -1)
+
+	highlight = runeString
+
+	log.Debugf("runeString:%s", runeString)
 	return
 }

@@ -19,13 +19,17 @@ type ESQuestionHits struct {
 	MaxScore float64                `json:"max_score"`
 	Hits     []ESQuestionHitElement `json:"hits"`
 }
+type EsQstHighlight struct {
+	HighlightContent []string `json:"qContent"`
+}
 
 type ESQuestionHitElement struct {
-	Index      string     `json:"_index"`
-	Type       string     `json:"_type"`
-	Id         string     `json:"_id"`
-	Score      float64    `json:"_score"`
-	EsQuestion EsQuestion `json:"_source"`
+	Index      string         `json:"_index"`
+	Type       string         `json:"_type"`
+	Id         string         `json:"_id"`
+	Score      float64        `json:"_score"`
+	EsQuestion EsQuestion     `json:"_source"`
+	Highlight  EsQstHighlight `json:"highlight"`
 }
 
 type EsQuestion struct {
