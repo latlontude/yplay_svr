@@ -1,7 +1,7 @@
 package board
 
 import (
-	"api/experience"
+	"api/common"
 	"common/constant"
 	"common/mydb"
 	"common/rest"
@@ -105,7 +105,7 @@ func GetBoards(uin int64) (boards []*st.BoardInfo, err error) {
 		info.FollowCnt = followCnt
 
 		//boardInfo 返回 是否是经验弹管理员
-		isAdmin, err2 := experience.CheckPermit(uin, info.BoardId, 0)
+		isAdmin, err2 := common.CheckPermit(uin, info.BoardId, 0)
 		if err2 != nil {
 			log.Error(err2.Error())
 		}
@@ -242,7 +242,7 @@ func GetBoardInfoByBoardId(uin int64, boardId int) (info st.BoardInfo, err error
 		info.FollowCnt = follwCnt
 
 		//boardInfo 返回 是否是经验弹管理员
-		isAdmin, err2 := experience.CheckPermit(uin, info.BoardId, 0)
+		isAdmin, err2 := common.CheckPermit(uin, info.BoardId, 0)
 		if err2 != nil {
 			log.Error(err2.Error())
 		}
