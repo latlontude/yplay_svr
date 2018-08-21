@@ -10,11 +10,12 @@ import (
 )
 
 type AskAndAnswerCountReq struct {
-	Uin   int64  `schema:"uin"`
-	Token string `schema:"token"`
-	Ver   int    `schema:"ver"`
-	Begin int64  `schema:"begin"`
-	End   int64  `schema:"end"`
+	Uin     int64  `schema:"uin"`
+	Token   string `schema:"token"`
+	Ver     int    `schema:"ver"`
+	Begin   int64  `schema:"begin"`
+	End     int64  `schema:"end"`
+	BoardId int    `json:"boardId"`
 }
 
 type AskAndAnswerCountRsp struct {
@@ -36,7 +37,7 @@ type AskAndAnswerCountRsp struct {
 func doDailyCount(req *AskAndAnswerCountReq, r *http.Request) (rsp *AskAndAnswerCountRsp, err error) {
 	log.Debugf("uin %d, AskAndAnswerCountReq %+v", req.Uin, req)
 
-	p1, p2, p3, p4, p5, p6, o1, o2, o3, o4, o5, o6, err := dailyCount(req.Uin, req.Begin, req.End)
+	p1, p2, p3, p4, p5, p6, o1, o2, o3, o4, o5, o6, err := dailyCount(req.Uin, req.Begin, req.End, req.BoardId)
 	if err != nil {
 		log.Errorf("uin %d, AskAndAnswerCountRsp error, %s", req.Uin, err.Error())
 		return
@@ -49,7 +50,7 @@ func doDailyCount(req *AskAndAnswerCountReq, r *http.Request) (rsp *AskAndAnswer
 	return
 }
 
-func dailyCount(uin int64, begin int64, end int64) (askPersonNum int, askPersonArr string, askCount int, answerPersonNum int, answerPersonArr string, answerCount int,
+func dailyCount(uin int64, begin int64, end int64, boardId int) (askPersonNum int, askPersonArr string, askCount int, answerPersonNum int, answerPersonArr string, answerCount int,
 	askOperatorNum int, askOperatorArr string, askOperatorCount int, answerOperatorNum int, answerOperatorArr string, answerOperatorCount int, err error) {
 
 	log.Debugf("dailyCount uin = %d", uin)
@@ -96,7 +97,7 @@ func dailyCount(uin int64, begin int64, end int64) (askPersonNum int, askPersonA
 
 	//真实用户提问总数
 	sql = fmt.Sprintf(`select count(*) from v2questions where createTs >= %d and createTs < %d 
-							and ownerUid not in (%s) and boardId = 5`, begin, end, str)
+							and ownerUid not in (%s) and boardId = %d`, begin, end, str, boardId)
 	rows, err = inst.Query(sql)
 	errMsg(err)
 
@@ -108,7 +109,7 @@ func dailyCount(uin int64, begin int64, end int64) (askPersonNum int, askPersonA
 
 	//运营用户提问总数
 	sql = fmt.Sprintf(`select count(*) from v2questions where createTs >= %d and createTs < %d 
-							and ownerUid  in (%s) and boardId = 5`, begin, end, str)
+							and ownerUid  in (%s) and boardId = %d`, begin, end, str, boardId)
 	rows, err = inst.Query(sql)
 	errMsg(err)
 	for rows.Next() {
@@ -116,7 +117,7 @@ func dailyCount(uin int64, begin int64, end int64) (askPersonNum int, askPersonA
 	}
 	log.Debugf("askOperatorCount:%d", askOperatorCount)
 
-	sql = fmt.Sprintf(`select ownerUid from v2questions where createTs >= %d and createTs < %d and ownerUid not in (%s) and boardId = 5 group by ownerUid `, begin, end, str)
+	sql = fmt.Sprintf(`select ownerUid from v2questions where createTs >= %d and createTs < %d and ownerUid not in (%s) and boardId = %d group by ownerUid `, begin, end, str, boardId)
 	rows, err = inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -143,7 +144,7 @@ func dailyCount(uin int64, begin int64, end int64) (askPersonNum int, askPersonA
 
 	log.Debugf("askPersonNum:%d,askPerson=%s", askPersonNum, askPersonArr)
 
-	sql = fmt.Sprintf(`select ownerUid from v2questions where createTs >= %d and createTs < %d and ownerUid in (%s) and boardId = 5 group by ownerUid`, begin, end, str)
+	sql = fmt.Sprintf(`select ownerUid from v2questions where createTs >= %d and createTs < %d and ownerUid in (%s) and boardId = %d group by ownerUid`, begin, end, str, boardId)
 	rows, err = inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -173,8 +174,8 @@ func dailyCount(uin int64, begin int64, end int64) (askPersonNum int, askPersonA
 	//answer
 
 	sql = fmt.Sprintf(`select count(*) from v2answers where answerTs >= %d and answerTs < %d 
-			and ownerUid in (select ownerUid from v2questions where boardId =5)
-			and ownerUid not in (%s) `, begin, end, str)
+			and ownerUid in (select ownerUid from v2questions where boardId =%d)
+			and ownerUid not in (%s) `, begin, end, boardId, str)
 	rows, err = inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -189,8 +190,8 @@ func dailyCount(uin int64, begin int64, end int64) (askPersonNum int, askPersonA
 	log.Debugf("answerCount:%d", answerCount)
 
 	sql = fmt.Sprintf(`select count(*) from v2answers where answerTs >= %d and answerTs < %d 
-			and ownerUid in (select ownerUid from v2questions where boardId =5)
-			and ownerUid  in (%s) `, begin, end, str)
+			and ownerUid in (select ownerUid from v2questions where boardId =%d)
+			and ownerUid  in (%s) `, begin, end, boardId, str)
 	rows, err = inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -205,8 +206,8 @@ func dailyCount(uin int64, begin int64, end int64) (askPersonNum int, askPersonA
 	log.Debugf("answerOperatorCount:%d", answerOperatorCount)
 
 	sql = fmt.Sprintf(`select ownerUid from v2answers where answerTs >= %d and answerTs < %d
-			and ownerUid in (select ownerUid from v2questions where boardId =5)
-			and ownerUid not in (%s)  group by ownerUid `, begin, end, str)
+			and ownerUid in (select ownerUid from v2questions where boardId =%d)
+			and ownerUid not in (%s)  group by ownerUid `, begin, end, boardId, str)
 	rows, err = inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -234,8 +235,8 @@ func dailyCount(uin int64, begin int64, end int64) (askPersonNum int, askPersonA
 	log.Debugf("answerPersonNum:%d,str=%s", answerPersonNum, answerPersonArr)
 
 	sql = fmt.Sprintf(`select ownerUid from v2answers where answerTs >= %d and answerTs < %d 
-					and ownerUid in (select ownerUid from v2questions where boardId =5)
-					and ownerUid in (%s)  group by ownerUid`, begin, end, str)
+					and ownerUid in (select ownerUid from v2questions where boardId =%d)
+					and ownerUid in (%s)  group by ownerUid`, begin, end, boardId, str)
 	rows, err = inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())

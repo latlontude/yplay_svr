@@ -91,9 +91,10 @@ func GetQuestions(uin int64, qid, boardId, pageNum, pageSize int) (questions []*
 	}
 
 	//第一次拉去列表 没有qid
+	s = 0
 	if qid == 0 {
 		sql = fmt.Sprintf(`select qid, ownerUid, qTitle, qContent, qImgUrls, isAnonymous, createTs, modTs ,ext from v2questions 
-		where qStatus = 0 and (qContent != "" or qImgUrls != "") and boardId = %d order by createTs desc limit %d, %d`, boardId, s, e)
+		where qStatus = 0 and (qContent != "" or qImgUrls != "") and boardId = %d order by qid desc limit %d, %d`, boardId, s, e)
 	} else {
 		//后面拉去问题列表防止插入 重复数据 客户端传qid,从小于qid的地方去pageSize
 		sql = fmt.Sprintf(`select qid, ownerUid, qTitle, qContent, qImgUrls, isAnonymous, createTs, modTs ,ext from v2questions 

@@ -18,7 +18,7 @@ func doGetV2QuestionsForFriend(req *GetV2QuestionsForFriendReq, r *http.Request)
 	log.Debugf("uin %d,fuid %d , GetQuestionsReq %+v", req.Uin, req.FUin, req)
 
 	//我提出的问题
-	questions, totalCnt, qstCnt, answerCnt, err := GetV2QuestionsAndAnswer(req.Uin, req.FUin, req.PageSize, req.PageNum)
+	questions, totalCnt, qstCnt, answerCnt, likeTotalCnt, err := GetV2QuestionsAndAnswer(req.Uin, req.FUin, req.PageSize, req.PageNum)
 
 	if err != nil {
 		log.Errorf("uin %d, doGetV2QuestionsForFriend error, %s", req.FUin, err.Error())
@@ -38,7 +38,7 @@ func doGetV2QuestionsForFriend(req *GetV2QuestionsForFriendReq, r *http.Request)
 		log.Errorf("get profile register ts error", req.Uin, err.Error())
 	}
 
-	rsp = &GetV2QuestionsRsp{questions, totalCnt, qstCnt, answerCnt, labelList, loginDays}
+	rsp = &GetV2QuestionsRsp{questions, totalCnt, qstCnt, answerCnt, labelList, loginDays, likeTotalCnt}
 
 	log.Debugf("uin %d fuin:%d, doGetV2QuestionsForFriend success", req.Uin, req.FUin)
 

@@ -44,6 +44,18 @@ func doGetAnswers(req *GetAnswersReq, r *http.Request) (rsp *GetAnswersRsp, err 
 
 	log.Debugf("uin %d, GetAnswersReq %+v", req.Uin, req)
 
+	qStatus, err := isQusetionBeDeleted(req.Qid)
+	if err != nil {
+		log.Errorf("uin %d, GetAnswers error, %s", req.Uin, err.Error())
+		return
+	}
+
+	if qStatus == 1 {
+		err = rest.NewAPIError(constant.E_QUESTION_BE_DELETE, "the question is be deleted")
+		log.Error(err)
+		return
+	}
+
 	answers, totalCnt, err := GetAnswers(req.Uin, req.Qid, req.PageNum, req.PageSize)
 
 	if err != nil {
@@ -54,6 +66,31 @@ func doGetAnswers(req *GetAnswersReq, r *http.Request) (rsp *GetAnswersRsp, err 
 	rsp = &GetAnswersRsp{answers, totalCnt}
 
 	log.Debugf("uin %d, GetQuestionsRsp succ, %+v", req.Uin, rsp)
+
+	return
+}
+
+func isQusetionBeDeleted(qid int) (qStatus int, err error) {
+
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		log.Error(err)
+		return
+	}
+
+	sql := fmt.Sprintf(`select qStatus  from  v2questions where qid = %d`, qid)
+	rows, err := inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Error(err)
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		rows.Scan(&qStatus)
+	}
 
 	return
 }

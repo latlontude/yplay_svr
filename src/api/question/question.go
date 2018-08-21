@@ -22,7 +22,7 @@ var (
 		"/getSameAskUid": auth.Apify2(doGetSameAskUid),
 		"/dailyCount":    auth.Apify(doDailyCount),
 		"/autoQuestion":  auth.Apify(doAutoQuestion),
-		"/autoInput":     auth.Apify2(doAutoInput),
+		"/autoInput":     auth.Apify(doAutoInput),
 	}
 
 	log = env.NewLogger("question")

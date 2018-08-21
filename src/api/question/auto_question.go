@@ -90,7 +90,7 @@ func AutoQuestion(boardId int) (ids []int, qids []int64, restTime int64, msg str
 
 	index := 0
 
-	randomUids, err := GetRandomUids()
+	randomUids, err := GetRandomUids(boardId)
 	if err != nil {
 		log.Errorf("query random uids error")
 	}
@@ -158,14 +158,15 @@ func AutoQuestion(boardId int) (ids []int, qids []int64, restTime int64, msg str
 	return
 }
 
-func GetRandomUids() (uids []int64, err error) {
+func GetRandomUids(boardId int) (uids []int64, err error) {
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
 	if inst == nil {
 		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
 		log.Error(err)
 		return
 	}
-	sql := fmt.Sprintf(`select uin from profiles where locate('1406666032',phone) or locate('1406666035',phone)  ORDER BY RAND() limit 5`)
+	sql := fmt.Sprintf(`select uin from profiles where locate('1406666',phone) and phone not in (14066660301,14066660320,14066660353,18866668888) and 
+schoolId in (select schoolId from v2boards where boardId = %d)  ORDER BY RAND() limit 5`, boardId)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())

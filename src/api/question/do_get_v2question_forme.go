@@ -29,6 +29,7 @@ type GetV2QuestionsRsp struct {
 	AnswerCnt   int                  `json:"answerCnt"`
 	LabelList   []*label.LabelInfo   `json:"labelList"`
 	LoginDays   int                  `json:"loginDays"`
+	LikeCnt     int                  `json:"likeCnt"`
 }
 
 // 自定义排序
@@ -51,7 +52,7 @@ func doGetV2QuestionsForMe(req *GetV2QuestionsformeReq, r *http.Request) (rsp *G
 	log.Debugf("uin %d, GetQuestionsReq %+v", req.Uin, req)
 
 	//我提出的问题
-	questions, totalCnt, qstCnt, answerCnt, err := GetV2QuestionsAndAnswer(req.Uin, 0, req.PageSize, req.PageNum)
+	questions, totalCnt, qstCnt, answerCnt, likeTotalCnt, err := GetV2QuestionsAndAnswer(req.Uin, 0, req.PageSize, req.PageNum)
 
 	labelList, err := GetHomeLabelInfo(req.Uin, 0)
 
@@ -66,7 +67,7 @@ func doGetV2QuestionsForMe(req *GetV2QuestionsformeReq, r *http.Request) (rsp *G
 		log.Errorf("get profile register ts error", req.Uin, err.Error())
 	}
 
-	rsp = &GetV2QuestionsRsp{questions, totalCnt, qstCnt, answerCnt, labelList, loginDays}
+	rsp = &GetV2QuestionsRsp{questions, totalCnt, qstCnt, answerCnt, labelList, loginDays, likeTotalCnt}
 
 	log.Debugf("uin %d, doGetV2QuestionsForMe success, rsp:%+v", req.Uin, rsp)
 
@@ -80,10 +81,10 @@ pageSize    分页大小
 pageNum     第几页
 */
 func GetV2QuestionsAndAnswer(uin int64, fUin int64, pageSize int, pageNum int) (
-	questions []*st.V2QuestionInfo, totalCnt int, qstCnt int, answerCnt int, err error) {
+	questions []*st.V2QuestionInfo, totalCnt int, qstCnt int, answerCnt int, likeTotalCnt int, err error) {
 
 	questions = make([]*st.V2QuestionInfo, 0)
-
+	likeTotalCnt = 0
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
 
 	if inst == nil {
@@ -190,6 +191,8 @@ and v2answers.ownerUid = %d`, uin)
 			log.Error(err1.Error())
 			continue
 		}
+		likeTotalCnt = likeTotalCnt + likeCnt
+
 		answerInfo.LikeCnt = likeCnt
 		isILike, err1 := checkIsILikeAnswer(uin, answerInfo.AnswerId)
 		if err1 != nil {
@@ -313,7 +316,7 @@ func GetHomeLabelInfo(uin int64, fUin int64) (labelList []*label.LabelInfo, err 
 		uid = uin
 	}
 
-	sql := fmt.Sprintf(`select experience_label.labelId ,experience_label.labelName from experience_label
+	sql := fmt.Sprintf(`select experience_label.labelId ,experience_label.labelName ,experience_label.boardId from experience_label
 	where experience_label.labelId in
 	(select experience_share.labelId from experience_share
 		where answerId in (select answerId from v2answers where ownerUid = %d )
@@ -329,7 +332,7 @@ func GetHomeLabelInfo(uin int64, fUin int64) (labelList []*label.LabelInfo, err 
 
 	for rows.Next() {
 		var labelInfo label.LabelInfo
-		rows.Scan(&labelInfo.LabelId, &labelInfo.LabelName)
+		rows.Scan(&labelInfo.LabelId, &labelInfo.LabelName, &labelInfo.BoardId)
 		labelList = append(labelList, &labelInfo)
 	}
 
