@@ -9,6 +9,7 @@ import (
 )
 
 type LabelInfo struct {
+	BoardId   int    `json:"boardId"`
 	LabelId   int    `json:"labelId"`
 	LabelName string `json:"labelName"`
 }

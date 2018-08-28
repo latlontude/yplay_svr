@@ -21,6 +21,8 @@ type AcceptAddFriendReq struct {
 
 	MsgId int64 `schema:"msgId"`
 	Act   int   `schema:"act"`
+
+	NeedNotify int `schema:"needNotify"`
 }
 
 type AcceptAddFriendRsp struct {
@@ -30,7 +32,7 @@ func doAcceptAddFriend(req *AcceptAddFriendReq, r *http.Request) (rsp *AcceptAdd
 
 	log.Errorf("uin %d, AcceptAddFriendReq %+v", req.Uin, req)
 
-	err = AcceptAddFriend(req.Uin, req.MsgId, req.Act)
+	err = AcceptAddFriend(req.Uin, req.MsgId, req.Act, req.NeedNotify)
 	if err != nil {
 		log.Errorf("uin %d, AcceptAddFriendRsp error, %s", req.Uin, err.Error())
 		return
@@ -43,7 +45,7 @@ func doAcceptAddFriend(req *AcceptAddFriendReq, r *http.Request) (rsp *AcceptAdd
 	return
 }
 
-func AcceptAddFriend(uin int64, msgId int64, act int) (err error) {
+func AcceptAddFriend(uin int64, msgId int64, act int, needNotify int) (err error) {
 
 	if uin == 0 {
 		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid uin")
@@ -178,7 +180,10 @@ func AcceptAddFriend(uin int64, msgId int64, act int) (err error) {
 	//向发送加好友方发送已经成为好友通知
 	go im.SendBeFriendsStartChatMsg(toUin, fromUin)
 
-	go im.SendBeFriendsStartChatMsg(fromUin, toUin)
+	//新版本自己同意好友后 不给自己发通知
+	if needNotify == 0 {
+		go im.SendBeFriendsStartChatMsg(fromUin, toUin)
+	}
 
 	go JudgeNeedGeneQids(fromUin, toUin)
 

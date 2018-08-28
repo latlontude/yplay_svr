@@ -38,6 +38,7 @@ type GetAngelInfoReq struct {
 
 type GetAngelInfoRsp struct {
 	AngelList []*st.UserProfileInfo `json:"angelList"`
+	IsAdmin   bool                  `json:"isAdmin"`
 }
 
 func doGetAngelInfo(req *GetAngelInfoReq, r *http.Request) (rsp *GetAngelInfoRsp, err error) {
@@ -45,21 +46,22 @@ func doGetAngelInfo(req *GetAngelInfoReq, r *http.Request) (rsp *GetAngelInfoRsp
 	log.Debugf("uin %d, GetAngelInfoReq %+v", req.Uin, req)
 
 	var angelList []*st.UserProfileInfo
+	var isAdmin bool
 	if req.ShowType == 1 {
-		angelList, err = GetExpAngelInfoList(req.Uin, req.BoardId)
+		angelList, isAdmin, err = GetExpAngelInfoList(req.Uin, req.BoardId)
 	} else {
-		angelList, err = GetAngelInfoList(req.Uin, req.BoardId)
+		angelList, isAdmin, err = GetAngelInfoList(req.Uin, req.BoardId)
 	}
 
 	if err != nil {
 		return
 	}
-	rsp = &GetAngelInfoRsp{angelList}
+	rsp = &GetAngelInfoRsp{angelList, isAdmin}
 	log.Debugf("uin %d, rsp %+v", req.Uin, rsp)
 	return
 }
 
-func GetAngelInfoList(uin int64, boardId int) (angelList []*st.UserProfileInfo, err error) {
+func GetAngelInfoList(uin int64, boardId int) (angelList []*st.UserProfileInfo, isAdmin bool, err error) {
 
 	angelList = make([]*st.UserProfileInfo, 0)
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
@@ -149,6 +151,7 @@ func GetAngelInfoList(uin int64, boardId int) (angelList []*st.UserProfileInfo, 
 
 		if boardUin == ui.Uin {
 			ui.Src = 1
+			isAdmin = true
 		}
 		//自己排序到第一位
 		if uin == ui.Uin {
@@ -186,7 +189,7 @@ func GetAngelInfoList(uin int64, boardId int) (angelList []*st.UserProfileInfo, 
 	return
 }
 
-func GetExpAngelInfoList(uin int64, boardId int) (angelList []*st.UserProfileInfo, err error) {
+func GetExpAngelInfoList(uin int64, boardId int) (angelList []*st.UserProfileInfo, isAdmin bool, err error) {
 
 	angelList = make([]*st.UserProfileInfo, 0)
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
@@ -266,6 +269,7 @@ func GetExpAngelInfoList(uin int64, boardId int) (angelList []*st.UserProfileInf
 		//自己排序到第一位
 		if uin == ui.Uin {
 			ui.Src = 1
+			isAdmin = true
 		}
 		//sort
 		if boardUin == ui.Uin {

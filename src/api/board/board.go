@@ -17,7 +17,7 @@ var (
 		"/addAngel":       auth.Apify2(doAddAngel),
 		"/demiseBigAngel": auth.Apify2(doDemiseBigAngel), //转让
 		"/deleteAngel":    auth.Apify2(doDelAngel),       //卸任
-		"/inviteAngel":    auth.Apify(doInviteAngel),     //邀请
+		"/inviteAngel":    auth.Apify2(doInviteAngel),    //邀请
 		"/acceptInvite":   auth.Apify2(doAcceptAngel),    //接收
 	}
 

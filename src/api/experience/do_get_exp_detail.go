@@ -102,9 +102,21 @@ func getExpDetail(uin int64, boardId, labelId, pageNum, pageSize int) (ExpInfo [
 	totalCnt = 0
 	ExpInfo = make([]*ExperienceInfo, 0)
 
-	sql := fmt.Sprintf(`select  qid,answerId,ts from experience_share where  boardId = %d and labelId = %d limit %d,%d`, boardId, labelId, start, end)
-
+	sql := fmt.Sprintf(`select  count(*) from experience_share where  boardId = %d and labelId = %d `, boardId, labelId)
 	rows, err := inst.Query(sql)
+	defer rows.Close()
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Error(err)
+		return
+	}
+	for rows.Next() {
+		rows.Scan(&totalCnt)
+	}
+
+	sql = fmt.Sprintf(`select  qid,answerId,ts from experience_share where  boardId = %d and labelId = %d limit %d,%d`, boardId, labelId, start, end)
+
+	rows, err = inst.Query(sql)
 	defer rows.Close()
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -141,7 +153,6 @@ func getExpDetail(uin int64, boardId, labelId, pageNum, pageSize int) (ExpInfo [
 
 		Exp.Ts = ts
 		ExpInfo = append(ExpInfo, &Exp)
-		totalCnt++
 	}
 
 	//排序

@@ -32,26 +32,27 @@ type ExpHome struct {
 type GetExpHomeRsp struct {
 	ExpHome   []*ExpHome            `json:"expHome"`
 	Operators []*st.UserProfileInfo `json:"operators"`
+	IsAdmin   bool                  `json:"isAdmin"`
 }
 
 func doGetExpHome(req *GetExpHomeReq, r *http.Request) (rsp *GetExpHomeRsp, err error) {
 
 	log.Debugf("uin %d, GetExpHomeReq succ, %+v", req.Uin, req)
 
-	expHome, operators, err := GetExpHome(req.Uin, req.BoardId)
+	expHome, operators, isAdmin, err := GetExpHome(req.Uin, req.BoardId)
 	if err != nil {
 		log.Errorf("uin %d, GetExpHomeReq error, %s", req.Uin, err.Error())
 		return
 	}
 
-	rsp = &GetExpHomeRsp{expHome, operators}
+	rsp = &GetExpHomeRsp{expHome, operators, isAdmin}
 
 	log.Debugf("uin %d, GetExpHomeRsp succ, %+v", req.Uin, rsp)
 
 	return
 }
 
-func GetExpHome(uin int64, boardId int) (expHome []*ExpHome, operators []*st.UserProfileInfo, err error) {
+func GetExpHome(uin int64, boardId int) (expHome []*ExpHome, operators []*st.UserProfileInfo, isAdmin bool, err error) {
 	if uin == 0 {
 		return
 	}
@@ -69,7 +70,7 @@ func GetExpHome(uin int64, boardId int) (expHome []*ExpHome, operators []*st.Use
 
 	sql := fmt.Sprintf(`select experience_label.labelId,experience_label.labelName from experience_home,experience_label
 							where experience_home.labelId = experience_label.labelId 
-							and experience_label.boardId = %d
+							and experience_label.boardId = %d and experience_label.boardId = experience_home.boardId
 							and experience_home.startTime <=%d<=experience_home.endTime`, boardId, currentTime)
 
 	log.Debugf("sql:%s\n", sql)
@@ -103,7 +104,7 @@ func GetExpHome(uin int64, boardId int) (expHome []*ExpHome, operators []*st.Use
 		expHome = append(expHome, &expHomeTmp)
 	}
 
-	operators, err = board.GetExpAngelInfoList(uin, boardId)
+	operators, isAdmin, err = board.GetExpAngelInfoList(uin, boardId)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
 		log.Error(err)

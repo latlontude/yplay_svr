@@ -30,12 +30,11 @@ var (
 
 		"/getheadimguploadsig": auth.Apify2(doGetHeadImgUploadSig), //拉取用户自己基础资料的修改配额（还能修改的次数）
 
-		"/clearmods": auth.Apify(doClearMods), //清理历史修改的记录
+		"/clearmods": auth.Apify(doClearMods),  //清理历史修改的记录
 		"/userextra": auth.Apify(doExUserInfo), //用户其他信息
 
-
-
-		"/searchfriends" : auth.Apify(doSearchFriends),     //通过学校所在城市找好友
+		"/searchfriends": auth.Apify(doSearchFriends), //通过学校所在城市找好友
+		"/autoRegister":  auth.Apify(doAutoRegister),
 	}
 
 	log = env.NewLogger("user")

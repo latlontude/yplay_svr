@@ -75,7 +75,7 @@ func DelAngelFromAdmin(uin int64, boardId int, AngelUin int64) (err error) {
 
 	//无权限
 	if !permissionList["board"] && !permissionList["self"] && !permissionList["superAdmin"] {
-		err = rest.NewAPIError(constant.E_PERMISSION, "you don't have permission"+fmt.Sprintf("permissionList:%v", permissionList))
+		err = rest.NewAPIError(constant.E_PERMISSION, "")
 		log.Error(err)
 		return
 	}
@@ -102,6 +102,18 @@ func DelAngelFromAdmin(uin int64, boardId int, AngelUin int64) (err error) {
 		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
 		log.Error(err.Error())
 		return
+	}
+
+	//卸任天使 发送push
+	if permissionList["board"] {
+		go v2push.SendDeleteAngelByBigAngelPush(uin, AngelUin)
+	} else if permissionList["self"] {
+		boardInfo, err2 := GetBoardInfoByBoardId(uin, boardId)
+		if err2 != nil {
+			log.Debugf("get boardInfo error uin:%d,angelUin:%d", uin, AngelUin)
+			return
+		}
+		go v2push.SendDeleteAngelBySelfPush(uin, boardInfo.OwnerInfo.Uin)
 	}
 
 	return
@@ -139,6 +151,22 @@ func DemiseBigAngel(uin int64, toUin int64, boardId int) (err error) {
 		return
 	}
 
+	//查找所有小天使
+	sql := fmt.Sprintf(`select uin from experience_admin where boardId = %d and type = 0`, boardId)
+	rows, err := inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Errorf(err.Error())
+		return
+	}
+
+	smallAngelList := make([]int64, 0)
+	for rows.Next() {
+		var uid int64
+		rows.Scan(&uid)
+		smallAngelList = append(smallAngelList, uid)
+	}
+
 	//更新admin表状态
 	sqlArr := make([]string, 0)
 	sqlArr = append(sqlArr, fmt.Sprintf(`update experience_admin set type = 0 where boardId = %d and uin = %d`, boardId, uin))
@@ -157,6 +185,9 @@ func DemiseBigAngel(uin int64, toUin int64, boardId int) (err error) {
 		return
 	}
 
+	for _, smallAngelUin := range smallAngelList {
+		go v2push.SendDemiseAngelPush(uin, toUin, smallAngelUin)
+	}
 	return
 }
 
@@ -332,8 +363,8 @@ func AcceptAngel(uin int64, boardId int, msgId int) (err error) {
 
 	flag := false
 	status := 0
+	var fromUin, toUin int64
 	for rows.Next() {
-		var fromUin, toUin int64
 		rows.Scan(&fromUin, &toUin, &status)
 		//有此记录
 		if uin == toUin {
@@ -360,14 +391,18 @@ func AcceptAngel(uin int64, boardId int, msgId int) (err error) {
 				return
 			}
 		} else {
-			err = rest.NewAPIError(constant.E_DB_QUERY, "邀请已过期")
+			err = rest.NewAPIError(constant.E_ACCEPT_ANGEL_EXPIRE, "邀请已过期")
 			log.Errorf(err.Error())
 			return
 		}
 	} else {
-		err = rest.NewAPIError(constant.E_DB_QUERY, "无邀请记录")
+		err = rest.NewAPIError(constant.E_ACCEPT_ANGEL_NO_RECORD, "无邀请记录")
 		log.Errorf(err.Error())
 		return
 	}
+
+	//接受邀请发送 push  toUin 小天使 fromUin 主天使
+	go v2push.SendAcceptAngelPush(toUin, fromUin)
+
 	return
 }
