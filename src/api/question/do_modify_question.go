@@ -19,6 +19,7 @@ type ModifyQuestionReq struct {
 	QTitle      string `schema:"qTitle"`
 	QContent    string `schema:"qContent"`
 	QImgUrls    string `schema:"qImgUrls"`
+	QType       int    `schema:"qType"`
 	IsAnonymous bool   `schema:"isAnonymous"` //是否匿名 1 匿名 0 不匿名
 	Ext         string `schema:"ext"`
 }
@@ -31,7 +32,7 @@ func doModifyQuestion(req *ModifyQuestionReq, r *http.Request) (rsp *ModifyQuest
 
 	log.Debugf("uin %d, ModifyQuestionReq %+v", req.Uin, req)
 
-	code, err := ModifyQuestion(req.Uin, req.Qid, req.QTitle, req.QContent, req.QImgUrls, req.IsAnonymous, req.Ext)
+	code, err := ModifyQuestion(req.Uin, req.Qid, req.QTitle, req.QContent, req.QImgUrls, req.QType,req.IsAnonymous, req.Ext)
 
 	if err != nil {
 		log.Errorf("uin %d, ModifyQuestionReq error, %s", req.Uin, err.Error())
@@ -45,7 +46,7 @@ func doModifyQuestion(req *ModifyQuestionReq, r *http.Request) (rsp *ModifyQuest
 	return
 }
 
-func ModifyQuestion(uin int64, qid int, qTitle, qContent, qImgUrls string, isAnonymous bool, ext string) (code int, err error) {
+func ModifyQuestion(uin int64, qid int, qTitle, qContent, qImgUrls string, qType int ,isAnonymous bool, ext string) (code int, err error) {
 	log.Debugf("start ModifyQuestion uin = %d qid = %d", uin, qid)
 
 	code = -1
@@ -67,11 +68,12 @@ func ModifyQuestion(uin int64, qid int, qTitle, qContent, qImgUrls string, isAno
 	sql := fmt.Sprintf(`update v2questions set qTitle = '%s',
                                            qContent = '%s',
                                            qImgUrls = '%s',
+qType = %d,
                                            isAnonymous = %t,
                                            modTs = %d,
 											ext = '%s'
                                            where ownerUid = %d and qid = %d`,
-		qTitle, qContent, qImgUrls, isAnonymous, ts, ext, uin, qid)
+		qTitle, qContent, qImgUrls, qType,isAnonymous, ts, ext, uin, qid)
 
 	_, err = inst.Exec(sql)
 	if err != nil {

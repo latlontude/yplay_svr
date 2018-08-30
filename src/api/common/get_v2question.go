@@ -22,7 +22,7 @@ func GetV2Question(qid int) (question st.V2QuestionInfo, err error) {
 		return
 	}
 
-	sql := fmt.Sprintf(`select qid, qTitle, qContent, qImgUrls, ownerUid, isAnonymous, createTs, modTs  from  v2questions where qid = %d`, qid)
+	sql := fmt.Sprintf(`select qid, qTitle, qContent, qImgUrls,qType, ownerUid, isAnonymous, createTs, modTs  from  v2questions where qid = %d`, qid)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -34,7 +34,7 @@ func GetV2Question(qid int) (question st.V2QuestionInfo, err error) {
 	var ownerUid int64
 
 	for rows.Next() {
-		rows.Scan(&question.Qid, &question.QTitle, &question.QContent, &question.QImgUrls, &ownerUid, &question.IsAnonymous, &question.CreateTs, &question.ModTs)
+		rows.Scan(&question.Qid, &question.QTitle, &question.QContent, &question.QImgUrls,&question.QType ,&ownerUid, &question.IsAnonymous, &question.CreateTs, &question.ModTs)
 	}
 
 	if ownerUid > 0 {

@@ -19,10 +19,12 @@ var (
 		"/sameAsk": auth.Apify2(doSameAsk), //同问
 
 		//TEST uidArr
-		"/getSameAskUid": auth.Apify2(doGetSameAskUid),
-		"/dailyCount":    auth.Apify(doDailyCount),
-		"/autoQuestion":  auth.Apify(doAutoQuestion),
-		"/autoInput":     auth.Apify(doAutoInput),
+		"/getSameAskUid":                auth.Apify2(doGetSameAskUid),
+		"/dailyCount":                   auth.Apify(doDailyCount),
+		"/autoQuestion":                 auth.Apify(doAutoQuestion),
+		"/autoInput":                    auth.Apify(doAutoInput),
+		"/getOneQuestion":               auth.Apify2(doGetOneQuestions), //根据板块ID来拉取问题列表 后续可能有按用户ID来拉取问题列表
+		"/autoInputQuestionNoBoardInfo": auth.Apify(doAutoInputQuestionNoBoardInfo),
 	}
 
 	log = env.NewLogger("question")

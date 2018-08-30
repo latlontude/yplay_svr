@@ -15,6 +15,7 @@ type AnswersInfo struct {
 	AnswerContent string           `json:"answerContent"`
 	AnswerImgUrls string           `json:"answerImgUrls"`
 	AnswerTs      int              `json:"answerTs"`
+	Ext           string           `json:"ext"`
 	CommentCnt    int              `json:"commentCnt"`
 	LikeCnt       int              `json:"likeCnt"`
 	IsILike       bool             `json:"isILike"`

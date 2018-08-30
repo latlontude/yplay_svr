@@ -20,6 +20,7 @@ type PostQuestionReq struct {
 	QTitle      string `schema:"qTitle"`
 	QContent    string `schema:"qContent"`
 	QImgUrls    string `schema:"qImgUrls"`
+	QType       int    `schema:"qType"`
 	IsAnonymous bool   `schema:"isAnonymous"`
 	Ext         string `schema:"ext"`
 }
@@ -33,7 +34,7 @@ func doPostQuestion(req *PostQuestionReq, r *http.Request) (rsp *PostQuestionRsp
 	log.Debugf("uin %d, PostQuestionReq %+v", req.Uin, req)
 
 	//去除首位空白字符
-	qid, err := PostQuestion(req.Uin, req.BoardId, req.QTitle, strings.Trim(req.QContent, " \n\t"), req.QImgUrls, req.IsAnonymous, req.Ext)
+	qid, err := PostQuestion(req.Uin, req.BoardId, req.QTitle, strings.Trim(req.QContent, " \n\t"), req.QImgUrls, req.QType,req.IsAnonymous, req.Ext)
 
 	if err != nil {
 		log.Errorf("uin %d, PostQuestion error, %s", req.Uin, err.Error())
@@ -47,7 +48,7 @@ func doPostQuestion(req *PostQuestionReq, r *http.Request) (rsp *PostQuestionRsp
 	return
 }
 
-func PostQuestion(uin int64, boardId int, title, content, imgUrls string, isAnonymous bool, ext string) (qid int64, err error) {
+func PostQuestion(uin int64, boardId int, title, content, imgUrls string,qType int , isAnonymous bool, ext string) (qid int64, err error) {
 
 	log.Debugf("post questions")
 	if boardId == 0 {
@@ -70,8 +71,8 @@ func PostQuestion(uin int64, boardId int, title, content, imgUrls string, isAnon
 	}
 
 	//v2question表多加了一个字段  (同问sameAskUid)
-	stmt, err := inst.Prepare(`insert into v2questions(qid, boardId, ownerUid, qTitle, qContent, qImgUrls, isAnonymous, qStatus, createTs, modTs,sameAskUid,ext) 
-		values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+	stmt, err := inst.Prepare(`insert into v2questions(qid, boardId, ownerUid, qTitle, qContent, qImgUrls, qType,isAnonymous, qStatus, createTs, modTs,sameAskUid,ext) 
+		values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? ,?)`)
 
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_PREPARE, err.Error())
@@ -84,7 +85,7 @@ func PostQuestion(uin int64, boardId int, title, content, imgUrls string, isAnon
 
 	status := 0 //0 默认
 
-	res, err := stmt.Exec(0, boardId, uin, title, content, imgUrls, isAnonymous, status, ts, 0, "", ext)
+	res, err := stmt.Exec(0, boardId, uin, title, content, imgUrls, qType,isAnonymous, status, ts, 0, "", ext)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
 		log.Error(err.Error())

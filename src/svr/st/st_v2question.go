@@ -10,9 +10,11 @@ type V2QuestionInfo struct {
 	QContent      string             `json:"qContent"`
 	QImgUrls      string             `json:"qImgUrls"`
 	OwnerInfo     *UserProfileInfo   `json:"ownerInfo"`
+	QType         int                `json:"qType"`
 	IsAnonymous   bool               `json:"isAnonymous"`
 	CreateTs      int                `json:"createTs"`
 	ModTs         int                `json:"modTs"`
+	Ext           string             `json:"ext"`
 	AnswerCnt     int                `json:"answerCnt"`
 	BestAnswer    *AnswersInfo       `json:"bestAnswer"`
 	NewResponders []*UserProfileInfo `json:"newResponders"`

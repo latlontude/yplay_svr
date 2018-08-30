@@ -75,7 +75,7 @@ func AutoQuestion(boardId int) (ids []int, qids []int64, restTime int64, msg str
 	}
 
 	auto_question_cnt := 0
-	sql := fmt.Sprintf(`select id,boardId,qTitle,qContent,qImgUrls,isAnonymous from auto_question where qStatus = 0 and boardId = %d limit 5`, boardId)
+	sql := fmt.Sprintf(`select id,boardId,qTitle,qContent,qImgUrls,qType,isAnonymous from auto_question where qStatus = 0 and boardId = %d limit 5`, boardId)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -103,10 +103,12 @@ func AutoQuestion(boardId int) (ids []int, qids []int64, restTime int64, msg str
 		var qTitle string
 		var qContent string
 		var qImgUrls string
+		var qType int
 		var isAnonymous bool
 		var ext string
-		rows.Scan(&id, &boardId, &qTitle, &qContent, &qImgUrls, &isAnonymous)
-		qid, err := PostQuestion(randomUids[index], boardId, qTitle, strings.Trim(qContent, " \n\t"), qImgUrls, isAnonymous, ext)
+		rows.Scan(&id, &boardId, &qTitle, &qContent, &qImgUrls,&qType, &isAnonymous)
+		qid, err := PostQuestion(randomUids[index], boardId, qTitle, strings.Trim(qContent, " \n\t"), qImgUrls, qType,isAnonymous, ext)
+		time.Sleep(time.Duration(1)*time.Second)
 		if err != nil {
 
 		}

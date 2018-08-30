@@ -101,7 +101,7 @@ func GetV2QuestionsAndAnswer(uin int64, fUin int64, pageSize int, pageNum int) (
 	if fUin > 0 {
 		sql = fmt.Sprintf(`select v2answers.answerId,v2answers.qid,v2answers.answerContent,v2answers.answerImgUrls,v2answers.answerTs,v2answers.ext,
 v2questions.qid, v2questions.boardId,v2questions.ownerUid,v2questions.qTitle,v2questions.qContent,
-v2questions.qImgUrls,v2questions.isAnonymous,v2questions.createTs,v2questions.modTs,v2questions.sameAskUid,v2questions.ext
+v2questions.qImgUrls,v2questions.qType,v2questions.isAnonymous,v2questions.createTs,v2questions.modTs,v2questions.sameAskUid,v2questions.ext
 from   v2answers ,v2questions
 where v2answers.answerStatus = 0 
 and v2questions.qStatus = 0 
@@ -112,7 +112,7 @@ and v2answers.ownerUid = %d`, fUin)
 		//自己看自己主页 可以看到匿名问题
 		sql = fmt.Sprintf(`select v2answers.answerId,v2answers.qid,v2answers.answerContent,v2answers.answerImgUrls,v2answers.answerTs,v2answers.ext,
 v2questions.qid, v2questions.boardId,v2questions.ownerUid,v2questions.qTitle,v2questions.qContent,
-v2questions.qImgUrls,v2questions.isAnonymous,v2questions.createTs,v2questions.modTs,v2questions.sameAskUid,v2questions.ext
+v2questions.qImgUrls,v2questions.qType,v2questions.isAnonymous,v2questions.createTs,v2questions.modTs,v2questions.sameAskUid,v2questions.ext
 from   v2answers ,v2questions
 where v2answers.answerStatus = 0 
 and v2questions.qStatus = 0 
@@ -156,6 +156,7 @@ and v2answers.ownerUid = %d`, uin)
 			&info.QTitle,
 			&info.QContent,
 			&info.QImgUrls,
+			&info.QType,
 			&info.IsAnonymous,
 			&info.CreateTs,
 			&info.ModTs,
@@ -243,6 +244,7 @@ and v2answers.ownerUid = %d`, uin)
 			&info.QTitle,
 			&info.QContent,
 			&info.QImgUrls,
+			&info.QType,
 			&info.IsAnonymous,
 			&qStatus,
 			&info.CreateTs,

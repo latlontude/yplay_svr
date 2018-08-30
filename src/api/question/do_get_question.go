@@ -19,6 +19,7 @@ type GetQuestionsReq struct {
 	PageNum  int `schema:"pageNum"`
 	PageSize int `schema:"pageSize"`
 	Qid      int `schema:"lastQid"`
+	Version  int `schema:"version"`
 }
 
 type GetQuestionsRsp struct {
@@ -30,7 +31,7 @@ func doGetQuestions(req *GetQuestionsReq, r *http.Request) (rsp *GetQuestionsRsp
 
 	log.Debugf("uin %d, GetQuestionsReq %+v", req.Uin, req)
 
-	questions, totalCnt, err := GetQuestions(req.Uin, req.Qid, req.BoardId, req.PageNum, req.PageSize)
+	questions, totalCnt, err := GetQuestions(req.Uin, req.Qid, req.BoardId, req.PageNum, req.PageSize,req.Version)
 
 	if err != nil {
 		log.Errorf("uin %d, GetQuestions error, %s", req.Uin, err.Error())
@@ -44,7 +45,7 @@ func doGetQuestions(req *GetQuestionsReq, r *http.Request) (rsp *GetQuestionsRsp
 	return
 }
 
-func GetQuestions(uin int64, qid, boardId, pageNum, pageSize int) (questions []*st.V2QuestionInfo, totalCnt int, err error) {
+func GetQuestions(uin int64, qid, boardId, pageNum, pageSize int,version int) (questions []*st.V2QuestionInfo, totalCnt int, err error) {
 
 	//log.Debugf("start GetQuestions uin:%d", uin)
 
@@ -93,13 +94,18 @@ func GetQuestions(uin int64, qid, boardId, pageNum, pageSize int) (questions []*
 	//第一次拉去列表 没有qid
 	s = 0
 	if qid == 0 {
-		sql = fmt.Sprintf(`select qid, ownerUid, qTitle, qContent, qImgUrls, isAnonymous, createTs, modTs ,ext from v2questions 
-		where qStatus = 0 and (qContent != "" or qImgUrls != "") and boardId = %d order by qid desc limit %d, %d`, boardId, s, e)
+		sql = fmt.Sprintf(`select qid, ownerUid, qTitle, qContent, qImgUrls,qType, isAnonymous, createTs, modTs ,ext from v2questions 
+		where qStatus = 0 and (qContent != "" or qImgUrls != "") and boardId = %d order by createTs desc limit %d, %d`, boardId, s, e)
 	} else {
 		//后面拉去问题列表防止插入 重复数据 客户端传qid,从小于qid的地方去pageSize
-		sql = fmt.Sprintf(`select qid, ownerUid, qTitle, qContent, qImgUrls, isAnonymous, createTs, modTs ,ext from v2questions 
-		where qStatus = 0 and (qContent != "" or qImgUrls != "") and boardId = %d  and qid < %d
-		order by qid desc limit %d, %d`, boardId, qid, s, e)
+		cutQuestion ,err2 := GetV2Question(qid)
+		if err2 != nil {
+			return
+		}
+		createTs := cutQuestion.CreateTs
+		sql = fmt.Sprintf(`select qid, ownerUid, qTitle, qContent, qImgUrls, qType,isAnonymous, createTs, modTs ,ext from v2questions 
+		where qStatus = 0 and (qContent != "" or qImgUrls != "") and boardId = %d  and qid < %d and createTs <=%d
+		order by createTs desc limit %d, %d`, boardId, qid,createTs, s, e)
 	}
 
 	log.Errorf("SQL:%s", sql)
@@ -119,6 +125,7 @@ func GetQuestions(uin int64, qid, boardId, pageNum, pageSize int) (questions []*
 			&info.QTitle,
 			&info.QContent,
 			&info.QImgUrls,
+			&info.QType,
 			&info.IsAnonymous,
 			&info.CreateTs,
 			&info.ModTs,

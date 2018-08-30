@@ -37,8 +37,8 @@ func AutoInput() (uids []int64, err error) {
 	}
 
 	//v2question表多加了一个字段  (同问sameAskUid)
-	stmt, err := inst.Prepare(`insert into auto_question(id, boardId, qTitle, qContent, qImgUrls, isAnonymous, qStatus, createTs) 
-		values(?, ?, ?, ?, ?, ?, ?, ?)`)
+	stmt, err := inst.Prepare(`insert into auto_question(id, boardId, qTitle, qContent, qImgUrls, qType,isAnonymous, qStatus, createTs) 
+		values(?, ?, ?, ?, ?, ?, ?, ? , ?)`)
 
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_PREPARE, err.Error())
@@ -65,7 +65,7 @@ func AutoInput() (uids []int64, err error) {
 	var qTitle, qImgUrls string
 	for _, row := range lineInfo {
 		log.Debugf("boardId:%s,info:%s,status:%s", row[0], row[1], row[2])
-		_, err = stmt.Exec(0, row[0], qTitle, row[1], qImgUrls, row[2], 0, ts)
+		_, err = stmt.Exec(0, row[0], qTitle, row[1], qImgUrls, 0,row[2], 0, ts)
 		if err != nil {
 			err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
 			log.Error(err.Error())

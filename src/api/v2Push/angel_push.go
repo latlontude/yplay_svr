@@ -191,3 +191,80 @@ func SendDemiseAngelPush(uin int64, newAngelUin int64, toUin int64) {
 	go im.SendV2CommonMsg(serviceAccountUin, toUin, dataType, dataStr, descStr)
 	return
 }
+
+//申请天使
+func SendApplyAngelPush(uin int64, boardId int, msgId int) {
+	var serviceAccountUin int64
+	serviceAccountUin = 100001 //客服号
+	operator, err := st.GetUserProfileInfo(uin)
+	if err != nil {
+		log.Errorf("get %d userprofile error :%v ", uin, err)
+		return
+	}
+
+	type ApplyAngelPush struct {
+		Operator *st.UserProfileInfo `json:"operator"` //操作者
+		BoardId  int                 `json:"boardId"`
+		MsgId    int                 `json:"msgId"`
+		Ts       int64               `json:"ts"`
+	}
+
+	var applyAngelPush ApplyAngelPush
+	applyAngelPush.Operator = operator
+	applyAngelPush.BoardId = boardId
+	applyAngelPush.MsgId = msgId
+	applyAngelPush.Ts = time.Now().Unix()
+
+	data, err := json.Marshal(&applyAngelPush)
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+
+	dataStr := string(data)
+	descStr := "收到新消息"
+	log.Debug("descStr:%s  dataStr:%s,uin:%d,touin:%d", descStr, dataStr, uin)
+	dataType := 32
+	go im.SendV2CommonMsg(serviceAccountUin, serviceAccountUin, dataType, dataStr, descStr)
+
+	return
+}
+
+
+//审核 天使
+func SendCheckApplyPush(uin int64, boardId int, result int ) {
+	var serviceAccountUin int64
+	serviceAccountUin = 100001 //客服号
+	operator, err := st.GetUserProfileInfo(serviceAccountUin)
+
+	if err != nil {
+		log.Errorf("get %d userprofile error :%v ", uin, err)
+		return
+	}
+
+	type CheckApplyPush struct {
+		Operator *st.UserProfileInfo `json:"operator"` //操作者
+		Result   int                 `json:"result"`    //1 通过 2未通过
+		Ts       int64               `json:"ts"`
+	}
+
+	var checkApplyPush CheckApplyPush
+	checkApplyPush.Operator = operator
+	checkApplyPush.Result   = result
+	checkApplyPush.Ts       = time.Now().Unix()
+
+	data, err := json.Marshal(&checkApplyPush)
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+
+	dataStr := string(data)
+	descStr := "收到新消息"
+	log.Debug("descStr:%s  dataStr:%s,uin:%d,touin:%d", descStr, dataStr, uin)
+
+	dataType := 33
+	go im.SendV2CommonMsg(serviceAccountUin, uin, dataType, dataStr, descStr)
+
+	return
+}

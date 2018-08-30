@@ -22,6 +22,7 @@ type BoardInfo struct {
 	CreateTs int `json:"createTs"`
 
 	IsAdmin bool `json:"isAdmin"`
+
 }
 
 func (this *BoardInfo) String() string {

@@ -19,9 +19,13 @@ var (
 		"/deleteAngel":    auth.Apify2(doDelAngel),       //卸任
 		"/inviteAngel":    auth.Apify2(doInviteAngel),    //邀请
 		"/acceptInvite":   auth.Apify2(doAcceptAngel),    //接收
+		"/applyAngel":     auth.Apify2(doApplyAngel),     //申请成为天使   //申请成为墙主
+		"/checkApply":     auth.Apify2(doCheckApply),     //审核天使 同意成为主天使
 	}
 
 	log = env.NewLogger("board")
 
 	boardMap = make(map[int]*st.BoardInfo) //boardId => boardInfo
+
+
 )

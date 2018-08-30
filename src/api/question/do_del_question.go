@@ -1,6 +1,7 @@
 package question
 
 import (
+	"api/answer"
 	"api/elastSearch"
 	"api/v2push"
 	"common/constant"
@@ -110,7 +111,9 @@ func DelQuestion(uin int64, qid int, reason string) (code int, err error) {
 	for rows.Next() {
 		var answerId int
 		rows.Scan(&answerId)
-		err2 := elastSearch.DelAnswerFromEs(answerId)
+		var pupuUin int64 = 100001
+		_,err2 := answer.DelAnswer(pupuUin, qid, answerId, "")
+		//err2 := elastSearch.DelAnswerFromEs(answerId)
 		if err2 != nil {
 			log.Errorf(err2.Error())
 		}

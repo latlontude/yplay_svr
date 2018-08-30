@@ -10,6 +10,7 @@ type ReplyInfo struct {
 	ReplyFromUserInfo *UserProfileInfo `json:"fromUserInfo"`
 	ReplyToUserInfo   *UserProfileInfo `json:"toUserInfo"`
 	ReplyTs           int64            `json:"replyTs"`
+	Ext               string           `json:"ext"`
 	LikeCnt           int              `json:"likeCnt"`
 	IsILike           bool             `json:"isILike"`
 }
@@ -20,6 +21,7 @@ type CommentInfo struct {
 	CommentContent string           `json:"commentContent"`
 	OwnerInfo      *UserProfileInfo `json:"ownerInfo"`
 	CommentTs      int              `json:"commentTs"`
+	Ext            string           `json:"ext"`
 	Replys         []ReplyInfo      `json:"replys"`
 	LikeCnt        int              `json:"likeCnt"`
 	IsILike        bool             `json:"isILike"`
