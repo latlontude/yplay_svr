@@ -125,26 +125,27 @@ func GetBoards(uin int64) (boards []*st.BoardInfo, err error) {
 	}
 	//该学校还没有开墙 插入一条墙记录
 	if !hasBoardId {
-		boards , err1 := CreateBoardInfo(uin,uInfo)
-		if err1 != nil {
-			log.Debugf("err1:%v",err1)
+		//不用 :=  局部变量覆盖boards
+		boards, err = CreateBoardInfo(uin, uInfo)
+		if err != nil {
+			log.Debugf("err1:%v", err)
 		}
-		uinList ,err2 := AutoRegister(uInfo)
-		if err1 != nil {
-			log.Debugf("err2:%v",err2)
+		uinList, err2 := AutoRegister(uInfo)
+		if err2 != nil {
+			log.Debugf("err2:%v", err2)
 		}
-		//创建完墙 插入二十条问题
-		err3 := InsertQuestions(boards[0].BoardId,uinList)
+		//创建完墙 插入5问题
+		err3 := InsertQuestions(boards[0].BoardId, uinList)
 
 		if err3 != nil {
-			log.Debugf("err3:%v",err3)
+			log.Debugf("err3:%v", err3)
 		}
 	}
-	log.Debugf("end GetBoards boards:%+v", boards)
 	return
 }
 
-func CreateBoardInfo(uin int64 , uInfo *st.UserProfileInfo)(boards []*st.BoardInfo, err error){
+func CreateBoardInfo(uin int64, uInfo *st.UserProfileInfo) (boards []*st.BoardInfo, err error) {
+	boards = make([]*st.BoardInfo, 0)
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
 	if inst == nil {
 		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
@@ -203,13 +204,11 @@ func CreateBoardInfo(uin int64 , uInfo *st.UserProfileInfo)(boards []*st.BoardIn
 	}
 	info.IsAdmin = isAdmin
 	boards = append(boards, &info)
-
+	log.Debugf("ceate boards :%v", boards)
 	return
 }
 
-
-
-func InsertQuestions(boardId int,registerUin []int64)(err error) {
+func InsertQuestions(boardId int, registerUin []int64) (err error) {
 
 	log.Debugf("insertNewQuestions")
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
@@ -221,7 +220,7 @@ func InsertQuestions(boardId int,registerUin []int64)(err error) {
 	}
 
 	sql := fmt.Sprintf(`select qTitle,qContent,qImgUrls,qType,isAnonymous from no_boardInfo_question  limit 20`)
-	log.Debugf("insertNewQuestions sql:%s",sql)
+	log.Debugf("insertNewQuestions sql:%s", sql)
 
 	rows, err := inst.Query(sql)
 	if err != nil {
@@ -233,8 +232,7 @@ func InsertQuestions(boardId int,registerUin []int64)(err error) {
 	index := 0
 	registerUinIndex := 0
 
-
-	log.Debugf("registerUin:%v",registerUin)
+	log.Debugf("registerUin:%v", registerUin)
 	for rows.Next() {
 		var info st.V2QuestionInfo
 		var qStatus int
@@ -246,22 +244,20 @@ func InsertQuestions(boardId int,registerUin []int64)(err error) {
 			&info.QType,
 			&info.IsAnonymous)
 
+		log.Debugf("info:%v", info)
 
-		log.Debugf("info:%v",info)
-
-		if registerUinIndex == len(registerUin){
+		if registerUinIndex == len(registerUin) {
 			registerUinIndex = 0
 		}
 		createTs := int(time.Now().Unix()) + index
 		sqlArr = append(sqlArr, fmt.Sprintf(`insert into v2questions values(%d, %d, %d, '%s', '%s', '%s', %d, %t, %d, %d, %d, '%s' ,'%s')`,
-			0,boardId,registerUin[registerUinIndex],info.QTitle,info.QContent,info.QImgUrls,info.QType,info.IsAnonymous,qStatus,createTs,info.ModTs,sameAskUid,info.Ext))
-
+			0, boardId, registerUin[registerUinIndex], info.QTitle, info.QContent, info.QImgUrls, info.QType, info.IsAnonymous, qStatus, createTs, info.ModTs, sameAskUid, info.Ext))
 
 		registerUinIndex++
 		index++
 	}
 
-	log.Debugf("sqlArr:%v",sqlArr)
+	log.Debugf("sqlArr:%v", sqlArr)
 
 	if len(sqlArr) == 0 {
 		log.Debugf("no question in no_boardInfo_question")
