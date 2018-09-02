@@ -336,7 +336,7 @@ func CreateNewSnapSession(uin, uid int64) (groupId string, err error) {
 
 	log.Debugf("begin uin %d, uid %d, CreateNewSnapSession ", uin, uid)
 
-	if uin == uid || uin <= 0 || uid <= 0 {
+	if uin == uid && uin != 100001 || uin <= 0 || uid <= 0 {
 		log.Errorf("invalid uin %d, uid %d", uin, uid)
 		return
 	}

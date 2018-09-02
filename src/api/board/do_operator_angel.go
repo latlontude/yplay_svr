@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func AddAngelInAdmin(uin int64, boardId int, labelId int, AngelUin int64) (err error) {
+func AddAngelInAdmin(uin int64, boardId int, labelId int, AngelUin int64, adminType int) (err error) {
 
 	if uin < 0 {
 		return
@@ -41,7 +41,7 @@ func AddAngelInAdmin(uin int64, boardId int, labelId int, AngelUin int64) (err e
 		log.Debugf("have joined admin :uin:%d,angelUin:%d", uin, AngelUin)
 		return
 	}
-	stmt, err := inst.Prepare(`insert into experience_admin(id, boardId, labelId,uin,ts) values(?, ?, ?, ?, ?)`)
+	stmt, err := inst.Prepare(`insert into experience_admin(id, boardId, labelId,uin,ts ,type) values(?, ?, ?, ?, ?, ?)`)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_PREPARE, err.Error())
 		log.Error(err.Error())
@@ -51,7 +51,7 @@ func AddAngelInAdmin(uin int64, boardId int, labelId int, AngelUin int64) (err e
 
 	ts := time.Now().Unix()
 
-	_, err = stmt.Exec(0, boardId, labelId, AngelUin, ts)
+	_, err = stmt.Exec(0, boardId, labelId, AngelUin, ts, adminType)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
 		log.Error(err.Error())
@@ -383,9 +383,8 @@ func AcceptAngel(uin int64, boardId int, msgId int) (err error) {
 				log.Error(err.Error())
 				return
 			}
-
 			//加入admin表
-			err = AddAngelInAdmin(uin, boardId, 0, uin)
+			err = AddAngelInAdmin(uin, boardId, 0, uin, 0)
 			if err != nil {
 				log.Errorf("add angel err , uin:%d err:%+v", uin, err.Error())
 				return

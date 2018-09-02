@@ -25,6 +25,7 @@ var (
 		"/getreqaddfrienduins":     auth.Apify2(doGetReqAddFriendUins),    //已经申请加好友的ID列表
 		"/addcustomserviceaccount": auth.Apify(doAddCustomServiceAccount), //添加客服号
 		"/addAll":                  auth.Apify(doAddAll),                  //扫描数据库添加客服号
+		"/removeFriend":            auth.Apify(doRemoveFriendS2S),
 	}
 
 	log = env.NewLogger("sns")

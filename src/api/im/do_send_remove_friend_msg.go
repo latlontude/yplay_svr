@@ -146,3 +146,63 @@ func SendRemoveFriendMsg(uin1 int64, uin2 int64) (err error) {
 
 	return
 }
+
+func RemoveFriendS2S(uin1 int64, uin2 int64) (err error) {
+
+	sig, err := GetAdminSig()
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+
+	msg, err := MakeIMRemoveFriendMsg(uin1, uin2)
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+
+	log.Errorf("SendRemoveFriendMsgReq uin1 %d, uin2 %d, req %+v", uin1, uin2, msg)
+
+	data, err := json.Marshal(&msg)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_IM_REQ_SEND_VOTE_MSG, err.Error())
+		log.Errorf(err.Error())
+		return
+	}
+
+	url := fmt.Sprintf("https://console.tim.qq.com/v4/openim/sendmsg?usersig=%s&identifier=%s&sdkappid=%d&random=%d&contenttype=json",
+		sig, constant.ENUM_IM_IDENTIFIER_ADMIN, constant.ENUM_IM_SDK_APPID, time.Now().Unix())
+
+	hrsp, err := http.Post(url, "application/octet-stream", bytes.NewBuffer(data))
+	if err != nil {
+		err = rest.NewAPIError(constant.E_IM_REQ_SEND_VOTE_MSG, err.Error())
+		log.Errorf(err.Error())
+		return
+	}
+
+	body, err := ioutil.ReadAll(hrsp.Body)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_IM_REQ_SEND_VOTE_MSG, err.Error())
+		log.Errorf(err.Error())
+		return
+	}
+
+	var rsp IMSendMsgRsp
+
+	err = json.Unmarshal(body, &rsp)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_IM_REQ_SEND_VOTE_MSG, err.Error())
+		log.Errorf(err.Error())
+		return
+	}
+
+	log.Errorf("SendRemoveFriendMsgRsp uin1 %d, uin2 %d, rsp %+v", uin1, uin2, rsp)
+
+	if rsp.ErrorCode != 0 {
+		err = rest.NewAPIError(constant.E_IM_REQ_SEND_VOTE_MSG, rsp.ErrorInfo)
+		log.Errorf(err.Error())
+		return
+	}
+
+	return
+}

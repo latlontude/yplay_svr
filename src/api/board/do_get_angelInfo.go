@@ -216,6 +216,11 @@ func GetExpAngelInfoList(uin int64, boardId int) (angelList []*st.UserProfileInf
 		rows.Scan(&boardUin)
 	}
 
+	if boardUin == 0 {
+		log.Debugf("没有墙主  uin=%d,boardId=%d", uin, boardId)
+		return
+	}
+
 	sql = fmt.Sprintf(`select uin from experience_admin where uin = %d and boardId = %d `, boardUin, boardId)
 	rows, err = inst.Query(sql)
 	if err != nil {

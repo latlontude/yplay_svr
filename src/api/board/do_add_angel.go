@@ -22,7 +22,7 @@ func doAddAngel(req *AddAngelReq, r *http.Request) (rsp *AddAngelRsp, err error)
 
 	log.Debugf("uin %d, AddAngelReq succ, %+v", req.Uin, rsp)
 
-	err = AddAngelInAdmin(req.Uin, req.BoardId, req.LabelId, req.AngelUin)
+	err = AddAngelInAdmin(req.Uin, req.BoardId, req.LabelId, req.AngelUin, 0)
 
 	if err != nil {
 		log.Errorf("uin %d, AddAngelRsp error, %s", req.Uin, err.Error())

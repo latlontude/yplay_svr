@@ -219,7 +219,7 @@ func InsertQuestions(boardId int, registerUin []int64) (err error) {
 		return
 	}
 
-	sql := fmt.Sprintf(`select qTitle,qContent,qImgUrls,qType,isAnonymous from no_boardInfo_question  limit 20`)
+	sql := fmt.Sprintf(`select qTitle,qContent,qImgUrls,qType,isAnonymous from no_boardInfo_question `)
 	log.Debugf("insertNewQuestions sql:%s", sql)
 
 	rows, err := inst.Query(sql)

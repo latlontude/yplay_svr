@@ -90,7 +90,7 @@ func MakeIMAcceptAddFriendMsg(uin1 int64, uin2 int64) (msg IMC2CMsg, err error) 
 
 func SendAcceptAddFriendMsg(uin1 int64, uin2 int64) (err error) {
 
-	if uin1 == 0 || uin2 == 0 || uin1 == uin2 {
+	if uin1 == 0 || uin2 == 0 || uin1 == uin2 && uin1 != 100001 {
 		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid params")
 		log.Errorf(err.Error())
 		return
