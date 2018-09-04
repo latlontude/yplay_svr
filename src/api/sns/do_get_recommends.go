@@ -35,21 +35,21 @@ type RecommendInfo struct {
 	HeadImgUrl string `json:"headImgUrl"`
 	Gender     int    `json:"gender"`
 
-	Grade      int    `json:"grade"`
-	SchoolId   int    `json:"schoolId"`
-	SchoolType int    `json:"schoolType"`
-	SchoolName string `json:"schoolName"`
-	Phone      string `json:"phone"`
-
-	Status        int    `json:"status"`        //0非好友 1好友 2已经邀请对方 3对方已经邀请我
-	RecommendType int    `json:"recommendType"` //同校 通讯录已注册但是非好友 通讯录未注册
-	RecommendDesc string `json:"recommendDesc"` //推荐描述
+	Grade          int    `json:"grade"`
+	SchoolId       int    `json:"schoolId"`
+	SchoolType     int    `json:"schoolType"`
+	SchoolName     string `json:"schoolName"`
+	Phone          string `json:"phone"`
+	EnrollmentYear int    `json:"enrollmentYear"`
+	Status         int    `json:"status"`        //0非好友 1好友 2已经邀请对方 3对方已经邀请我
+	RecommendType  int    `json:"recommendType"` //同校 通讯录已注册但是非好友 通讯录未注册
+	RecommendDesc  string `json:"recommendDesc"` //推荐描述
 }
 
 func (this *RecommendInfo) String() string {
 
-	return fmt.Sprintf(`RecommendInfo{Uin:%d, NickName:%s, HeadImgUrl:%s, Gender:%d, Grade:%d, SchoolId:%d, SchoolType:%d, SchoolName:%s, Phone:%s, Status:%d, RecommendType:%d RecommendDesc:%s}`,
-		this.Uin, this.NickName, this.HeadImgUrl, this.Gender, this.Grade, this.SchoolId, this.SchoolType, this.SchoolName, this.Phone, this.Status, this.RecommendType, this.RecommendDesc)
+	return fmt.Sprintf(`RecommendInfo{Uin:%d, NickName:%s, HeadImgUrl:%s, Gender:%d, Grade:%d, SchoolId:%d, SchoolType:%d, SchoolName:%s, Phone:%s, EnrollmentYear:%d,Status:%d, RecommendType:%d RecommendDesc:%s}`,
+		this.Uin, this.NickName, this.HeadImgUrl, this.Gender, this.Grade, this.SchoolId, this.SchoolType, this.SchoolName, this.Phone, this.EnrollmentYear, this.Status, this.RecommendType, this.RecommendDesc)
 }
 
 func doGetRecommends(req *GetRecommendsReq, r *http.Request) (rsp *GetRecommendsRsp, err error) {
@@ -72,7 +72,7 @@ func doGetRecommends(req *GetRecommendsReq, r *http.Request) (rsp *GetRecommends
 
 	rsp = &GetRecommendsRsp{total, friends}
 
-	//log.Debugf("uin %d, GetRecommendsRsp succ, %+v", req.Uin, rsp)
+	log.Debugf("uin %d, GetRecommendsRsp succ, %+v", req.Uin, rsp)
 
 	return
 }
@@ -246,7 +246,7 @@ func GetRecommendsFromSameSchool(uin int64, subType int, pageNum, pageSize int) 
 		return
 	}
 
-	sql = fmt.Sprintf(`select uin, phone, nickName, headImgUrl, gender, grade, schoolId, schoolType, schoolName, deptId, deptName from profiles where %s order by uin desc`, conditions)
+	sql = fmt.Sprintf(`select uin, phone, nickName, headImgUrl, gender, grade, schoolId, schoolType, schoolName, deptId, deptName ,enrollmentYear from profiles where %s order by uin desc`, conditions)
 	rows, err = inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -266,7 +266,7 @@ func GetRecommendsFromSameSchool(uin int64, subType int, pageNum, pageSize int) 
 		var deptId int
 		var deptName string
 
-		rows.Scan(&fi.Uin, &fi.Phone, &fi.NickName, &fi.HeadImgUrl, &fi.Gender, &fi.Grade, &fi.SchoolId, &fi.SchoolType, &fi.SchoolName, &deptId, &deptName)
+		rows.Scan(&fi.Uin, &fi.Phone, &fi.NickName, &fi.HeadImgUrl, &fi.Gender, &fi.Grade, &fi.SchoolId, &fi.SchoolType, &fi.SchoolName, &deptId, &deptName, &fi.EnrollmentYear)
 
 		if len(fi.HeadImgUrl) > 0 {
 			fi.HeadImgUrl = fmt.Sprintf("http://yplay-1253229355.image.myqcloud.com/headimgs/%s", fi.HeadImgUrl)
@@ -284,8 +284,8 @@ func GetRecommendsFromSameSchool(uin int64, subType int, pageNum, pageSize int) 
 			//初始为非好友状态
 			fi.Status = constant.ENUM_SNS_STATUS_NOT_FRIEND
 			fi.RecommendType = subType
-			fi.RecommendDesc = fmt.Sprintf("同校%s", st.GetGradeDescBySchool(fi.SchoolType, fi.Grade))
-
+			//fi.RecommendDesc = fmt.Sprintf("同校%s", st.GetGradeDescBySchool(fi.SchoolType, fi.Grade))
+			fi.RecommendDesc = fmt.Sprintf("同校%d", fi.EnrollmentYear)
 			/*if subType == constant.ENUM_RECOMMEND_FRIEND_TYPE_SAME_SCHOOL {
 				recommUinsMap[fi.Uin] = &fi
 				recommUinsMaptmp[fi.Uin] = deptId
