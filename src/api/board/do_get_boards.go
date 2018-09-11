@@ -123,8 +123,8 @@ func GetBoards(uin int64) (boards []*st.BoardInfo, err error) {
 
 		hasBoardId = true
 	}
-	//该学校还没有开墙 插入一条墙记录
-	if !hasBoardId {
+	//该学校还没有开墙 插入一条墙记录  并且学校存在
+	if !hasBoardId && uInfo.SchoolId < 9999997 {
 		//不用 :=  局部变量覆盖boards
 		boards, err = CreateBoardInfo(uin, uInfo)
 		if err != nil {

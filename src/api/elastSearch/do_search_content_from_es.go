@@ -55,6 +55,7 @@ type SearchInterlocutionFromEsReq struct {
 	BoardId  int    `schema:"boardId"`
 	PageNum  int    `schema:"pageNum"`
 	PageSize int    `schema:"pageSize"`
+	Version  int    `schema:"version"`
 }
 
 type SearchInterlocutionFromEsRsp struct {
@@ -66,7 +67,7 @@ func doSearchInterlocutionFromEs(req *SearchInterlocutionFromEsReq, r *http.Requ
 
 	log.Debugf("uin %d, SearchInterlocutionFromEsReq %+v", req.Uin, req)
 
-	interlocution, totalCnt, err := SearchInterlocutionFromEs(req.Uin, req.Content, req.BoardId, req.PageNum, req.PageSize)
+	interlocution, totalCnt, err := SearchInterlocutionFromEs(req.Uin, req.Content, req.BoardId, req.PageNum, req.PageSize, req.Version)
 
 	if err != nil {
 		log.Errorf("uin %d, SearchInterlocutionFromEsReq error, %s", req.Uin, err.Error())
@@ -80,7 +81,7 @@ func doSearchInterlocutionFromEs(req *SearchInterlocutionFromEsReq, r *http.Requ
 	return
 }
 
-func SearchInterlocutionFromEs(uin int64, content string, boardId, pageNum, pageSize int) (interlocution []*Interlocution, totalCnt int, err error) {
+func SearchInterlocutionFromEs(uin int64, content string, boardId, pageNum, pageSize int, version int) (interlocution []*Interlocution, totalCnt int, err error) {
 
 	totalCnt = 0
 
@@ -227,7 +228,7 @@ func SearchInterlocutionFromEs(uin int64, content string, boardId, pageNum, page
 		highlight := e.Highlight
 		log.Debugf("boardId:%d,qid :%d , qContent : %s,high:%+v", qstBoardId, qid, qContent, highlight)
 
-		question, err1 := common.GetV2Question(qid)
+		question, err1 := common.GetV2Question(qid, version)
 		if err1 != nil {
 			log.Errorf("get question error")
 			continue
@@ -263,7 +264,7 @@ func SearchInterlocutionFromEs(uin int64, content string, boardId, pageNum, page
 	//hash 剩余的(只有回答没有匹配到提问的)
 	for k, v := range hashmap {
 		qid := hashQidAnswerId[k]
-		question, err2 := common.GetV2Question(int(qid))
+		question, err2 := common.GetV2Question(int(qid), version)
 		interQts := hashmap[k]
 		interQts.Question = question
 		if err2 != nil {

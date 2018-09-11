@@ -43,6 +43,7 @@ type GetExperienceDetailReq struct {
 	LabelId  int `schema:"labelId"`
 	PageNum  int `schema:"pageNum"`
 	PageSize int `schema:"pageSize"`
+	Version  int `schema:"version"`
 }
 
 type GetExperienceDetailRsp struct {
@@ -57,7 +58,7 @@ func doGetExpDetail(req *GetExperienceDetailReq, r *http.Request) (rsp *GetExper
 
 	log.Debugf("uin %d, GetExperienceDetailReq succ, %+v", req.Uin, req)
 
-	expInfo, totalCnt, operators, updateTime, err := getExpDetail(req.Uin, req.BoardId, req.LabelId, req.PageNum, req.PageSize)
+	expInfo, totalCnt, operators, updateTime, err := getExpDetail(req.Uin, req.BoardId, req.LabelId, req.PageNum, req.PageSize, req.Version)
 
 	if err != nil {
 		log.Errorf("uin %d, GetExperienceDetailReq error, %s", req.Uin, err.Error())
@@ -80,7 +81,7 @@ func doGetExpDetail(req *GetExperienceDetailReq, r *http.Request) (rsp *GetExper
 查看经验弹详情 (查看某个经验弹收录的所有回答)
 */
 
-func getExpDetail(uin int64, boardId, labelId, pageNum, pageSize int) (ExpInfo []*ExperienceInfo, totalCnt int, operators []*st.UserProfileInfo, updateTime int64, err error) {
+func getExpDetail(uin int64, boardId, labelId, pageNum, pageSize int, version int) (ExpInfo []*ExperienceInfo, totalCnt int, operators []*st.UserProfileInfo, updateTime int64, err error) {
 
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
 	if inst == nil {
@@ -131,7 +132,7 @@ func getExpDetail(uin int64, boardId, labelId, pageNum, pageSize int) (ExpInfo [
 
 		rows.Scan(&qid, &answerId, &ts)
 
-		Exp.Question, _ = common.GetV2Question(qid)
+		Exp.Question, _ = common.GetV2Question(qid, version)
 		Exp.AnswerInfo, _ = common.GetV2Answer(answerId)
 
 		//点赞数

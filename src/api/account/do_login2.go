@@ -1,6 +1,7 @@
 package account
 
 import (
+	"api/story"
 	"common/constant"
 	"common/env"
 	"common/mydb"
@@ -27,13 +28,14 @@ type Login2Req struct {
 }
 
 type Login2Rsp struct {
-	HasCheckInviteCode int                 `json:"hasCheckInviteCode"` //是否校验过邀请码
-	Uin                int64               `json:"uin"`
-	Token              string              `json:"token"`
-	Ver                int                 `json:"ver"`
-	IsNewUser          int                 `json:"isNewUser"`
-	Info               *st.UserProfileInfo `json:"info"`
-	FriendListVer      int64               `json:"friendListVer"` //好友列表的版本号
+	HasCheckInviteCode int                       `json:"hasCheckInviteCode"` //是否校验过邀请码
+	Uin                int64                     `json:"uin"`
+	Token              string                    `json:"token"`
+	Ver                int                       `json:"ver"`
+	IsNewUser          int                       `json:"isNewUser"`
+	Info               *st.UserProfileInfo       `json:"info"`
+	FriendListVer      int64                     `json:"friendListVer"` //好友列表的版本号
+	ModInfos           []*st.ProfileModQuotaInfo `json:"modInfos"`
 }
 
 func doLogin2(req *Login2Req, r *http.Request) (rsp *Login2Rsp, err error) {
@@ -193,7 +195,28 @@ func Login2(phone string, code string, uuid int64, device, os, appVer string) (r
 		hasCheckInviteCode = 1
 	}
 
-	rsp = &Login2Rsp{hasCheckInviteCode, uin, token, env.Config.Token.VER, isNewUser, info, friendListVer}
+	newsCnt, err := story.GetMyStoriesCnt(uin)
+	if err != nil {
+		log.Errorf("faied to get news count")
+		return
+	}
+
+	info.NewsCnt = newsCnt
+
+	friendsCnt, err := st.GetMyFriendsCnt(uin)
+	if err != nil {
+		log.Errorf("faied to get friends count")
+		return
+	}
+
+	modInfos, err := st.GetUserProfileModQuotaAllInfo(uin)
+	if err != nil {
+		log.Errorf("uin %d, modInfos error, %s", uin, err.Error())
+		return
+	}
+	info.FriendCnt = friendsCnt
+
+	rsp = &Login2Rsp{hasCheckInviteCode, uin, token, env.Config.Token.VER, isNewUser, info, friendListVer, modInfos}
 
 	go RecordUserDeviceInfo(uin, uuid, phone, device, os, appVer)
 

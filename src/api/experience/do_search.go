@@ -19,6 +19,7 @@ type SearchAllReq struct {
 	Content  string `schema:"content"`
 	PageNum  int    `schema:"pageNum"`
 	PageSize int    `schema:"pageSize"`
+	Version  int    `schema:"version"`
 }
 
 type InterlocutionRsp struct {
@@ -36,7 +37,7 @@ func doSearchAll(req *SearchAllReq, r *http.Request) (rsp *SearchAllRsp, err err
 
 	log.Debugf("uin %d, SearchAllReq succ, %+v", req.Uin, req)
 	//TODO search  pupu用户       search label    search question and answer
-	friends, getLabelListRsp, interlocutionRsp, err := SearchAll(req.Uin, req.BoardId, req.Content, req.PageNum, req.PageSize)
+	friends, getLabelListRsp, interlocutionRsp, err := SearchAll(req.Uin, req.BoardId, req.Content, req.PageNum, req.PageSize, req.Version)
 
 	if err != nil {
 		log.Errorf("uin %d, GetLabelListReq error, %s", req.Uin, err.Error())
@@ -49,7 +50,7 @@ func doSearchAll(req *SearchAllReq, r *http.Request) (rsp *SearchAllRsp, err err
 	return
 }
 
-func SearchAll(uin int64, boardId int, content string, pageNum int, pageSize int) (friends []*sns.SearchFriendInfo, getLabelListRsp GetLabelListRsp, interlocutionRsp InterlocutionRsp, err error) {
+func SearchAll(uin int64, boardId int, content string, pageNum int, pageSize int, version int) (friends []*sns.SearchFriendInfo, getLabelListRsp GetLabelListRsp, interlocutionRsp InterlocutionRsp, err error) {
 
 	isCn := hasCn(content)
 	if isCn == false {
@@ -75,7 +76,7 @@ func SearchAll(uin int64, boardId int, content string, pageNum int, pageSize int
 		pageSize = pageSize - labelListCnt
 	}
 
-	interlocution, totalCnt, err := elastSearch.SearchInterlocutionFromEs(uin, content, boardId, pageNum, pageSize)
+	interlocution, totalCnt, err := elastSearch.SearchInterlocutionFromEs(uin, content, boardId, pageNum, pageSize, version)
 	if err != nil {
 		log.Errorf("uin %d, GetLabelList error, %s", uin, err.Error())
 	}

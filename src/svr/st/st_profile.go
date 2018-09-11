@@ -34,12 +34,16 @@ type UserProfileInfo struct {
 	EnrollmentYear int    `json:"enrollmentYear"` //入学年份
 	Hometown       string `json:"hometown"`       //家乡
 
+	GemCnt    int `json:"gemCnt"`
+	FriendCnt int `json:"friendCnt"`
+	NewsCnt   int `json:"newsCnt"`
+
 	Type int    `json:"type"` //是否是白名单用户  0:非白名单  1:白名单
 	Ext  string `json:"ext"`
 	Src  int    `json:"src"` //来源  默认:0:同校  1:同城 2:其他
 
-	IsAngelDays int `json:"isAngelDays"`        //成为天使的时间
-	
+	IsAngelDays int `json:"isAngelDays"` //成为天使的时间
+
 }
 
 type ExtInfo struct {
@@ -79,14 +83,22 @@ type UserProfileInfo2 struct {
 
 func (this *UserProfileInfo) String() string {
 
-	return fmt.Sprintf(`UserProfileInfo{Uin:%d, UserName:%s, Phone:%s, NickName:%s, HeadImgUrl:%s, Gender:%d, Age:%d, Grade:%d, SchoolId:%d, SchoolType:%d, SchoolName:%s, DeptId:%d, DeptName:%s ,Src:%d,type:%d,ext:%s}`,
-		this.Uin, this.UserName, this.Phone, this.NickName, this.HeadImgUrl, this.Gender, this.Age, this.Grade, this.SchoolId, this.SchoolType, this.SchoolName, this.DeptId, this.DeptName,this.Src,this.Type,this.Ext)
+	return fmt.Sprintf(`UserProfileInfo2{Uin:%d, UserName:%s, Phone:%s, NickName:%s, HeadImgUrl:%s, Gender:%d,
+Age:%d, Grade:%d, SchoolId:%d, SchoolType:%d, SchoolName:%s, DeptId:%d, DeptName:%s, GemCnt:%d, FriendCnt:%d,
+NewsCnt:%d,Src:%d,type:%d,ext:%s}`,
+		this.Uin, this.UserName, this.Phone, this.NickName, this.HeadImgUrl, this.Gender,
+		this.Age, this.Grade, this.SchoolId, this.SchoolType, this.SchoolName, this.DeptId,
+		this.DeptName, this.GemCnt, this.FriendCnt, this.NewsCnt, this.Src, this.Type, this.Ext)
 }
 
 func (this *UserProfileInfo2) String() string {
 
-	return fmt.Sprintf(`UserProfileInfo2{Uin:%d, UserName:%s, Phone:%s, NickName:%s, HeadImgUrl:%s, Gender:%d, Age:%d, Grade:%d, SchoolId:%d, SchoolType:%d, SchoolName:%s, DeptId:%d, DeptName:%s, GemCnt:%d, FriendCnt:%d, NewsCnt:%d,Src:%d,type:%d,ext:%s}`,
-		this.Uin, this.UserName, this.Phone, this.NickName, this.HeadImgUrl, this.Gender, this.Age, this.Grade, this.SchoolId, this.SchoolType, this.SchoolName, this.DeptId, this.DeptName, this.GemCnt, this.FriendCnt, this.NewsCnt,this.Src,this.Type,this.Ext)
+	return fmt.Sprintf(`UserProfileInfo2{Uin:%d, UserName:%s, Phone:%s, NickName:%s, HeadImgUrl:%s, Gender:%d,
+Age:%d, Grade:%d, SchoolId:%d, SchoolType:%d, SchoolName:%s, DeptId:%d, DeptName:%s, GemCnt:%d, FriendCnt:%d,
+NewsCnt:%d,Src:%d,type:%d,ext:%s}`,
+		this.Uin, this.UserName, this.Phone, this.NickName, this.HeadImgUrl, this.Gender,
+		this.Age, this.Grade, this.SchoolId, this.SchoolType, this.SchoolName, this.DeptId,
+		this.DeptName, this.GemCnt, this.FriendCnt, this.NewsCnt, this.Src, this.Type, this.Ext)
 }
 
 // func CopyProfileInfo2ProfileInfo2(info *UserProfileInfo, info2 *UserProfileInfo2) {

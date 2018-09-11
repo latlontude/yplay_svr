@@ -224,7 +224,7 @@ func SendApplyAngelPush(uin int64, boardId int, msgId int) {
 	dataStr := string(data)
 	descStr := "收到新消息"
 	log.Debugf("申请天使 ===> descStr:%s  dataStr:%s, uin:%d ", descStr, dataStr, uin)
-	go im.SendV2CommonMsg(serviceAccountUin, serviceAccountUin, 32, dataStr, descStr)
+	go im.SendV2CommonMsg(102688, serviceAccountUin, 32, dataStr, descStr)
 
 	text1 := "睡着了zZZ,明天早上10点马上回复你!"
 	text2 := "本噗10分钟内联系你注册时的电话号码"

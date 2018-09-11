@@ -2,6 +2,7 @@ package question
 
 import (
 	"api/board"
+	"api/common"
 	"api/label"
 	"common/constant"
 	"common/mydb"
@@ -19,6 +20,7 @@ type GetV2QuestionsformeReq struct {
 	Ver      int    `schema:"ver"`
 	PageNum  int    `schema:"pageNum"`
 	PageSize int    `schema:"pageSize"`
+	Version  int    `schema:"version"`
 }
 
 //提问总数 回答总数
@@ -52,7 +54,7 @@ func doGetV2QuestionsForMe(req *GetV2QuestionsformeReq, r *http.Request) (rsp *G
 	log.Debugf("uin %d, GetQuestionsReq %+v", req.Uin, req)
 
 	//我提出的问题
-	questions, totalCnt, qstCnt, answerCnt, likeTotalCnt, err := GetV2QuestionsAndAnswer(req.Uin, 0, req.PageSize, req.PageNum)
+	questions, totalCnt, qstCnt, answerCnt, likeTotalCnt, err := GetV2QuestionsAndAnswer(req.Uin, 0, req.PageSize, req.PageNum, req.Version)
 
 	labelList, err := GetHomeLabelInfo(req.Uin, 0)
 
@@ -80,7 +82,7 @@ fuin        好友uin
 pageSize    分页大小
 pageNum     第几页
 */
-func GetV2QuestionsAndAnswer(uin int64, fUin int64, pageSize int, pageNum int) (
+func GetV2QuestionsAndAnswer(uin int64, fUin int64, pageSize int, pageNum int, version int) (
 	questions []*st.V2QuestionInfo, totalCnt int, qstCnt int, answerCnt int, likeTotalCnt int, err error) {
 
 	questions = make([]*st.V2QuestionInfo, 0)
@@ -169,6 +171,8 @@ and v2answers.ownerUid = %d`, uin)
 		//回答问题的时间比问题创建时间更新  统一用createTs排序
 		info.CreateTs = answerInfo.AnswerTs
 
+		info.QContent = common.GetContentByVersion(info.QContent, info.QType, version)
+
 		if uid > 0 {
 			ui, err1 := st.GetUserProfileInfo(uid)
 			if err1 != nil {
@@ -252,7 +256,7 @@ and v2answers.ownerUid = %d`, uin)
 			&sameAskUid,
 			&info.Ext,
 		)
-
+		info.QContent = common.GetContentByVersion(info.QContent, info.QType, version)
 		boardInfo, err = board.GetBoardInfoByBoardId(uin, boardId)
 		info.Board = &boardInfo
 		if uid > 0 {

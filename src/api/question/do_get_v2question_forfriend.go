@@ -11,6 +11,7 @@ type GetV2QuestionsForFriendReq struct {
 	FUin     int64  `schema:"fuin"`
 	PageNum  int    `schema:"pageNum"`
 	PageSize int    `schema:"pageSize"`
+	Version  int    `schema:"version"`
 }
 
 func doGetV2QuestionsForFriend(req *GetV2QuestionsForFriendReq, r *http.Request) (rsp *GetV2QuestionsRsp, err error) {
@@ -18,7 +19,7 @@ func doGetV2QuestionsForFriend(req *GetV2QuestionsForFriendReq, r *http.Request)
 	log.Debugf("uin %d,fuid %d , GetQuestionsReq %+v", req.Uin, req.FUin, req)
 
 	//我提出的问题
-	questions, totalCnt, qstCnt, answerCnt, likeTotalCnt, err := GetV2QuestionsAndAnswer(req.Uin, req.FUin, req.PageSize, req.PageNum)
+	questions, totalCnt, qstCnt, answerCnt, likeTotalCnt, err := GetV2QuestionsAndAnswer(req.Uin, req.FUin, req.PageSize, req.PageNum, req.Version)
 
 	if err != nil {
 		log.Errorf("uin %d, doGetV2QuestionsForFriend error, %s", req.FUin, err.Error())

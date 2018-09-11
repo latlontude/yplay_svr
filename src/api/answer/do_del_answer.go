@@ -166,9 +166,10 @@ func getDelAnswerPermitOperators(answerId, qid int) (operators []int64, owner in
 		operators = append(operators, manager)
 	}
 
-	//回答者本人有权删除自己的回答
+	//回答者本人有权删除自己的回答  问题所有者有权利删除回答
 	//var owner int64
-	sql = fmt.Sprintf(`select ownerUid from v2answers where qid = %d and answerId = %d`, qid, answerId)
+	sql = fmt.Sprintf(`select v2questions.ownerUid,v2answers.ownerUid from v2questions,v2answers 
+where  v2answers.answerId = %d and v2answers.qid = %d and v2questions.qid = %d`, answerId, qid, qid)
 	rows, err = inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -176,11 +177,14 @@ func getDelAnswerPermitOperators(answerId, qid int) (operators []int64, owner in
 		return
 	}
 	defer rows.Close()
-
+	var qidOwner int64
 	for rows.Next() {
-		rows.Scan(&owner)
+		rows.Scan(&qidOwner, &owner)
 	}
 
+	if qidOwner != 0 {
+		operators = append(operators, qidOwner)
+	}
 	if owner != 0 {
 		operators = append(operators, owner)
 	}

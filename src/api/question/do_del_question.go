@@ -2,6 +2,7 @@ package question
 
 import (
 	"api/answer"
+	"api/common"
 	"api/elastSearch"
 	"api/v2push"
 	"common/constant"
@@ -17,8 +18,9 @@ type DelQuestionReq struct {
 	Token string `schema:"token"`
 	Ver   int    `schema:"ver"`
 
-	Qid    int    `schema:"qid"`
-	Reason string `schema:"reason"` //删除原因
+	Qid     int    `schema:"qid"`
+	Reason  string `schema:"reason"` //删除原因
+	Version int    `schema:"version"`
 }
 
 type DelQuestionRsp struct {
@@ -29,7 +31,7 @@ func doDelQuestion(req *DelQuestionReq, r *http.Request) (rsp *DelQuestionRsp, e
 
 	log.Debugf("uin %d, DelQuestionReq %+v", req.Uin, req)
 
-	code, err := DelQuestion(req.Uin, req.Qid, req.Reason)
+	code, err := DelQuestion(req.Uin, req.Qid, req.Reason, req.Version)
 
 	if err != nil {
 		log.Errorf("uin %d, DelQuestion error, %s", req.Uin, err.Error())
@@ -43,7 +45,7 @@ func doDelQuestion(req *DelQuestionReq, r *http.Request) (rsp *DelQuestionRsp, e
 	return
 }
 
-func DelQuestion(uin int64, qid int, reason string) (code int, err error) {
+func DelQuestion(uin int64, qid int, reason string, version int) (code int, err error) {
 	log.Debugf("start DelQuestion uin = %d qid = %d", uin, qid)
 
 	code = -1
@@ -111,8 +113,8 @@ func DelQuestion(uin int64, qid int, reason string) (code int, err error) {
 	for rows.Next() {
 		var answerId int
 		rows.Scan(&answerId)
-		var pupuUin int64 = 100001
-		_,err2 := answer.DelAnswer(pupuUin, qid, answerId, "")
+		//var pupuUin int64 = 100001
+		_, err2 := answer.DelAnswer(uin, qid, answerId, "")
 		//err2 := elastSearch.DelAnswerFromEs(answerId)
 		if err2 != nil {
 			log.Errorf(err2.Error())
@@ -121,7 +123,7 @@ func DelQuestion(uin int64, qid int, reason string) (code int, err error) {
 
 	//不是我自己删的  发推送
 	if !isMyself {
-		question, _ := GetV2Question(qid)
+		question, _ := common.GetV2Question(qid, version)
 		data, err1 := json.Marshal(&question)
 		if err1 != nil {
 			log.Errorf(err1.Error())
