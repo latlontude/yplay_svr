@@ -44,7 +44,7 @@ func doGetAnswers(req *GetAnswersReq, r *http.Request) (rsp *GetAnswersRsp, err 
 
 	log.Debugf("uin %d, GetAnswersReq %+v", req.Uin, req)
 
-	qStatus, err := isQusetionBeDeleted(req.Qid)
+	qStatus, err := isQuestionBeDeleted(req.Qid)
 	if err != nil {
 		log.Errorf("uin %d, GetAnswers error, %s", req.Uin, err.Error())
 		return
@@ -70,7 +70,7 @@ func doGetAnswers(req *GetAnswersReq, r *http.Request) (rsp *GetAnswersRsp, err 
 	return
 }
 
-func isQusetionBeDeleted(qid int) (qStatus int, err error) {
+func isQuestionBeDeleted(qid int) (qStatus int, err error) {
 
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
 	if inst == nil {

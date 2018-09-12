@@ -120,6 +120,7 @@ func GetQuestions(uin int64, qid, boardId, pageNum, pageSize int, version int) (
 	for rows.Next() {
 		var info st.V2QuestionInfo
 		var uid int64
+
 		rows.Scan(
 			&info.Qid,
 			&uid,
@@ -131,6 +132,8 @@ func GetQuestions(uin int64, qid, boardId, pageNum, pageSize int, version int) (
 			&info.CreateTs,
 			&info.ModTs,
 			&info.Ext)
+
+		info.AccessCount, _ = IncreaseQuestionAccessCount(info.Qid)
 
 		if uid > 0 {
 			ui, err1 := st.GetUserProfileInfo(uid)

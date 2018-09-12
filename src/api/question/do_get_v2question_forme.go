@@ -165,6 +165,7 @@ and v2answers.ownerUid = %d`, uin)
 			&sameAskUid,
 			&info.Ext)
 
+		info.AccessCount, _ = IncreaseQuestionAccessCount(info.Qid)
 		boardInfo, err = board.GetBoardInfoByBoardId(uin, boardId)
 		info.Board = &boardInfo
 
@@ -256,6 +257,7 @@ and v2answers.ownerUid = %d`, uin)
 			&sameAskUid,
 			&info.Ext,
 		)
+		info.AccessCount, _ = IncreaseQuestionAccessCount(info.Qid)
 		info.QContent = common.GetContentByVersion(info.QContent, info.QType, version)
 		boardInfo, err = board.GetBoardInfoByBoardId(uin, boardId)
 		info.Board = &boardInfo
