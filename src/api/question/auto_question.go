@@ -106,9 +106,9 @@ func AutoQuestion(boardId int) (ids []int, qids []int64, restTime int64, msg str
 		var qType int
 		var isAnonymous bool
 		var ext string
-		rows.Scan(&id, &boardId, &qTitle, &qContent, &qImgUrls,&qType, &isAnonymous)
-		qid, err := PostQuestion(randomUids[index], boardId, qTitle, strings.Trim(qContent, " \n\t"), qImgUrls, qType,isAnonymous, ext)
-		time.Sleep(time.Duration(1)*time.Second)
+		rows.Scan(&id, &boardId, &qTitle, &qContent, &qImgUrls, &qType, &isAnonymous)
+		qid, err := PostQuestion(randomUids[index], boardId, qTitle, strings.Trim(qContent, " \n\t"), qImgUrls, qType, isAnonymous, ext, 0, 0, "")
+		time.Sleep(time.Duration(1) * time.Second)
 		if err != nil {
 
 		}
