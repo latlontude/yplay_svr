@@ -28,6 +28,28 @@ type GetQuestionsRsp struct {
 	TotalCnt    int                  `json:"totalCnt"`
 }
 
+type GetGeoQuestionsReq struct {
+	Uin   int64  `schema:"uin"`
+	Token string `schema:"token"`
+	Ver   int    `schema:"ver"`
+
+	BoardId   int     `schema:"boardId"`
+	Longitude float64 `schema:"longitude"`
+	Latitude  float64 `schema:"latitude"`
+	Radius    int     `schema:"radius"`
+	PoiTag    string  `schema:"poiTag"`
+
+	PageNum  int `schema:"pageNum"`
+	PageSize int `schema:"pageSize"`
+	Qid      int `schema:"lastQid"`
+	Version  int `schema:"version"`
+}
+
+type GetGeoQuestionsRsp struct {
+	V2Questions []*st.V2QuestionInfo `json:"questions"`
+	TotalCnt    int                  `json:"totalCnt"`
+}
+
 func doGetQuestions(req *GetQuestionsReq, r *http.Request) (rsp *GetQuestionsRsp, err error) {
 
 	log.Debugf("uin %d, GetQuestionsReq %+v", req.Uin, req)
@@ -46,7 +68,157 @@ func doGetQuestions(req *GetQuestionsReq, r *http.Request) (rsp *GetQuestionsRsp
 	return
 }
 
-func GetQuestions(uin int64, qid, boardId, pageNum, pageSize int, version int) (questions []*st.V2QuestionInfo, totalCnt int, err error) {
+func doGetGeoQuestions(req *GetGeoQuestionsReq, r *http.Request) (rsp *GetGeoQuestionsRsp, err error) {
+
+	log.Debugf("uin %d, GetQuestionsReq %+v", req.Uin, req)
+
+	questions, totalCnt, err := GetGeoQuestions(req.Uin, req.Qid, req.BoardId, req.Longitude, req.Latitude, req.Radius, req.PoiTag, req.PageNum, req.PageSize, req.Version)
+
+	if err != nil {
+		log.Errorf("uin %d, GetQuestions error, %s", req.Uin, err.Error())
+		return
+	}
+
+	rsp = &GetGeoQuestionsRsp{questions, totalCnt}
+
+	log.Debugf("uin %d, GetQuestionsRsp succ  , rsp:%v", req.Uin, rsp)
+
+	return
+}
+
+func GetGeoQuestions(uin int64, qid, boardId int, lng, lat float64, radius int, poiTag string, pageNum, pageSize, version int) (questions []*st.V2QuestionInfo, totalCnt int, err error) {
+
+	//log.Debugf("start GetQuestions uin:%d", uin)
+
+	if boardId <= 0 || pageNum < 0 || pageSize < 0 {
+		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid params")
+		log.Error(err)
+		return
+	}
+	questions = make([]*st.V2QuestionInfo, 0)
+
+	if pageNum == 0 {
+		pageNum = 1
+	}
+
+	if radius == 0 {
+		radius = 1000
+	}
+
+	if pageSize == 0 {
+		pageSize = constant.DEFAULT_PAGE_SIZE
+	}
+
+	s := (pageNum - 1) * pageSize
+	e := pageSize
+
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		log.Error(err)
+		return
+	}
+
+	sql := fmt.Sprintf(`select count(qid) as cnt from  v2questions where boardId = %d and qStatus = 0 and (longitude != 0 or latitude != 0) and poiTag='%s'`, boardId, poiTag)
+	rows, err := inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Error(err)
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		rows.Scan(&totalCnt)
+	}
+
+	if totalCnt == 0 {
+		return
+	}
+
+	fields := "qid,ownerUid,qTitle,qContent,qImgUrls,qType,isAnonymous,createTs,modTs ,ext,longitude,latitude,poiTag"
+	//第一次拉取列表 没有qid
+	s = 0
+	if qid == 0 {
+		sql = fmt.Sprintf(`select %s from v2questions 	where qStatus = 0 and (qContent != "" or qImgUrls != "") 
+			and boardId = %d and (longitude != 0 or latitude != 0) and poiTag='%s' order by createTs desc limit %d, %d`, fields, boardId, poiTag, s, e)
+	} else {
+		//后面拉去问题列表防止插入 重复数据 客户端传qid,从小于qid的地方去pageSize
+		cutQuestion, err2 := common.GetV2Question(qid, version)
+		if err2 != nil {
+			return
+		}
+		createTs := cutQuestion.CreateTs
+		sql = fmt.Sprintf(`select %s from v2questions where qStatus = 0 and (qContent != "" or qImgUrls != "") 
+		and boardId = %d  and qid < %d and createTs <=%d and (longitude != 0 or latitude != 0) and poiTag='%s' order by createTs desc limit %d, %d`, fields, boardId, qid, createTs, poiTag, s, e)
+	}
+
+	log.Errorf("SQL:%s", sql)
+	rows, err = inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var info st.V2QuestionInfo
+		var uid int64
+
+		rows.Scan(
+			&info.Qid,
+			&uid,
+			&info.QTitle,
+			&info.QContent,
+			&info.QImgUrls,
+			&info.QType,
+			&info.IsAnonymous,
+			&info.CreateTs,
+			&info.ModTs,
+			&info.Ext,
+			&info.Longitude,
+			&info.Latitude,
+			&info.PoiTag)
+
+		info.AccessCount, _ = IncreaseQuestionAccessCount(info.Qid)
+
+		if uid > 0 {
+			ui, err1 := st.GetUserProfileInfo(uid)
+			if err1 != nil {
+				log.Error(err1.Error())
+				continue
+			}
+
+			info.OwnerInfo = ui
+		}
+
+		//TODO 新的视频内容对低版本不支持 2019-09-06
+		info.QContent = common.GetContentByVersion(info.QContent, info.QType, version)
+
+		//answerCnt, err := GetAnswerCnt(info.Qid)
+
+		answerCnt, err := GetDiscussCnt(info.Qid)
+		if err != nil {
+			log.Error(err.Error())
+			continue
+		}
+		info.AnswerCnt = answerCnt
+
+		bestAnswer, _ := GetBestAnswer(uin, info.Qid)
+		info.BestAnswer = bestAnswer
+		if bestAnswer != nil {
+			responders, _ := GetQidNewResponders(info.Qid, bestAnswer)
+			info.NewResponders = responders
+		}
+
+		questions = append(questions, &info)
+	}
+
+	//log.Debugf("end GetQuestions uin:%d totalCnt:%d", uin, totalCnt)
+	return
+}
+
+func GetQuestions(uin int64, qid, boardId int, pageNum, pageSize, version int) (questions []*st.V2QuestionInfo, totalCnt int, err error) {
 
 	//log.Debugf("start GetQuestions uin:%d", uin)
 
@@ -92,11 +264,12 @@ func GetQuestions(uin int64, qid, boardId, pageNum, pageSize int, version int) (
 		return
 	}
 
-	//第一次拉去列表 没有qid
+	fields := "qid,ownerUid,qTitle,qContent,qImgUrls,qType,isAnonymous,createTs,modTs ,ext,longitude,latitude,poiTag"
+	//第一次拉取列表 没有qid
 	s = 0
 	if qid == 0 {
-		sql = fmt.Sprintf(`select qid, ownerUid, qTitle, qContent, qImgUrls,qType, isAnonymous, createTs, modTs ,ext from v2questions 
-		where qStatus = 0 and (qContent != "" or qImgUrls != "") and boardId = %d order by createTs desc limit %d, %d`, boardId, s, e)
+		sql = fmt.Sprintf(`select %s from v2questions 	where qStatus = 0 and (qContent != "" or qImgUrls != "") 
+			and boardId = %d order by createTs desc limit %d, %d`, fields, boardId, s, e)
 	} else {
 		//后面拉去问题列表防止插入 重复数据 客户端传qid,从小于qid的地方去pageSize
 		cutQuestion, err2 := common.GetV2Question(qid, version)
@@ -104,9 +277,8 @@ func GetQuestions(uin int64, qid, boardId, pageNum, pageSize int, version int) (
 			return
 		}
 		createTs := cutQuestion.CreateTs
-		sql = fmt.Sprintf(`select qid, ownerUid, qTitle, qContent, qImgUrls, qType,isAnonymous, createTs, modTs ,ext from v2questions 
-		where qStatus = 0 and (qContent != "" or qImgUrls != "") and boardId = %d  and qid < %d and createTs <=%d
-		order by createTs desc limit %d, %d`, boardId, qid, createTs, s, e)
+		sql = fmt.Sprintf(`select %s from v2questions where qStatus = 0 and (qContent != "" or qImgUrls != "") 
+		and boardId = %d  and qid < %d and createTs <=%d order by createTs desc limit %d, %d`, fields, boardId, qid, createTs, s, e)
 	}
 
 	log.Errorf("SQL:%s", sql)
@@ -131,7 +303,10 @@ func GetQuestions(uin int64, qid, boardId, pageNum, pageSize int, version int) (
 			&info.IsAnonymous,
 			&info.CreateTs,
 			&info.ModTs,
-			&info.Ext)
+			&info.Ext,
+			&info.Longitude,
+			&info.Latitude,
+			&info.PoiTag)
 
 		info.AccessCount, _ = IncreaseQuestionAccessCount(info.Qid)
 
