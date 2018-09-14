@@ -8,7 +8,9 @@ import (
 
 var (
 	APIMap = httputil.APIMap{
-		"/auth": auth.Apify4(doAuth), //发送短信
+		"/auth":  auth.Apify4(doAuth), //发送短信
+		"/login": auth.Apify(doGetCode),
+		"/order": auth.Apify(doOrder),
 	}
 
 	log = env.NewLogger("chengyuan_wxpublic")

@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func AddAngelInAdmin(uin int64, boardId int, labelId int, AngelUin int64, adminType int) (err error) {
+func AddAngelInAdmin(uin int64, boardId int, labelId int, AngelUin int64, adminType int ) (err error) {
 
 	if uin < 0 {
 		return
@@ -51,7 +51,7 @@ func AddAngelInAdmin(uin int64, boardId int, labelId int, AngelUin int64, adminT
 
 	ts := time.Now().Unix()
 
-	_, err = stmt.Exec(0, boardId, labelId, AngelUin, ts, adminType)
+	_, err = stmt.Exec(0, boardId, labelId, AngelUin, ts ,adminType)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
 		log.Error(err.Error())
@@ -384,7 +384,7 @@ func AcceptAngel(uin int64, boardId int, msgId int) (err error) {
 				return
 			}
 			//加入admin表
-			err = AddAngelInAdmin(uin, boardId, 0, uin, 0)
+			err = AddAngelInAdmin(uin, boardId, 0, uin , 0)
 			if err != nil {
 				log.Errorf("add angel err , uin:%d err:%+v", uin, err.Error())
 				return

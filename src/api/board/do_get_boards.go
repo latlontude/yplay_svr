@@ -250,8 +250,9 @@ func InsertQuestions(boardId int, registerUin []int64) (err error) {
 			registerUinIndex = 0
 		}
 		createTs := int(time.Now().Unix()) + index
-		sqlArr = append(sqlArr, fmt.Sprintf(`insert into v2questions values(%d, %d, %d, '%s', '%s', '%s', %d, %t, %d, %d, %d, '%s' ,'%s')`,
-			0, boardId, registerUin[registerUinIndex], info.QTitle, info.QContent, info.QImgUrls, info.QType, info.IsAnonymous, qStatus, createTs, info.ModTs, sameAskUid, info.Ext))
+		sqlArr = append(sqlArr, fmt.Sprintf(`insert into v2questions values(%d, %d, %d, '%s', '%s', '%s', %d, %t, %d, %d, %d, '%s' ,'%s',%f ,%f ,'%s')`,
+			0, boardId, registerUin[registerUinIndex], info.QTitle, info.QContent, info.QImgUrls, info.QType,
+				info.IsAnonymous, qStatus, createTs, info.ModTs, sameAskUid, info.Ext,info.Longitude,info.Latitude,info.PoiTag))
 
 		registerUinIndex++
 		index++

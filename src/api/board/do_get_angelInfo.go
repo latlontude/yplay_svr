@@ -216,8 +216,8 @@ func GetExpAngelInfoList(uin int64, boardId int) (angelList []*st.UserProfileInf
 		rows.Scan(&boardUin)
 	}
 
-	if boardUin == 0 {
-		log.Debugf("没有墙主  uin=%d,boardId=%d", uin, boardId)
+	if boardUin == 0{
+		log.Debugf("没有墙主  uin=%d,boardId=%d",uin,boardId)
 		return
 	}
 

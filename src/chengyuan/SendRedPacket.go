@@ -48,7 +48,7 @@ type SendRedPacketRspData struct {
 	Wxappid      string   `xml:"wxappid"`      //
 	Re_openid    string   `xml:"re_openid"`    //
 	Total_amount int      `xml:"total_amount"` //
-	Send_listid  string   `xml:""send_listid`  //
+	Send_listid  string   `xml:"send_listid"`  //
 }
 
 const (

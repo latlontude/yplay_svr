@@ -66,7 +66,7 @@ func MakeIMCreateSnapChatSessonReq(uin int64, user int64, groupName string) (req
 
 func CreateSnapChatSesson(uin int64, user int64) (sessionId string, err error) {
 
-	if uin == 0 || user == 0 || uin == user && uin != 100001 {
+	if uin == 0 || user == 0 || uin == user && uin != 100001  {
 		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid params")
 		log.Errorf(err.Error())
 		return

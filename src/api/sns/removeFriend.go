@@ -20,6 +20,7 @@ type RemoveFriendS2SReq struct {
 }
 
 type RemoveFriendS2SRsp struct {
+
 }
 
 func doRemoveFriendS2S(req *RemoveFriendS2SReq, r *http.Request) (rsp *RemoveFriendS2SRsp, err error) {

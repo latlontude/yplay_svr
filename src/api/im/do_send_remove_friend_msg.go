@@ -147,6 +147,7 @@ func SendRemoveFriendMsg(uin1 int64, uin2 int64) (err error) {
 	return
 }
 
+
 func RemoveFriendS2S(uin1 int64, uin2 int64) (err error) {
 
 	sig, err := GetAdminSig()

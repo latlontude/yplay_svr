@@ -41,7 +41,7 @@ func CheckApply(uin int64, boardId int, msgId int, result int) (err error) {
 	}
 
 	sql := fmt.Sprintf(`select applyUin,status,result ,applyTs,dealTs from apply_angel 
-where status = 0 and msgId = %d and boardId = %d `, msgId, boardId)
+where status = 0 and msgId = %d and boardId = %d `, msgId,boardId)
 
 	rows, err := inst.Query(sql)
 	if err != nil {
@@ -66,13 +66,14 @@ where status = 0 and msgId = %d and boardId = %d `, msgId, boardId)
 	sqlArr := make([]string, 0)
 	sqlArr = append(sqlArr, fmt.Sprintf(`update apply_angel set result=%d,dealTs=%d where msgId = %d`, result, dealTs, msgId))
 
+
 	//是否有墙主 如果有墙主 B则变成小天使
 	//同意变更墙主
 
 	var boardOwnerUin int64
 
 	if result == 1 {
-		sql = fmt.Sprintf(`select ownerUid from v2boards where boardId = %d`, boardId)
+		sql = fmt.Sprintf(`select ownerUid from v2boards where boardId = %d`,boardId)
 		rows, err = inst.Query(sql)
 		if err != nil {
 			err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -95,14 +96,14 @@ where status = 0 and msgId = %d and boardId = %d `, msgId, boardId)
 	}
 
 	//同意审核之后 才加入admin表
-	if result == 1 {
+	if result == 1{
 		//加入admin表
 		boardType := 0
 		if boardOwnerUin == 0 {
 			boardType = 1
-			result = 3 //3.主天使  1.小天使 2.拒绝
+			result = 3      //3.主天使  1.小天使 2.拒绝
 		}
-		err = AddAngelInAdmin(100001, boardId, 0, applyUin, boardType)
+		err = AddAngelInAdmin(100001, boardId, 0, applyUin,boardType)
 		if err != nil {
 			log.Errorf("add angel err , uin:%d err:%+v", uin, err.Error())
 			return
