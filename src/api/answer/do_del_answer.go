@@ -62,7 +62,7 @@ func DelAnswer(uin int64, qid, answerId int, reason string) (code int, err error
 		return
 	}
 
-	uids, ownerUid, err := getDelAnswerPermitOperators(answerId, qid)
+	uids, ownerUid, qidOwner, err := getDelAnswerPermitOperators(answerId, qid)
 	if err != nil {
 		log.Error(err)
 		return
@@ -112,7 +112,9 @@ func DelAnswer(uin int64, qid, answerId int, reason string) (code int, err error
 			return
 		}
 		dataStr := string(data)
-		v2push.SendBeDeletePush(uin, ownerUid, reason, 2, dataStr)
+		if uin != qidOwner {
+			v2push.SendBeDeletePush(uin, ownerUid, reason, 2, dataStr)
+		}
 	}
 
 	code = 0
@@ -121,7 +123,7 @@ func DelAnswer(uin int64, qid, answerId int, reason string) (code int, err error
 	return
 }
 
-func getDelAnswerPermitOperators(answerId, qid int) (operators []int64, owner int64, err error) {
+func getDelAnswerPermitOperators(answerId, qid int) (operators []int64, owner int64, qidOwner int64, err error) {
 
 	if answerId == 0 || qid == 0 {
 		log.Errorf("qid or answerId is zero")
@@ -177,7 +179,6 @@ where  v2answers.answerId = %d and v2answers.qid = %d and v2questions.qid = %d`,
 		return
 	}
 	defer rows.Close()
-	var qidOwner int64
 	for rows.Next() {
 		rows.Scan(&qidOwner, &owner)
 	}
