@@ -427,7 +427,8 @@ func GetLatesCommentByAnswerId(answerId int) (comments []*st.CommentInfo, err er
 		return
 	}
 
-	sql := fmt.Sprintf(`select * from v2comments where answerId = %d  limit 2`, answerId)
+	sql := fmt.Sprintf(`select commentId,answerId,commentContent,ownerUid,toUid,isAnonymous, commentStatus,commentTs,ext 
+from v2comments where answerId = %d  limit 2`, answerId)
 
 	log.Debugf("sql:%s", sql)
 	rows, err := inst.Query(sql)
@@ -439,7 +440,7 @@ func GetLatesCommentByAnswerId(answerId int) (comments []*st.CommentInfo, err er
 
 	for rows.Next() {
 		var info st.CommentInfo
-		var uid int64
+		var uid, toUid int64
 		var ts int
 
 		info.Replys = make([]st.ReplyInfo, 0)
@@ -449,6 +450,8 @@ func GetLatesCommentByAnswerId(answerId int) (comments []*st.CommentInfo, err er
 			&info.AnswerId,
 			&info.CommentContent,
 			&uid,
+			&toUid,
+			&info.IsAnonymous,
 			&ts,
 			&info.CommentTs,
 			&info.Ext)
@@ -461,6 +464,15 @@ func GetLatesCommentByAnswerId(answerId int) (comments []*st.CommentInfo, err er
 			}
 
 			info.OwnerInfo = ui
+		}
+
+		if toUid > 0 {
+			toUi, err2 := st.GetUserProfileInfo(toUid)
+			if err2 != nil {
+				log.Error(err2.Error())
+				continue
+			}
+			info.ToOwnerInfo = toUi
 		}
 
 		comments = append(comments, &info)

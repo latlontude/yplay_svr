@@ -106,7 +106,10 @@ func GetBoards(uin int64) (boards []*st.BoardInfo, err error) {
 			info.SchoolName = si.SchoolName
 			info.SchoolType = si.SchoolType
 		}
-
+		info.Longitude, info.Latitude, err = GetSchoolLocation(info.SchoolId)
+		if err != nil {
+			log.Debugf("GetSchoolLocation err : schoolId:%d", info.SchoolId)
+		}
 		followCnt, _ := GetFollowCnt(info.BoardId)
 		info.FollowCnt = followCnt
 
@@ -140,6 +143,30 @@ func GetBoards(uin int64) (boards []*st.BoardInfo, err error) {
 		if err3 != nil {
 			log.Debugf("err3:%v", err3)
 		}
+	}
+	return
+}
+
+func GetSchoolLocation(schoolId int) (longitude float64, latitude float64, err error) {
+
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		log.Error(err)
+		return
+	}
+
+	sql := fmt.Sprintf(`select longitude, latitude from schools where schoolId = %d`, schoolId)
+
+	rows, err := inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		rows.Scan(&longitude, &latitude)
 	}
 	return
 }
@@ -252,7 +279,7 @@ func InsertQuestions(boardId int, registerUin []int64) (err error) {
 		createTs := int(time.Now().Unix()) + index
 		sqlArr = append(sqlArr, fmt.Sprintf(`insert into v2questions values(%d, %d, %d, '%s', '%s', '%s', %d, %t, %d, %d, %d, '%s' ,'%s',%f ,%f ,'%s')`,
 			0, boardId, registerUin[registerUinIndex], info.QTitle, info.QContent, info.QImgUrls, info.QType,
-				info.IsAnonymous, qStatus, createTs, info.ModTs, sameAskUid, info.Ext,info.Longitude,info.Latitude,info.PoiTag))
+			info.IsAnonymous, qStatus, createTs, info.ModTs, sameAskUid, info.Ext, info.Longitude, info.Latitude, info.PoiTag))
 
 		registerUinIndex++
 		index++

@@ -88,7 +88,7 @@ func GetComments(uin int64, answerId, pageNum, pageSize int) (comments []*st.Com
 		return
 	}
 
-	sql = fmt.Sprintf(`select commentId, answerId, commentContent, ownerUid, commentTs ,ext from v2comments where commentStatus = 0 
+	sql = fmt.Sprintf(`select commentId, answerId, commentContent, ownerUid, toUid,isAnonymous,commentTs ,ext from v2comments where commentStatus = 0 
 and answerId = %d order by commentTs  limit %d, %d`, answerId, s, e)
 
 	rows, err = inst.Query(sql)
@@ -100,7 +100,7 @@ and answerId = %d order by commentTs  limit %d, %d`, answerId, s, e)
 
 	for rows.Next() {
 		var info st.CommentInfo
-		var uid int64
+		var uid, toUid int64
 
 		info.Replys = make([]st.ReplyInfo, 0)
 
@@ -109,6 +109,8 @@ and answerId = %d order by commentTs  limit %d, %d`, answerId, s, e)
 			&info.AnswerId,
 			&info.CommentContent,
 			&uid,
+			&toUid,
+			&info.IsAnonymous,
 			&info.CommentTs,
 			&info.Ext)
 
@@ -122,13 +124,23 @@ and answerId = %d order by commentTs  limit %d, %d`, answerId, s, e)
 			info.OwnerInfo = ui
 		}
 
-		Replys, err1 := getReplyArray(uin, info.CommentId)
-		if err1 != nil {
-			log.Error(err1.Error())
-			continue
+		if toUid > 0 {
+			toUi, err1 := st.GetUserProfileInfo(toUid)
+			if err1 != nil {
+				log.Error(err1.Error())
+				continue
+			}
+
+			info.ToOwnerInfo = toUi
 		}
 
-		info.Replys = Replys
+		//Replys, err1 := getReplyArray(uin, info.CommentId)
+		//if err1 != nil {
+		//	log.Error(err1.Error())
+		//	continue
+		//}
+		//
+		//info.Replys = Replys
 
 		commentLikeCnt, err1 := getCommentLikeCnt(info.CommentId)
 		if err1 != nil {

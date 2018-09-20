@@ -23,6 +23,7 @@ type ReplyToCommentReq struct {
 	CommentId    int    `schema:"commentId"`
 	ReplyContent string `schema:"replyContent"`
 	Ext          string `schema:"ext"`
+	ToUin        int64  `schema:"toUin"`
 }
 
 type ReplyToCommentRsp struct {
@@ -33,7 +34,7 @@ func doReplyToComment(req *ReplyToCommentReq, r *http.Request) (rsp *ReplyToComm
 
 	log.Debugf("uin %d, ReplyToCommentReq %+v", req.Uin, req)
 
-	replyId, err := ReplyToComment(req.Uin, req.Qid, req.AnswerId, req.CommentId, strings.Trim(req.ReplyContent, " \n\t"), req.Ext)
+	replyId, err := V2ReplayToComment(req.Uin, req.ToUin, req.Qid, req.AnswerId, req.CommentId, strings.Trim(req.ReplyContent, " \n\t"), req.Ext)
 
 	if err != nil {
 		log.Errorf("uin %d, PostAnswer error, %s", req.Uin, err.Error())
