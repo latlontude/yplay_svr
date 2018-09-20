@@ -1,6 +1,7 @@
 package answer
 
 import (
+	"api/common"
 	"api/elastSearch"
 	"api/experience"
 	"api/v2push"
@@ -105,7 +106,7 @@ func DelAnswer(uin int64, qid, answerId int, reason string) (code int, err error
 	experience.DelAnswerFromExpByAnswerId(uin, answerId)
 
 	if !isMyself {
-		answer, _ := GetV2Answer(answerId)
+		answer, _ := common.GetV2Answer(answerId)
 		data, err1 := json.Marshal(&answer)
 		if err1 != nil {
 			log.Errorf(err1.Error())

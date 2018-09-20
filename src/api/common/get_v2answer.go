@@ -21,7 +21,7 @@ func GetV2Answer(answerId int) (answer st.AnswersInfo, err error) {
 		return
 	}
 
-	sql := fmt.Sprintf(`select qid, answerId, ownerUid, answerContent, answerImgUrls, answerTs from  v2answers where answerId = %d`, answerId)
+	sql := fmt.Sprintf(`select qid, answerId, ownerUid, answerContent, answerImgUrls, isAnonymous,answerTs from  v2answers where answerId = %d`, answerId)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -31,7 +31,7 @@ func GetV2Answer(answerId int) (answer st.AnswersInfo, err error) {
 
 	var uid int64
 	for rows.Next() {
-		rows.Scan(&answer.Qid, &answer.AnswerId, &uid, &answer.AnswerContent, &answer.AnswerImgUrls, &answer.AnswerTs)
+		rows.Scan(&answer.Qid, &answer.AnswerId, &uid, &answer.AnswerContent, &answer.AnswerImgUrls, &answer.IsAnonymous, &answer.AnswerTs)
 	}
 
 	if uid > 0 {

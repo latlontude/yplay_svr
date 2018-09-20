@@ -1,6 +1,7 @@
 package comment
 
 import (
+	"api/common"
 	"api/v2push"
 	"common/constant"
 	"common/mydb"
@@ -86,7 +87,7 @@ func DelComment(uin int64, answerId, commentId int, reason string) (code int, er
 	sql := fmt.Sprintf(`delete from v2comments where answerId = %d and commentId = %d`, answerId, commentId)
 
 	//放到上面
-	comment, _, _ := GetV2Comment(commentId)
+	comment, _, _ := common.GetV2Comment(commentId)
 
 	_, err = inst.Exec(sql)
 	if err != nil {

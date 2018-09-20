@@ -18,6 +18,7 @@ type PostAnswerReq struct {
 	Ver           int    `schema:"ver"`
 	BoardId       int    `schema:"boardId"`
 	Qid           int    `schema:"qid"`
+	IsAnonymous   bool   `schema:"isAnonymous"`
 	AnswerContent string `schema:"answerContent"`
 	AnswerImgUrls string `schema:"answerImgUrls"`
 	Ext           string `schema:"ext"`
@@ -32,7 +33,7 @@ func doPostAnswer(req *PostAnswerReq, r *http.Request) (rsp *PostAnswerRsp, err 
 
 	log.Debugf("uin %d, PostAnswerReq %+v", req.Uin, req)
 
-	answerId, err := PostAnswer(req.Uin, req.BoardId, req.Qid, strings.Trim(req.AnswerContent, " \n\t"), req.AnswerImgUrls, req.Ext)
+	answerId, err := PostAnswer(req.Uin, req.BoardId, req.Qid, strings.Trim(req.AnswerContent, " \n\t"), req.IsAnonymous, req.AnswerImgUrls, req.Ext)
 
 	if err != nil {
 		log.Errorf("uin %d, PostAnswer error, %s", req.Uin, err.Error())
@@ -46,7 +47,7 @@ func doPostAnswer(req *PostAnswerReq, r *http.Request) (rsp *PostAnswerRsp, err 
 	return
 }
 
-func PostAnswer(uin int64, boardId, qid int, answerContent, answerImgUrls, ext string) (answerId int64, err error) {
+func PostAnswer(uin int64, boardId, qid int, answerContent string, isAnonymous bool, answerImgUrls string, ext string) (answerId int64, err error) {
 
 	if len(answerContent) == 0 && len(answerImgUrls) == 0 && len(ext) == 0 {
 		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid params")
@@ -60,9 +61,9 @@ func PostAnswer(uin int64, boardId, qid int, answerContent, answerImgUrls, ext s
 		log.Error(err)
 		return
 	}
-
-	stmt, err := inst.Prepare(`insert into v2answers(answerId, qid, answerContent, answerImgUrls, ownerUid, answerStatus, answerTs,ext) 
-		values(?, ?, ?, ?, ?, ?, ?, ?)`)
+	stmt, err := inst.Prepare(`insert into v2answers(
+answerId, qid, answerContent, answerImgUrls, ownerUid, isAnonymous,answerStatus, answerTs,ext) 
+		values(?, ?, ?, ?, ?, ?, ?, ?, ? )`)
 
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_PREPARE, err.Error())
@@ -74,7 +75,7 @@ func PostAnswer(uin int64, boardId, qid int, answerContent, answerImgUrls, ext s
 	ts := time.Now().Unix()
 
 	status := 0 //0 默认
-	res, err := stmt.Exec(0, qid, answerContent, answerImgUrls, uin, status, ts, ext)
+	res, err := stmt.Exec(0, qid, answerContent, answerImgUrls, uin, isAnonymous, status, ts, ext)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_EXEC, err.Error())
 		log.Error(err.Error())
