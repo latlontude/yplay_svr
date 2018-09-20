@@ -22,6 +22,7 @@ type AnswersInfo struct {
 	OwnerInfo     *UserProfileInfo `json:"ownerInfo"`
 	ExpLabel      []*ExpLabel      `json:"expLabel"`
 	LatestComment []*CommentInfo   `json:"latestComment"`
+	IsAnonymous   bool             `json:"isAnonymous"`
 }
 
 func (this *AnswersInfo) String() string {

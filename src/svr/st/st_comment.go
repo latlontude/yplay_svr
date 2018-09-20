@@ -20,6 +20,8 @@ type CommentInfo struct {
 	CommentId      int              `json:"commentId"`
 	CommentContent string           `json:"commentContent"`
 	OwnerInfo      *UserProfileInfo `json:"ownerInfo"`
+	ToOwnerInfo    *UserProfileInfo `json:"toOwnerInfo"`
+	IsAnonymous    bool             `json:"isAnonymous"`
 	CommentTs      int              `json:"commentTs"`
 	Ext            string           `json:"ext"`
 	Replys         []ReplyInfo      `json:"replys"`

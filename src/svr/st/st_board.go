@@ -11,24 +11,24 @@ type BoardInfo struct {
 	BoardIconUrl string `json:"boardIconUrl"`
 	BoardStatus  int    `json:"boardStatus"`
 
-	SchoolId   int    `json:"schoolId"`
-	SchoolName string `json:"schoolName"`
-	SchoolType int    `json:"schoolType"`
-
-	OwnerInfo *UserProfileInfo `json:"ownerInfo"`
+	SchoolId   int              `json:"schoolId"`
+	SchoolName string           `json:"schoolName"`
+	SchoolType int              `json:"schoolType"`
+	Longitude  float64          `json:"longitude"`
+	Latitude   float64          `json:"latitude"`
+	OwnerInfo  *UserProfileInfo `json:"ownerInfo"`
 
 	FollowCnt int `json:"followCnt"`
 
 	CreateTs int `json:"createTs"`
 
 	IsAdmin bool `json:"isAdmin"`
-
 }
 
 func (this *BoardInfo) String() string {
 
 	return fmt.Sprintf(`BoardInfo{BoardId:%dBoardName:%s BoardIntro:%s BoardIconUrl:%s BoardStatus:%d SchoolId:%d 
-SchoolName:%s  SchoolType:%d, CreateTs:%d, OwnerInfo:%+v, FollowCnt:%d, isAdmin:%v}`,
+SchoolName:%s  SchoolType:%d, longitude:%f,latitude:%f,CreateTs:%d, OwnerInfo:%+v, FollowCnt:%d, isAdmin:%v}`,
 		this.BoardId, this.BoardName, this.BoardIntro, this.BoardIconUrl, this.BoardStatus,
-		this.SchoolId, this.SchoolName, this.SchoolType, this.CreateTs, this.OwnerInfo, this.FollowCnt, this.IsAdmin)
+		this.SchoolId, this.SchoolName, this.SchoolType, this.Longitude, this.Latitude, this.CreateTs, this.OwnerInfo, this.FollowCnt, this.IsAdmin)
 }
