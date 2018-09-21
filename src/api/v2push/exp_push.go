@@ -1,6 +1,7 @@
 package v2push
 
 import (
+	"api/common"
 	"api/im"
 	"encoding/json"
 	"svr/st"
@@ -19,7 +20,7 @@ func SendAddAnswerIdInExpPush(uin int64, qid int, labelId int, answerId int) {
 	if err != nil {
 		return
 	}
-	answer, err := getV2Answer(answerId)
+	answer, err := common.GetV2Answer(answerId)
 	if err != nil {
 		return
 	}
@@ -78,7 +79,7 @@ func SendDelAnswerIdInExpPush(uin int64, qid int, answerId int, labelId int) {
 	if err != nil {
 		return
 	}
-	answer, err := getV2Answer(answerId)
+	answer, err := common.GetV2Answer(answerId)
 	if err != nil {
 		return
 	}

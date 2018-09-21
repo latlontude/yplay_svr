@@ -1,6 +1,7 @@
 package answer
 
 import (
+	"api/common"
 	"common/constant"
 	"common/mydb"
 	"common/rest"
@@ -142,7 +143,7 @@ and answerId = %d order by commentTs  limit %d, %d`, answerId, s, e)
 		//
 		//info.Replys = Replys
 
-		commentLikeCnt, err1 := getCommentLikeCnt(info.CommentId)
+		commentLikeCnt, err1 := common.GetLikeCntByType(info.CommentId, 2)
 		if err1 != nil {
 			log.Error(err1.Error())
 			continue
@@ -150,7 +151,7 @@ and answerId = %d order by commentTs  limit %d, %d`, answerId, s, e)
 
 		info.LikeCnt = commentLikeCnt
 
-		isILikeComment, err1 := checkIsILikeComment(uin, info.CommentId)
+		isILikeComment, err1 := common.CheckIsILike(uin, info.CommentId, 2)
 		if err1 != nil {
 			log.Error(err1.Error())
 			continue
@@ -162,33 +163,6 @@ and answerId = %d order by commentTs  limit %d, %d`, answerId, s, e)
 	}
 
 	//log.Debugf("end GetComments uin:%d totalCnt:%d", uin, totalCnt)
-	return
-}
-
-func getCommentLikeCnt(commentId int) (cnt int, err error) {
-	//log.Debugf("start getCommentLikeCnt commentId:%d", commentId)
-
-	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
-	if inst == nil {
-		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
-		log.Error(err)
-		return
-	}
-
-	sql := fmt.Sprintf(`select count(id) as cnt from v2likes where type = 2 and likeId = %d and likeStatus != 2`, commentId)
-	rows, err := inst.Query(sql)
-	if err != nil {
-		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
-		log.Error(err)
-		return
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		rows.Scan(&cnt)
-	}
-
-	log.Debugf("end getCommentLikeCnt commentId:%d cnt:%d", commentId, cnt)
 	return
 }
 
@@ -246,7 +220,7 @@ func getReplyArray(uin int64, commentId int) (Replys []st.ReplyInfo, err error) 
 			replyInfo.ReplyToUserInfo = ui
 		}
 
-		replyLikeCnt, err1 := getReplyLikeCnt(replyInfo.ReplyId)
+		replyLikeCnt, err1 := common.GetLikeCntByType(replyInfo.ReplyId, 3)
 		if err1 != nil {
 			log.Error(err1.Error())
 			continue
@@ -254,7 +228,7 @@ func getReplyArray(uin int64, commentId int) (Replys []st.ReplyInfo, err error) 
 
 		replyInfo.LikeCnt = replyLikeCnt
 
-		isILikeReply, err1 := checkIsILikeReply(uin, replyInfo.ReplyId)
+		isILikeReply, err1 := common.CheckIsILike(uin, replyInfo.ReplyId, 3)
 		if err1 != nil {
 			log.Error(err1.Error())
 			continue
@@ -266,90 +240,5 @@ func getReplyArray(uin int64, commentId int) (Replys []st.ReplyInfo, err error) 
 	}
 
 	//log.Debugf("end getReplyArray uin:%d commentId:%d replayInfos:%+v", uin, commentId, Replys)
-	return
-}
-
-func getReplyLikeCnt(replyId int) (cnt int, err error) {
-	//log.Debugf("start getReplyLikeCnt replyId:%d", replyId)
-
-	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
-	if inst == nil {
-		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
-		log.Error(err)
-		return
-	}
-
-	sql := fmt.Sprintf(`select count(id) as cnt from v2likes where type = 3 and likeId = %d and likeStatus !=2 `, replyId)
-	rows, err := inst.Query(sql)
-	if err != nil {
-		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
-		log.Error(err)
-		return
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		rows.Scan(&cnt)
-	}
-
-	//log.Debugf("end getReplyLikeCnt replyId:%d cnt:%d", replyId, cnt)
-	return
-}
-
-func checkIsILikeComment(uin int64, commentId int) (ret bool, err error) {
-	//log.Debugf("start checkIsILikeComment uin:%d commentId:%d", uin, commentId)
-
-	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
-	if inst == nil {
-		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
-		log.Error(err)
-		return
-	}
-
-	sql := fmt.Sprintf(`select id from v2likes where type = 2 and likeId = %d and ownerUid = %d and likeStatus != 2`, commentId, uin)
-	rows, err := inst.Query(sql)
-	if err != nil {
-		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
-		log.Error(err)
-		return
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var id int
-		rows.Scan(&id)
-		ret = true
-	}
-
-	//log.Debugf("end checkIsILikeComment uin:%d commentId:%d ret:%t", uin, commentId, ret)
-	return
-}
-
-func checkIsILikeReply(uin int64, replyId int) (ret bool, err error) {
-	//log.Debugf("start checkIsILikeReply uin:%d replyId:%d", uin, replyId)
-
-	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
-	if inst == nil {
-		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
-		log.Error(err)
-		return
-	}
-
-	sql := fmt.Sprintf(`select id from v2likes where type = 3 and likeId = %d and ownerUid = %d and likeStatus !=2`, replyId, uin)
-	rows, err := inst.Query(sql)
-	if err != nil {
-		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
-		log.Error(err)
-		return
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var id int
-		rows.Scan(&id)
-		ret = true
-	}
-
-	//log.Debugf("end checkIsILikeReply uin:%d replyId:%d ret:%t", uin, replyId, ret)
 	return
 }

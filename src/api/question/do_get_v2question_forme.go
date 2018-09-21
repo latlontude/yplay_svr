@@ -100,8 +100,15 @@ func GetV2QuestionsAndAnswer(uin int64, fUin int64, pageSize int, pageNum int, v
 	var sql string
 
 	//查询好友的个人主页 看不到匿名问题(回答不需要判断匿名问题)
+	var ownerUid int64
 	if fUin > 0 {
-		sql = fmt.Sprintf(`select v2answers.answerId,v2answers.qid,v2answers.answerContent,v2answers.answerImgUrls,v2answers.answerTs,v2answers.ext,
+		ownerUid = fUin
+	} else {
+		//自己看自己主页 可以看到匿名问题
+		ownerUid = uin
+	}
+	sql = fmt.Sprintf(`select 
+v2answers.answerId,v2answers.qid,v2answers.answerContent,v2answers.answerImgUrls,v2answers.isAnonymous,v2answers.answerTs,v2answers.ext,
 v2questions.qid, v2questions.boardId,v2questions.ownerUid,v2questions.qTitle,v2questions.qContent,
 v2questions.qImgUrls,v2questions.qType,v2questions.isAnonymous,v2questions.createTs,v2questions.modTs,v2questions.sameAskUid,v2questions.ext
 from   v2answers ,v2questions
@@ -109,18 +116,7 @@ where v2answers.answerStatus = 0
 and v2questions.qStatus = 0 
 and v2answers.qid=v2questions.qid
 and v2questions.isAnonymous = 0
-and v2answers.ownerUid = %d`, fUin)
-	} else {
-		//自己看自己主页 可以看到匿名问题
-		sql = fmt.Sprintf(`select v2answers.answerId,v2answers.qid,v2answers.answerContent,v2answers.answerImgUrls,v2answers.answerTs,v2answers.ext,
-v2questions.qid, v2questions.boardId,v2questions.ownerUid,v2questions.qTitle,v2questions.qContent,
-v2questions.qImgUrls,v2questions.qType,v2questions.isAnonymous,v2questions.createTs,v2questions.modTs,v2questions.sameAskUid,v2questions.ext
-from   v2answers ,v2questions
-where v2answers.answerStatus = 0 
-and v2questions.qStatus = 0 
-and v2answers.qid=v2questions.qid 
-and v2answers.ownerUid = %d`, uin)
-	}
+and v2answers.ownerUid = %d`, ownerUid)
 
 	log.Debugf("sql:%s", sql)
 
@@ -150,6 +146,7 @@ and v2answers.ownerUid = %d`, uin)
 			&answerInfo.Qid,
 			&answerInfo.AnswerContent,
 			&answerInfo.AnswerImgUrls,
+			&answerInfo.IsAnonymous,
 			&answerInfo.AnswerTs,
 			&answerInfo.Ext,
 			&info.Qid,
@@ -192,7 +189,7 @@ and v2answers.ownerUid = %d`, uin)
 		answerInfo.CommentCnt = commentCnt
 
 		//点赞数
-		likeCnt, err1 := getAnswerLikeCnt(answerInfo.AnswerId)
+		likeCnt, err1 := common.GetLikeCntByType(answerInfo.AnswerId, 1)
 		if err1 != nil {
 			log.Error(err1.Error())
 			continue
@@ -200,7 +197,7 @@ and v2answers.ownerUid = %d`, uin)
 		likeTotalCnt = likeTotalCnt + likeCnt
 
 		answerInfo.LikeCnt = likeCnt
-		isILike, err1 := checkIsILikeAnswer(uin, answerInfo.AnswerId)
+		isILike, err1 := common.CheckIsILike(uin, answerInfo.AnswerId, 1)
 		if err1 != nil {
 			log.Error(err1.Error())
 			continue
@@ -256,6 +253,9 @@ and v2answers.ownerUid = %d`, uin)
 			&info.ModTs,
 			&sameAskUid,
 			&info.Ext,
+			&info.Longitude,
+			&info.Latitude,
+			&info.PoiTag,
 		)
 		info.AccessCount, _ = IncreaseQuestionAccessCount(info.Qid)
 		info.QContent = common.GetContentByVersion(info.QContent, info.QType, version)

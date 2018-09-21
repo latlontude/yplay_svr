@@ -137,14 +137,14 @@ func getExpDetail(uin int64, boardId, labelId, pageNum, pageSize int, version in
 
 		//点赞数
 
-		likeCnt, err1 := common.GetAnswerLikeCnt(answerId)
+		likeCnt, err1 := common.GetLikeCntByType(answerId, 1)
 		if err1 != nil {
 			log.Error(err1.Error())
 			continue
 		}
 
 		Exp.AnswerInfo.LikeCnt = likeCnt
-		isILike, err1 := common.CheckIsILikeAnswer(uin, answerId)
+		isILike, err1 := common.CheckIsILike(uin, answerId, 1)
 		if err1 != nil {
 			log.Error(err1.Error())
 			continue

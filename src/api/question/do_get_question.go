@@ -332,6 +332,20 @@ func GetQuestions(uin int64, qid, boardId int, pageNum, pageSize, version int) (
 		}
 		info.AnswerCnt = answerCnt
 
+		//点赞数
+		likeCnt, err1 := common.GetLikeCntByType(info.Qid, 4)
+		if err1 != nil {
+			log.Error(err1.Error())
+			continue
+		}
+		info.LikeCnt = likeCnt
+		isILike, err1 := common.CheckIsILike(uin, info.Qid, 4)
+		if err1 != nil {
+			log.Error(err1.Error())
+			continue
+		}
+		info.IsILike = isILike
+
 		bestAnswer, _ := GetBestAnswer(uin, info.Qid)
 		info.BestAnswer = bestAnswer
 		if bestAnswer != nil {
@@ -404,7 +418,9 @@ func GetBestAnswer(uin int64, qid int) (answer *st.AnswersInfo, err error) {
 	answers := make([]*st.AnswersInfo, 0)
 	expAnswer := make([]*st.AnswersInfo, 0)   //带经验弹的回答
 	otherAnswer := make([]*st.AnswersInfo, 0) //不带经验弹的回答
-	sql = fmt.Sprintf(`select qid, ownerUid, answerId, answerContent, answerImgUrls, answerTs  ,ext from v2answers where answerStatus = 0 and qid = %d order by answerTs desc`, qid)
+	sql = fmt.Sprintf(`select 
+qid, ownerUid, answerId, answerContent, answerImgUrls,isAnonymous, answerTs ,ext 
+from v2answers where answerStatus = 0 and qid = %d order by answerTs desc`, qid)
 
 	rows, err = inst.Query(sql)
 	if err != nil {
@@ -423,6 +439,7 @@ func GetBestAnswer(uin int64, qid int) (answer *st.AnswersInfo, err error) {
 			&info.AnswerId,
 			&info.AnswerContent,
 			&info.AnswerImgUrls,
+			&info.IsAnonymous,
 			&info.AnswerTs,
 			&info.Ext)
 
@@ -446,7 +463,7 @@ func GetBestAnswer(uin int64, qid int) (answer *st.AnswersInfo, err error) {
 
 		//点赞数
 
-		likeCnt, err1 := getAnswerLikeCnt(info.AnswerId)
+		likeCnt, err1 := common.GetLikeCntByType(info.AnswerId, 1)
 		if err1 != nil {
 			log.Error(err1.Error())
 			continue
@@ -454,7 +471,7 @@ func GetBestAnswer(uin int64, qid int) (answer *st.AnswersInfo, err error) {
 
 		info.LikeCnt = likeCnt
 
-		isILike, err1 := checkIsILikeAnswer(uin, info.AnswerId)
+		isILike, err1 := common.CheckIsILike(uin, info.AnswerId, 1)
 		if err1 != nil {
 			log.Error(err1.Error())
 			continue
@@ -492,18 +509,6 @@ func GetBestAnswer(uin int64, qid int) (answer *st.AnswersInfo, err error) {
 		answer = answers[0]
 	}
 
-	//sortAnswers, err := sortQuestionAnswer(answers)
-	//if err != nil {
-	//	log.Error(err.Error())
-	//	return
-	//}
-	//
-	//if len(sortAnswers) > 0 {
-	//	if sortAnswers[0].LikeCnt != 0 {
-	//		answer = sortAnswers[0]
-	//	}
-	//}
-	//	log.Debugf("end getBestAnswer answer:%+v", answer)
 	return
 }
 
@@ -642,9 +647,10 @@ func GetCommentsByAnswerIds(qid int, answerIds []int, hashMap map[int64]*st.User
 		}
 	}
 
-	if len(commentIds) > 0 {
-		GetReplysByCommentIds(commentIds, hashMap, restCnt, responders)
-	}
+	//已经没有回复了 不从reply表中取数据
+	//if len(commentIds) > 0 {
+	//	GetReplysByCommentIds(commentIds, hashMap, restCnt, responders)
+	//}
 
 	return
 }
@@ -746,19 +752,21 @@ func GetDiscussCnt(qid int) (discussCnt int, err error) {
 	if commentCnt == 0 {
 		return
 	}
+
+	log.Debugf("discuss commentids :%+v", commentIds)
 	discussCnt = discussCnt + commentCnt
 
-	replyIds, replyCnt, err := GetCntByType("replyId", "v2replys", "commentId", "replystatus", commentIds)
-	if err != nil {
-		log.Errorf("get reply Info error !")
-		return
-	}
-	if replyCnt == 0 {
-		return
-	}
-	discussCnt = discussCnt + replyCnt
+	//replyIds, replyCnt, err := GetCntByType("replyId", "v2replys", "commentId", "replystatus", commentIds)
+	//if err != nil {
+	//	log.Errorf("get reply Info error !")
+	//	return
+	//}
+	//if replyCnt == 0 {
+	//	return
+	//}
+	//discussCnt = discussCnt + replyCnt
 
-	log.Debugf("answerCnt : %d  commentCnt : %d replyCnt : %d replyids :%v", answerCnt, commentCnt, replyCnt, replyIds)
+	//log.Debugf("answerCnt : %d  commentCnt : %d replyCnt : %d replyids :%v", answerCnt, commentCnt, replyCnt, replyIds)
 
 	return
 

@@ -7,18 +7,20 @@ import (
 	"fmt"
 )
 
-func GetAnswerLikeCnt(answerId int) (cnt int, err error) {
-	//log.Debugf("start getAnswerLikeCnt answerId:%d", answerId)
+//获得点赞数 通用方法
+func GetLikeCntByType(likeId int, likeType int) (cnt int, err error) {
 
+	log.Debugf("start get like cnt,likeId:%d,likeType:%d", likeId, likeType)
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
 	if inst == nil {
 		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
 		log.Error(err)
 		return
 	}
-
 	// 点赞数
-	sql := fmt.Sprintf(`select count(id) as cnt from v2likes where type = 1 and likeId = %d and likeStatus != 2`, answerId)
+	sql := fmt.Sprintf(`select count(id) as cnt from v2likes where type = %d and likeId = %d and likeStatus != 2`, likeType, likeId)
+
+	log.Debugf("likeCntSql:%s", sql)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -31,13 +33,14 @@ func GetAnswerLikeCnt(answerId int) (cnt int, err error) {
 		rows.Scan(&cnt)
 	}
 
-	log.Debugf("end getAnswerLikeCnt answerId:%d cnt:%d", answerId, cnt)
+	log.Debugf("get like count likeType:%d likeId:%d, likeCnt:%d", likeType, likeId, cnt)
 	return
 }
 
-func CheckIsILikeAnswer(uin int64, answerId int) (ret bool, err error) {
-	//log.Debugf("start checkIsILikeAnswer uin:%d answerId:%d", uin, answerId)
+//判断我是否点过赞
+func CheckIsILike(uin int64, likeId int, likeType int) (ret bool, err error) {
 
+	log.Debugf("start check is  like, likeType:%d likeId:%d, uin:%d", likeType, likeId, uin)
 	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
 	if inst == nil {
 		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
@@ -45,7 +48,7 @@ func CheckIsILikeAnswer(uin int64, answerId int) (ret bool, err error) {
 		return
 	}
 
-	sql := fmt.Sprintf(`select id from v2likes where type = 1 and likeId = %d and ownerUid = %d and likeStatus != 2`, answerId, uin)
+	sql := fmt.Sprintf(`select id from v2likes where type = %d and likeId = %d and ownerUid = %d and likeStatus != 2`, likeType, likeId, uin)
 	rows, err := inst.Query(sql)
 	if err != nil {
 		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
@@ -59,7 +62,6 @@ func CheckIsILikeAnswer(uin int64, answerId int) (ret bool, err error) {
 		rows.Scan(&id)
 		ret = true
 	}
-
-	//log.Debugf("end checkIsILikeAnswer uin:%d answerId:%d ret:%t", uin, answerId, ret)
+	log.Debugf("check is  like, likeType:%d likeId:%d, ret:%t", likeType, likeId, ret)
 	return
 }

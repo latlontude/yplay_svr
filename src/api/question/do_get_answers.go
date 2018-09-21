@@ -1,6 +1,7 @@
 package question
 
 import (
+	"api/common"
 	"common/constant"
 	"common/mydb"
 	"common/rest"
@@ -144,7 +145,7 @@ func GetAnswers(uin int64, qid, pageNum, pageSize int) (answers []*st.AnswersInf
 		return
 	}
 
-	sql = fmt.Sprintf(`select qid, ownerUid, answerId, answerContent, answerImgUrls, answerTs ,ext from v2answers where answerStatus = 0 and qid = %d order by answerTs desc`, qid)
+	sql = fmt.Sprintf(`select qid, ownerUid, answerId, answerContent, answerImgUrls, isAnonymous,answerTs ,ext from v2answers where answerStatus = 0 and qid = %d order by answerTs desc`, qid)
 
 	rows, err = inst.Query(sql)
 	if err != nil {
@@ -163,6 +164,7 @@ func GetAnswers(uin int64, qid, pageNum, pageSize int) (answers []*st.AnswersInf
 			&info.AnswerId,
 			&info.AnswerContent,
 			&info.AnswerImgUrls,
+			&info.IsAnonymous,
 			&info.AnswerTs,
 			&info.Ext)
 
@@ -199,22 +201,25 @@ func GetAnswers(uin int64, qid, pageNum, pageSize int) (answers []*st.AnswersInf
 
 		info.CommentCnt = commentCnt
 
+		reply, commentCnt, err3 := GetAllComments(uin, info.AnswerId)
+		if err3 != nil {
+			log.Error(err3.Error())
+			continue
+		}
+		info.Reply = reply
+
 		//点赞数
-
-		likeCnt, err1 := getAnswerLikeCnt(info.AnswerId)
+		likeCnt, err1 := common.GetLikeCntByType(info.AnswerId, 1)
 		if err1 != nil {
 			log.Error(err1.Error())
 			continue
 		}
-
 		info.LikeCnt = likeCnt
-
-		isILike, err1 := checkIsILikeAnswer(uin, info.AnswerId)
+		isILike, err1 := common.CheckIsILike(uin, info.AnswerId, 1)
 		if err1 != nil {
 			log.Error(err1.Error())
 			continue
 		}
-
 		info.IsILike = isILike
 
 		//分成两个slice
@@ -239,25 +244,6 @@ func GetAnswers(uin int64, qid, pageNum, pageSize int) (answers []*st.AnswersInf
 		var answerTmp = tmp
 		answers = append(answers, answerTmp)
 	}
-	//copy(answers,expAnswer)
-	//copy(answers[len(expAnswer):],otherAnswer)
-
-	//retAnsers, err := sortQuestionAnswer(answers)
-	//if err != nil {
-	//	log.Error(err.Error())
-	//	return
-	//}
-	//
-	//// 超过最大长度  等于slice长度
-	//totalCnt = len(retAnsers)
-	//if e > totalCnt {
-	//	e = totalCnt
-	//}
-	//
-	////s - e
-	//retAnsers = retAnsers[s:e]
-	//
-	//log.Debugf("end GetAnswers uin:%d totalCnt:%d, len:%d ,s:%d,e:%d", uin, totalCnt, len(retAnsers), s, e)
 
 	totalCnt = len(answers)
 	if e > totalCnt {
@@ -269,8 +255,6 @@ func GetAnswers(uin int64, qid, pageNum, pageSize int) (answers []*st.AnswersInf
 }
 
 func sortQuestionAnswer(answers []*st.AnswersInfo) (sortedAnswers []*st.AnswersInfo, err error) {
-
-	//log.Debugf("start sortQuestionAnswer")
 
 	likeCntAnswerMap := make(map[int][]*st.AnswersInfo)
 
@@ -293,8 +277,6 @@ func sortQuestionAnswer(answers []*st.AnswersInfo) (sortedAnswers []*st.AnswersI
 			sortedAnswers = append(sortedAnswers, answer)
 		}
 	}
-
-	//log.Debugf("end sortQuestionAnswer sortedAnswers:%+v", sortedAnswers)
 	return
 }
 
@@ -308,8 +290,8 @@ func getCommentCnt(answerId int) (cnt int, err error) {
 		return
 	}
 
-	//2018-07-05 评论数 = 评论数 + 回复数
-	sql := fmt.Sprintf(`select commentId  from v2comments where answerId = %d and commentStatus = 0`, answerId)
+	//2018-09-20 只有评论
+	sql := fmt.Sprintf(`select count(commentId) as cnt from v2comments where answerId = %d and commentStatus = 0`, answerId)
 	rows, err := inst.Query(sql)
 	defer rows.Close()
 
@@ -319,38 +301,53 @@ func getCommentCnt(answerId int) (cnt int, err error) {
 		return
 	}
 
-	commentIdArr := make([]int, 0)
-	commentCnt := 0
 	for rows.Next() {
-		var commentId int
-		rows.Scan(&commentId)
-		commentCnt++
-		commentIdArr = append(commentIdArr, commentId)
-	}
-	commentStr := ""
-	for i, commentId := range commentIdArr {
-		if i != len(commentIdArr)-1 {
-			commentStr += fmt.Sprintf(`%d,`, commentId)
-		} else {
-			commentStr += fmt.Sprintf(`%d`, commentId)
-		}
+		rows.Scan(&cnt)
 	}
 
-	//找到每一条评论的回复数
-	sql = fmt.Sprintf(`select count(*) as cnt from v2replys where commentId in ('%s') and replyStatus = 0 `, commentStr)
-
-	rows, err = inst.Query(sql)
-	if err != nil {
-		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
-		log.Error(err)
-		return
-	}
-
-	replyCnt := 0
-	for rows.Next() {
-		rows.Scan(&replyCnt)
-	}
-	cnt = replyCnt + commentCnt
+	////2018-07-05 评论数 = 评论数 + 回复数
+	//sql := fmt.Sprintf(`select commentId  from v2comments where answerId = %d and commentStatus = 0`, answerId)
+	//rows, err := inst.Query(sql)
+	//defer rows.Close()
+	//
+	//if err != nil {
+	//	err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+	//	log.Error(err)
+	//	return
+	//}
+	//
+	//commentIdArr := make([]int, 0)
+	//commentCnt := 0
+	//for rows.Next() {
+	//	var commentId int
+	//	rows.Scan(&commentId)
+	//	commentCnt++
+	//	commentIdArr = append(commentIdArr, commentId)
+	//}
+	//commentStr := ""
+	//for i, commentId := range commentIdArr {
+	//	if i != len(commentIdArr)-1 {
+	//		commentStr += fmt.Sprintf(`%d,`, commentId)
+	//	} else {
+	//		commentStr += fmt.Sprintf(`%d`, commentId)
+	//	}
+	//}
+	//
+	////找到每一条评论的回复数
+	//sql = fmt.Sprintf(`select count(*) as cnt from v2replys where commentId in ('%s') and replyStatus = 0 `, commentStr)
+	//
+	//rows, err = inst.Query(sql)
+	//if err != nil {
+	//	err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+	//	log.Error(err)
+	//	return
+	//}
+	//
+	//replyCnt := 0
+	//for rows.Next() {
+	//	rows.Scan(&replyCnt)
+	//}
+	//cnt = replyCnt + commentCnt
 
 	/*
 		// 评论数
@@ -358,63 +355,6 @@ func getCommentCnt(answerId int) (cnt int, err error) {
 	*/
 
 	//log.Debugf("end getCommentCnt answerId:%d commentCnt:%d,replyCnt:%d,cnt:%d", answerId, commentCnt, replyCnt, cnt)
-	return
-}
-
-func getAnswerLikeCnt(answerId int) (cnt int, err error) {
-	//log.Debugf("start getAnswerLikeCnt answerId:%d", answerId)
-
-	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
-	if inst == nil {
-		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
-		log.Error(err)
-		return
-	}
-
-	// 点赞数
-	sql := fmt.Sprintf(`select count(id) as cnt from v2likes where type = 1 and likeId = %d and likeStatus != 2`, answerId)
-	rows, err := inst.Query(sql)
-	if err != nil {
-		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
-		log.Error(err)
-		return
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		rows.Scan(&cnt)
-	}
-
-	//log.Debugf("end getAnswerLikeCnt answerId:%d cnt:%d", answerId, cnt)
-	return
-}
-
-func checkIsILikeAnswer(uin int64, answerId int) (ret bool, err error) {
-	//log.Debugf("start checkIsILikeAnswer uin:%d answerId:%d", uin, answerId)
-
-	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
-	if inst == nil {
-		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
-		log.Error(err)
-		return
-	}
-
-	sql := fmt.Sprintf(`select id from v2likes where type = 1 and likeId = %d and ownerUid = %d and likeStatus != 2`, answerId, uin)
-	rows, err := inst.Query(sql)
-	if err != nil {
-		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
-		log.Error(err)
-		return
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var id int
-		rows.Scan(&id)
-		ret = true
-	}
-
-	//log.Debugf("end checkIsILikeAnswer uin:%d answerId:%d ret:%t", uin, answerId, ret)
 	return
 }
 
@@ -505,5 +445,103 @@ where experience_share.labelId = experience_label.labelId and experience_share.a
 		expLabels = append(expLabels, &expLabel)
 	}
 
+	return
+}
+func GetAllComments(uin int64, answerId int) (comments []*st.CommentInfo, totalCnt int, err error) {
+
+	//log.Debugf("start GetComments uin:%d", uin)
+	if answerId <= 0 {
+		err = rest.NewAPIError(constant.E_INVALID_PARAM, "invalid params")
+		log.Error(err)
+		return
+	}
+	comments = make([]*st.CommentInfo, 0)
+
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		log.Error(err)
+		return
+	}
+
+	sql := fmt.Sprintf(`select count(commentId) as cnt from  v2comments where answerId = %d and commentStatus = 0`, answerId)
+	rows, err := inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		log.Error(err)
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		rows.Scan(&totalCnt)
+	}
+
+	if totalCnt == 0 {
+		return
+	}
+
+	sql = fmt.Sprintf(`select commentId, answerId, commentContent, ownerUid, toUid,isAnonymous,commentTs ,ext from v2comments where commentStatus = 0 
+and answerId = %d order by commentTs`, answerId)
+
+	rows, err = inst.Query(sql)
+	if err != nil {
+		err = rest.NewAPIError(constant.E_DB_QUERY, err.Error())
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var info st.CommentInfo
+		var uid, toUid int64
+
+		info.Replys = make([]st.ReplyInfo, 0)
+
+		rows.Scan(
+			&info.CommentId,
+			&info.AnswerId,
+			&info.CommentContent,
+			&uid,
+			&toUid,
+			&info.IsAnonymous,
+			&info.CommentTs,
+			&info.Ext)
+
+		if uid > 0 {
+			ui, err1 := st.GetUserProfileInfo(uid)
+			if err1 != nil {
+				log.Error(err1.Error())
+				continue
+			}
+
+			info.OwnerInfo = ui
+		}
+
+		if toUid > 0 {
+			toUi, err1 := st.GetUserProfileInfo(toUid)
+			if err1 != nil {
+				log.Error(err1.Error())
+				continue
+			}
+
+			info.ToOwnerInfo = toUi
+		}
+
+		commentLikeCnt, err1 := common.GetLikeCntByType(info.CommentId, 2)
+		if err1 != nil {
+			log.Error(err1.Error())
+			continue
+		}
+
+		info.LikeCnt = commentLikeCnt
+		isILikeComment, err1 := common.CheckIsILike(uin, info.CommentId, 2)
+		if err1 != nil {
+			log.Error(err1.Error())
+			continue
+		}
+
+		info.IsILike = isILikeComment
+		comments = append(comments, &info)
+	}
 	return
 }

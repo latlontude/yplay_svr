@@ -16,7 +16,7 @@ type PostLikeReq struct {
 
 	Qid    int `schema:"qid"`
 	LikeId int `schema:"likeId"`
-	Typ    int `schema:"type"` //1 给回答点赞，2给评论点赞，3给回应点赞
+	Typ    int `schema:"type"` // 1 给回答点赞，2给评论点赞，3给回应点赞  4 表示给问题点赞
 }
 
 type PostLikeRsp struct {
@@ -67,51 +67,48 @@ func PostLike(uin int64, qid, likeId, typ int) (code int, err error) {
 	}
 	defer rows.Close()
 
-
-
 	id := 0
 	likeStatus := 0
 	for rows.Next() {
-		rows.Scan(&id,&likeStatus)
+		rows.Scan(&id, &likeStatus)
 	}
 
 	pushAble := false
-	log.Debugf("sql:%s  id =%d, likeStatus = %d",sql,id,likeStatus)
+	log.Debugf("sql:%s  id =%d, likeStatus = %d", sql, id, likeStatus)
 
 	if id == 0 && likeStatus == 0 {
 		//insert
-		err = insertV2Like(uin,likeId,qid,typ,inst)
+		err = insertV2Like(uin, likeId, qid, typ, inst)
 
 		//新增的点赞可以发推送
 		pushAble = true
-		log.Debugf("insert like id:%d , likeStatus : %d",id,likeStatus)
-	}else if id != 0 &&likeStatus == 2 {
+		log.Debugf("insert like id:%d , likeStatus : %d", id, likeStatus)
+	} else if id != 0 && likeStatus == 2 {
 		//delete -> update
-		err = updateV2LikeById(id,1,inst)
-		log.Debugf("update like id:%d , likeStatus : %d",id,likeStatus)
+		err = updateV2LikeById(id, 1, inst)
+		log.Debugf("update like id:%d , likeStatus : %d", id, likeStatus)
 
 		//取消赞后再点赞 不发推送
 
-	}else {
+	} else {
 		code = 0
 		log.Debugf("repeat like!")
 		return
 	}
 
-
 	code = 0
-
 	if pushAble {
 		//回答 评论 回复被点赞 发推送
 		if typ == 1 {
 			go v2push.SendBeLikedAnswerPush(uin, qid, likeId)
-		}else if typ == 2 {
-			go v2push.SendBeLikedCommentPush(uin,qid,likeId)
-		}else if typ == 3 {
-			go v2push.SendBeLikedReplyPush(uin,qid,likeId)
+		} else if typ == 2 {
+			go v2push.SendBeLikedCommentPush(uin, qid, likeId)
+		} else if typ == 3 {
+			go v2push.SendBeLikedReplyPush(uin, qid, likeId)
+		} else if typ == 4 {
+			//v2push.SendBeLikedQuestionPush(uin,qid,likeId)
 		}
 	}
-
 
 	return
 }
