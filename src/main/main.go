@@ -9,6 +9,7 @@ import (
 	"api/comment"
 	"api/elastSearch"
 	"api/experience"
+	"api/express"
 	"api/feed"
 	"api/geneqids"
 	"api/helper"
@@ -90,6 +91,7 @@ func main() {
 	httputil.HandleAPIMap("/api/experience/", experience.APIMap)
 	httputil.HandleAPIMap("/api/elastSearch/", elastSearch.APIMap)
 	httputil.HandleAPIMap("/api/label/", label.APIMap)
+	httputil.HandleAPIMap("/api/express/", express.APIMap)
 	log.Errorf("Starting yplay_svr...")
 	panicUnless(httputil.ListenHttp(env.Config.HttpServer.BindAddr))
 }

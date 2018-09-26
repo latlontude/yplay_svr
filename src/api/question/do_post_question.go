@@ -116,5 +116,8 @@ func PostQuestion(uin int64, boardId int, title, content, imgUrls string, qType 
 	go v2push.SendAtPush(uin, 1, int(qid), qstInter, ext)
 	//}
 
+	//把问题添加到mgo中
+	AddQuestionToMgo(uin, int(qid), lat, lng, poi, ts)
+
 	return
 }

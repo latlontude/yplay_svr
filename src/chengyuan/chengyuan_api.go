@@ -8,12 +8,13 @@ import (
 
 var (
 	APIMap = httputil.APIMap{
-		"/auth":  auth.Apify4(doAuth), //发送短信
-		"/login": auth.Apify(doGetCode),
-		"/order": auth.Apify(doOrder),
+		"/auth": auth.Apify4(doAuth), //发送短信
+
 	}
 
 	log = env.NewLogger("chengyuan_wxpublic")
 
 	TOKEN = "cool6d709yeejaypupusocool"
+
+	codeOpenIdMap = make(map[string]string, 0)
 )

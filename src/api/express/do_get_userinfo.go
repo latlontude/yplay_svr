@@ -1,4 +1,4 @@
-package chengyuan
+package express
 
 import (
 	"encoding/json"
@@ -13,7 +13,7 @@ type LoginReq struct {
 }
 
 type LoginRsp struct {
-	UserInfo *UserInfo `json:"user_info"`
+	UserInfo *UserInfo `json:"userInfo"`
 }
 
 type GetAccessTokenRsp struct {
@@ -69,7 +69,6 @@ func doGetCode(req *LoginReq, r *http.Request) (rsp *LoginRsp, err error) {
 	uinfo, err := GetUserInfo(accessToken.OpenId, accessToken.AccessToken)
 
 	rsp = &LoginRsp{uinfo}
-
 
 	return
 }

@@ -23,6 +23,7 @@ type AnswersInfo struct {
 	ExpLabel      []*ExpLabel      `json:"expLabel"`
 	LatestComment []*CommentInfo   `json:"latestComment"`
 	IsAnonymous   bool             `json:"isAnonymous"`
+	Reply         []*CommentInfo   `json:"reply"`
 }
 
 func (this *AnswersInfo) String() string {

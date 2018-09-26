@@ -14,15 +14,17 @@ type V2QuestionInfo struct {
 	IsAnonymous   bool               `json:"isAnonymous"`
 	CreateTs      int                `json:"createTs"`
 	ModTs         int                `json:"modTs"`
-	Longitude 	  float64 			  `schema:"longitude"`
-	Latitude 	  float64 			  `schema:"latitude"`
-	PoiTag 		  string 			  `schema:"poiTag"`
+	Longitude     float64            `schema:"longitude"`
+	Latitude      float64            `schema:"latitude"`
+	PoiTag        string             `schema:"poiTag"`
 	Ext           string             `json:"ext"`
 	AnswerCnt     int                `json:"answerCnt"`
-	AccessCount   int                `json:"accessCount"`   //帖子访问数
+	AccessCount   int                `json:"accessCount"` //帖子访问数
 	BestAnswer    *AnswersInfo       `json:"bestAnswer"`
 	NewResponders []*UserProfileInfo `json:"newResponders"`
-	Board         *BoardInfo		 `json:"board"`					//墙信息
+	Board         *BoardInfo         `json:"board"`   //墙信息
+	LikeCnt       int                `json:"likeCnt"` //点赞数
+	IsILike       bool               `json:"isILike"` //我是否点过赞
 }
 
 func (this *V2QuestionInfo) String() string {

@@ -17,12 +17,9 @@ type BoardInfo struct {
 	Longitude  float64          `json:"longitude"`
 	Latitude   float64          `json:"latitude"`
 	OwnerInfo  *UserProfileInfo `json:"ownerInfo"`
-
-	FollowCnt int `json:"followCnt"`
-
-	CreateTs int `json:"createTs"`
-
-	IsAdmin bool `json:"isAdmin"`
+	FollowCnt  int              `json:"followCnt"`
+	CreateTs   int              `json:"createTs"`
+	IsAdmin    bool             `json:"isAdmin"`
 }
 
 func (this *BoardInfo) String() string {

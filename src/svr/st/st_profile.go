@@ -419,6 +419,62 @@ func GetUserProfileInfo2(uin int64) (info *UserProfileInfo2, err error) {
 		info.Ext = dataStr
 	}
 
+	isBoardOwner, isSender, err := CheckExpressUser(uin, info.SchoolId)
+	log.Debugf("checkUser:uin:%d,isBoardOwner:%t,isSender:%t", uin, isBoardOwner, isSender)
+	if isBoardOwner == true || isSender == true {
+		info.Type = 2
+	}
+
+	return
+}
+
+func CheckExpressUser(uin int64, schoolId int) (isBoardAdmin bool, isSender bool, err error) {
+	inst := mydb.GetInst(constant.ENUM_DB_INST_YPLAY)
+	if inst == nil {
+		err = rest.NewAPIError(constant.E_DB_INST_NIL, "db inst nil")
+		log.Error(err)
+		return
+	}
+	{
+		//判断是不是墙主
+		sql := fmt.Sprintf(`select ownerUid from v2boards where schoolId = %d`, schoolId)
+		rows, err1 := inst.Query(sql)
+		defer rows.Close()
+		if err1 != nil {
+			err = rest.NewAPIError(constant.E_DB_QUERY, err1.Error())
+			log.Error(err)
+			return
+		}
+		isBoardAdmin = false
+		for rows.Next() {
+			var uid int64
+			rows.Scan(&uid)
+			if uid == uin {
+				isBoardAdmin = true
+			}
+		}
+	}
+
+	{
+		//判断是不是跑腿者
+		sql := fmt.Sprintf(`select uid from express_senderList where schoolId = %d`, schoolId)
+		rows, err1 := inst.Query(sql)
+		defer rows.Close()
+		if err1 != nil {
+			err = rest.NewAPIError(constant.E_DB_QUERY, err1.Error())
+			log.Error(err)
+			return
+		}
+		isSender = false
+		for rows.Next() {
+			var uid int64
+			rows.Scan(&uid)
+			if uid == uin {
+				isSender = true
+			}
+		}
+	}
+
 	return
 }
 

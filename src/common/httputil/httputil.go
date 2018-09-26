@@ -55,6 +55,12 @@ func HandleAPIMap(urlPrefix string, apiMap APIMap) {
 	}
 }
 
+func HandleFunc(urlPrefix string, handle http.Handler) {
+	Router = nil
+
+	http.HandleFunc(urlPrefix, handle.ServeHTTP)
+}
+
 //bindAddr -> 10.154.216.215:9091
 func ListenHttp(bindAddr string) error {
 

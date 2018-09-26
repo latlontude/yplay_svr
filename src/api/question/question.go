@@ -27,6 +27,10 @@ var (
 		"/autoInput":                    auth.Apify(doAutoInput),
 		"/getOneQuestion":               auth.Apify2(doGetOneQuestions), //根据板块ID来拉取问题列表 后续可能有按用户ID来拉取问题列表
 		"/autoInputQuestionNoBoardInfo": auth.Apify(doAutoInputQuestionNoBoardInfo),
+		"/getquestion":                  auth.Apify2(doGetOneQuestionDetail),
+
+		"/readQuestion": auth.Apify2(doReadQuestion),
+		"/getHeatMap":   auth.Apify(doGetHeatMap),
 	}
 
 	log = env.NewLogger("question")

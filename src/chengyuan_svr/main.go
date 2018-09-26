@@ -8,6 +8,7 @@ import (
 	"flag"
 	"fmt"
 	"math/rand"
+	"net/http"
 	"os"
 	"runtime"
 	"time"
@@ -34,10 +35,19 @@ func main() {
 	panicUnless(mydb.Init(env.WxPublicConfig.DbInsts))
 	panicUnless(httputil.Init())
 
-	httputil.HandleAPIMap("/api/", chengyuan.APIMap)
-
+	http.HandleFunc("/express/", chengyuan.ExpressHandel)
+	http.HandleFunc("/images/", chengyuan.ImageHandler)
+	http.HandleFunc("/js/", chengyuan.JsHandler)
+	http.HandleFunc("/css/", chengyuan.CssHandler)
+	http.HandleFunc("/html/", chengyuan.HtmlHandler)
+	http.HandleFunc("/courier/", chengyuan.CourierHandler)
+	http.HandleFunc("/icons/", chengyuan.IconsHandler)
+	http.HandleFunc("/owner/", chengyuan.OwnerHandler)
+	http.HandleFunc("/sender/", chengyuan.SenderHandler)
+	http.HandleFunc("/", chengyuan.PathHandler)
 	log.Errorf("Starting chengyuan_wxpublic_svr...")
-	panicUnless(httputil.ListenHttp(env.WxPublicConfig.HttpServer.BindAddr))
+	http.ListenAndServe(env.WxPublicConfig.HttpServer.BindAddr, nil)
+	//panicUnless(httputil.ListenHttp(env.WxPublicConfig.HttpServer.BindAddr))
 }
 
 func panicUnless(err error) {
